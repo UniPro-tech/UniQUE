@@ -52,6 +52,18 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
 
 docker-composeを用いて開発環境を整えることができます。
 
+### Tag
+
+タグについては、下記のルールに従いましょう。
+
+- [semver 2.0](https://semver.org/lang/ja/)を採用しています。
+- 下記のprefixを必ずつけましょう
+  - front/v
+  - auth/v
+  - api/v
+  - mail/v
+  - db/v
+
 ## Old Repositories
 
 このリポジトリはmonorepoになる前の分離されたバージョンが存在します。
