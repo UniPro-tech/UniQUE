@@ -1,6 +1,7 @@
 # UniQUE - Open ID Connect ID Provider
 
 このプロジェクトは、[デジタル創作サークルUniProject](https://uniproject.jp)のためのOIDC認証基盤です。
+Discord連携機能やアナウンス機能などを持ち合わせており、サークルの円滑な運営のために用いられています。
 
 ## Components
 
@@ -48,9 +49,11 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
 - namespace - unique
 - public key - cert.pem
 
-## Development
+## Contributing & Development
 
-docker-composeを用いて開発環境を整えることができます。
+コントリビュートに興味をお持ちいただき、ありがとうございます！
+
+開発環境はdocker-composeを用いて整えることができます。
 
 ### Tag
 
@@ -64,29 +67,21 @@ docker-composeを用いて開発環境を整えることができます。
   - mail/v
   - db/v
 
-## Old Repositories
-
-このリポジトリはmonorepoになる前の分離されたバージョンが存在します。
-過去のバージョンを追うには下記リポジトリを参照してください。
-
-- [UniQUE-Auth](https://github.com/UniPro-tech/UniQUE-Auth)
-- [UniQUE-API](https://github.com/UniPro-tech/UniQUE-API)
-- [UniQUE-Front](https://github.com/UniPro-tech/UniQUE-Front)
-- [UniQUE-MailServer](https://github.com/UniPro-tech/UniQUE-MailServer)
-- [UniQUE-DB](https://github.com/UniPro-tech/UniQUE-DB)
-- [UniQUE-Kustomization](https://github.com/UniPro-tech/UniQUE-Kustomization)
-
 ## LICENSE
 
 このプロジェクトは、AGPL-3.0ライセンスの下で公開されています。詳しくは、LICENSEファイルをご覧ください。
 
 ## Super Thanks
 
+このプロジェクトにおいて、大きな変化をもたらしてくださった方々です。
+本当にありがとうございました。
+
 - @sibapybot - サーバーを提供していただき、多くのアイデアを提供してくださいました。
 - 倉林 雅 氏 - セキュリティ・キャンプ 2025 全国大会にて、様々なことを教えてくださいました。
-- Other All
 
-### 以前のリポジトリの貢献者
+その他すべてのコントリビューターおよびUniProjectメンバーに感謝します。
+
+### 以前のリポジトリのコントリビューター
 
 <a href="https://github.com/UniPro-tech/UniQUE-Auth/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=UniPro-tech/UniQUE-Auth" />
@@ -99,3 +94,15 @@ docker-composeを用いて開発環境を整えることができます。
 <a href="https://github.com/UniPro-tech/UniQUE-Front/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=UniPro-tech/UniQUE-Front" />
 </a>
+
+## Old Repositories
+
+このリポジトリはmonorepoになる前の分離されたバージョンが存在します。
+過去のバージョンを追うには下記リポジトリを参照してください。
+
+- [UniQUE-Auth](https://github.com/UniPro-tech/UniQUE-Auth)
+- [UniQUE-API](https://github.com/UniPro-tech/UniQUE-API)
+- [UniQUE-Front](https://github.com/UniPro-tech/UniQUE-Front)
+- [UniQUE-MailServer](https://github.com/UniPro-tech/UniQUE-MailServer)
+- [UniQUE-DB](https://github.com/UniPro-tech/UniQUE-DB)
+- [UniQUE-Kustomization](https://github.com/UniPro-tech/UniQUE-Kustomization)
