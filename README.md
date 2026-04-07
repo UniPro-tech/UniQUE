@@ -40,6 +40,14 @@ KubernetesのCronJobにより、1日1回、GitからCloneしたマイグレー�
 デプロイにはKustomizationを用いています。
 kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロイしています。
 
+### Sealed Secretについて
+
+暗号化のためには、下記条件を指定してください。
+
+- mode - strict
+- namespace - unique
+- public key - cert.pem
+
 ## Development
 
 docker-composeを用いて開発環境を整えることができます。
