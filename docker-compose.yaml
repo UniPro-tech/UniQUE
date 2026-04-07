@@ -121,10 +121,10 @@ services:
       CONFIG_ISSUER_INTERNAL_URL: "http://auth:8080"
       CONFIG_EMAIL_SENDER_URL: "http://mailserver:8080"
       DISCORD_CLIENT_ID: "1437220613554176294"
-      DISCORD_CLIENT_SECRET: "e-KCHsA7qaUshnrT9KTk77B7d2yOJwr0"
-      DISCORD_GUILD_ID: "1383480145486286879"
-      DISCORD_BOT_TOKEN: "MTQzNzIyMDYxMzU1NDE3NjI5NA.GtFfso.vzwD9TCMc2Z8DzOTYnD_GLkkcfnFG2Q7VZN5IA"
-      DISCORD_MEMBER_ROLE_ID: "1446833591987474582"
+      DISCORD_CLIENT_SECRET: "your-client-secret"
+      DISCORD_GUILD_ID: "your-guild-id"
+      DISCORD_BOT_TOKEN: "your-token-here"
+      DISCORD_MEMBER_ROLE_ID: "your-member-role-id-here"
       GIN_MODE: debug
     ports:
       - "8001:8080"
