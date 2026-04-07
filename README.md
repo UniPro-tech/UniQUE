@@ -1,0 +1,57 @@
+# UniQUE - Open ID Connect ID Provider
+
+このプロジェクトは、[デジタル創作サークルUniProject](https://uniproject.jp)のためのOIDC認証基盤です。
+
+## Components
+
+このプロジェクトはマイクロサービスアーキテクチャの思想を取り入れ、主に5つのコンポーネントに分離しています。
+
+### Resource API Server
+
+Goで作られたリソースAPIサーバーです。
+ここで、UniQUEに保存されたすべてのデータを管理できます。
+
+### Auth Server
+
+認証・認可サーバーです。
+ここでは、Open ID Connect 1.0 / OAuth 2.0に基づいた処理を行っています。
+また、フロントエンドから受け取る認証リクエストを処理しています。
+
+### Frontend
+
+フロントエンドです。
+ユーザーは基本的のこのコンポーネントを経由しWebUIを用いてアクセスします。
+Next.jsで制作されており、このコンポーネントからデータベースへのアクセスは許可されていません。
+
+### Mail Server
+
+メールを送るためだけのシステムです。
+ここであらゆる種類のメールのテンプレートと変換し、APIサーバー等から送信されたリクエストをもとにメールを配信します。
+
+### UniQUE-DB
+
+これは、マイグレーションファイルが含まれたデータベースマイグレーション用のコンポーネントです。
+KubernetesのCronJobにより、1日1回、GitからCloneしたマイグレーションファイルをデータベースに反映します。
+
+また、DBはMySQL互換です。
+
+## Deployment
+
+デプロイにはKustomizationを用いています。
+kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロイしています。
+
+## Development
+
+docker-composeを用いて開発環境を整えることができます。
+
+## Old Repositories
+
+このリポジトリはmonorepoになる前の分離されたバージョンが存在します。
+過去のバージョンを追うには下記リポジトリを参照してください。
+
+- [UniQUE-Auth](https://github.com/UniPro-tech/UniQUE-Auth)
+- [UniQUE-API](https://github.com/UniPro-tech/UniQUE-API)
+- [UniQUE-Front](https://github.com/UniPro-tech/UniQUE-Front)
+- [UniQUE-MailServer](https://github.com/UniPro-tech/UniQUE-MailServer)
+- [UniQUE-DB](https://github.com/UniPro-tech/UniQUE-DB)
+- [UniQUE-Kustomization](https://github.com/UniPro-tech/UniQUE-Kustomization)
