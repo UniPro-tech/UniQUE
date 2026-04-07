@@ -3,8 +3,14 @@ on:
   push:
     paths:
       - "UniQUE-Front/**"
-      - "*.md"
-      - ".vscode/**"
+      - "!*.md"
+      - "!.vscode/**"
+      - "!.github/**"
+    tags-ignore:
+      - "api/v*"
+      - "auth/v*"
+      - "mail/v*"
+      - "db/v*"
 jobs:
   quality:
     runs-on: ubuntu-latest
