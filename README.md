@@ -75,3 +75,27 @@ docker-composeを用いて開発環境を整えることができます。
 - [UniQUE-MailServer](https://github.com/UniPro-tech/UniQUE-MailServer)
 - [UniQUE-DB](https://github.com/UniPro-tech/UniQUE-DB)
 - [UniQUE-Kustomization](https://github.com/UniPro-tech/UniQUE-Kustomization)
+
+## LICENSE
+
+このプロジェクトは、AGPL-3.0ライセンスの下で公開されています。詳しくは、LICENSEファイルをご覧ください。
+
+## Super Thanks
+
+- @sibapybot - サーバーを提供していただき、多くのアイデアを提供してくださいました。
+- 倉林 雅 氏 - セキュリティ・キャンプ 2025 全国大会にて、様々なことを教えてくださいました。
+- Other All
+
+### 以前のリポジトリの貢献者
+
+<a href="https://github.com/UniPro-tech/UniQUE-Auth/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=UniPro-tech/UniQUE-Auth" />
+</a>
+
+<a href="https://github.com/UniPro-tech/UniQUE-API/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=UniPro-tech/UniQUE-API" />
+</a>
+
+<a href="https://github.com/UniPro-tech/UniQUE-Front/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=UniPro-tech/UniQUE-Front" />
+</a>
