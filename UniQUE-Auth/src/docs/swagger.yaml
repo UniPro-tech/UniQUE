@@ -1,0 +1,976 @@
+basePath: /
+definitions:
+  main.HealthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  router.AuthenticationRequest:
+    properties:
+      code:
+        description: for MFA/TOTP
+        type: string
+      ip_address:
+        type: string
+      password:
+        type: string
+      remember:
+        default: false
+        type: boolean
+      type:
+        enum:
+        - password
+        - mfa
+        - totp
+        type: string
+      user_agent:
+        type: string
+      username:
+        type: string
+    required:
+    - type
+    type: object
+  router.AuthenticationResponse:
+    properties:
+      mfa_type:
+        description: '"totp"'
+        items:
+          type: string
+        type: array
+      require_mfa:
+        type: boolean
+      session_jwt:
+        type: string
+    type: object
+  router.AuthorizationResponse:
+    properties:
+      client_id:
+        type: string
+      code_challenge:
+        type: string
+      code_challenge_method:
+        enum:
+        - plain
+        - S256
+        type: string
+      nonce:
+        type: string
+      prompt:
+        type: string
+      redirect_uri:
+        type: string
+      response_type:
+        enum:
+        - code
+        - token
+        type: string
+      scope:
+        type: string
+      state:
+        type: string
+    required:
+    - client_id
+    - redirect_uri
+    - response_type
+    - scope
+    type: object
+  router.ConsentCreateRequest:
+    properties:
+      application_id:
+        type: string
+      scope:
+        type: string
+      user_id:
+        type: string
+    required:
+    - application_id
+    - scope
+    - user_id
+    type: object
+  router.ConsentResponse:
+    properties:
+      application_id:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      scope:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  router.DisableTOTPRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  router.DisableTOTPResponse:
+    properties:
+      message:
+        description: 結果メッセージ
+        type: string
+    type: object
+  router.GenerateTOTPRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  router.GenerateTOTPResponse:
+    properties:
+      secret:
+        description: TOTPシークレット
+        type: string
+      uri:
+        description: QRコード用URI (otpauth://...)
+        type: string
+    type: object
+  router.JWKS:
+    properties:
+      keys:
+        items:
+          $ref: '#/definitions/router.JWKSKey'
+        type: array
+    type: object
+  router.JWKSKey:
+    properties:
+      alg:
+        type: string
+      e:
+        type: string
+      kid:
+        type: string
+      kty:
+        type: string
+      "n":
+        type: string
+      use:
+        type: string
+    type: object
+  router.PasswordHashRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  router.PasswordHashResponse:
+    properties:
+      password_hash:
+        type: string
+    type: object
+  router.PasswordResetConfirmRequest:
+    properties:
+      code:
+        type: string
+      password:
+        type: string
+    required:
+    - code
+    - password
+    type: object
+  router.PasswordResetConfirmResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  router.PasswordResetRequestRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  router.PasswordResetRequestResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  router.SessionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/router.SessionResponse'
+        type: array
+    type: object
+  router.SessionResponse:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      ip_address:
+        type: string
+      last_login_at:
+        type: string
+      updated_at:
+        type: string
+      user_agent:
+        type: string
+      user_id:
+        type: string
+    type: object
+  router.SessionVerifyResponse:
+    properties:
+      expires_at:
+        type: string
+      user_id:
+        type: string
+      valid:
+        type: boolean
+    type: object
+  router.TokenGetResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      id_token:
+        type: string
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  router.TokenVerifyResponse:
+    properties:
+      valid:
+        type: boolean
+    type: object
+  router.UserInfoResponse:
+    properties:
+      affiliation_period:
+        type: string
+      bio:
+        type: string
+      birthdate:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      name:
+        type: string
+      preferred_username:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      sub:
+        type: string
+      twitter:
+        type: string
+      updated_at:
+        type: integer
+      website:
+        type: string
+    type: object
+  router.VerifyTOTPRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  router.VerifyTOTPResponse:
+    properties:
+      valid:
+        description: TOTPコードが有効かどうか
+        type: boolean
+    type: object
+  router.WellKnownOpenIDConfigurationResponse:
+    properties:
+      authorization_endpoint:
+        type: string
+      claims_supported:
+        items:
+          type: string
+        type: array
+      code_challenge_methods_supported:
+        items:
+          type: string
+        type: array
+      grant_types_supported:
+        items:
+          type: string
+        type: array
+      id_token_signing_alg_values_supported:
+        items:
+          type: string
+        type: array
+      issuer:
+        type: string
+      jwks_uri:
+        type: string
+      response_types_supported:
+        items:
+          type: string
+        type: array
+      revocation_endpoint:
+        type: string
+      scopes_supported:
+        items:
+          type: string
+        type: array
+      subject_types_supported:
+        items:
+          type: string
+        type: array
+      token_endpoint:
+        type: string
+      token_endpoint_auth_methods_supported:
+        items:
+          type: string
+        type: array
+      userinfo_endpoint:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /.well-known/jwks.json:
+    get:
+      description: .well-known/jwks.json エンドポイント
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.JWKS'
+      summary: JSON Web Key Set
+      tags:
+      - metadata
+  /.well-known/openid-configuration:
+    get:
+      description: .well-known/openid-configuration エンドポイント
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.WellKnownOpenIDConfigurationResponse'
+      summary: OpenID Configuration
+      tags:
+      - metadata
+  /authorization:
+    get:
+      description: OAuth 2.0 / OIDC における認可エンドポイントです。クライアントアプリケーションがユーザーの認可を取得するために使用します。
+      parameters:
+      - description: Client ID
+        in: query
+        name: client_id
+        required: true
+        type: string
+      - description: Redirect URI
+        in: query
+        name: redirect_uri
+        required: true
+        type: string
+      - description: Response Type
+        in: query
+        name: response_type
+        required: true
+        type: string
+      - description: Scope
+        in: query
+        name: scope
+        required: true
+        type: string
+      - description: State
+        in: query
+        name: state
+        type: string
+      - description: Nonce
+        in: query
+        name: nonce
+        type: string
+      - description: Code Challenge
+        in: query
+        name: code_challenge
+        type: string
+      - description: Code Challenge Method
+        in: query
+        name: code_challenge_method
+        type: string
+      responses:
+        "302":
+          description: Redirect to frontend authorization page
+          schema:
+            type: string
+      summary: authorization endpoint
+      tags:
+      - authorization
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: ユーザーが認可を許可した際に呼び出されるエンドポイントです。Consent レコードを作成し、認可コードを生成してクライアントアプリケーションのリダイレクトURIにリダイレクトします。
+      parameters:
+      - description: Authorization Request ID
+        in: formData
+        name: auth_request_id
+        type: string
+      - description: Session ID
+        in: formData
+        name: session_jwt
+        type: string
+      responses:
+        "301":
+          description: Redirect to client application with authorization code
+          schema:
+            type: string
+      summary: consent authorization request
+      tags:
+      - authorization
+  /consented:
+    get:
+      consumes:
+      - application/json
+      description: 認可リクエストが完了したのちにリダイレクトするためのエンドポイントです。
+      parameters:
+      - description: Authorization Request ID
+        in: query
+        name: authorization_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "301":
+          description: Redirect to client application with authorization code
+          schema:
+            type: string
+      summary: Redirect for Authorization Request
+      tags:
+      - authorization
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: システムの稼働状況を確認するためのエンドポイントです。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+      summary: health check endpoint
+      tags:
+      - system info
+  /internal/auth-requests/:id:
+    get:
+      description: 内部使用のみのエンドポイントで、認可リクエストの詳細情報を取得します。
+      parameters:
+      - description: Authorization Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.AuthorizationResponse'
+      summary: get authorization request details (internal use only)
+      tags:
+      - internal
+  /internal/auth-requests/:id/consented:
+    post:
+      consumes:
+      - application/json
+      description: 内部使用のみのエンドポイントで、認可リクエストをユーザーが同意した状態に更新します。
+      parameters:
+      - description: Authorization Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Authorization request marked as consented
+          schema:
+            type: string
+      summary: mark authorization request as consented (internal use only)
+      tags:
+      - internal
+  /internal/authentication:
+    post:
+      consumes:
+      - application/json
+      description: 内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: Authentication Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.AuthenticationRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.AuthenticationResponse'
+      summary: authentication endpoint
+      tags:
+      - internal
+  /internal/consents:
+    get:
+      consumes:
+      - application/json
+      description: 一覧取得およびクエリ条件による検索を行う。
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        type: string
+      - description: Application ID
+        in: query
+        name: application_id
+        type: string
+      - description: Scope
+        in: query
+        name: scope
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/router.ConsentResponse'
+            type: array
+      summary: list or search consents
+      tags:
+      - internal
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create Consent
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.ConsentCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/router.ConsentResponse'
+      summary: create consent
+      tags:
+      - internal
+  /internal/consents/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Consent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: delete consent by id
+      tags:
+      - internal
+  /internal/password_hash:
+    post:
+      consumes:
+      - application/json
+      description: パスワードのハッシュ（bcrypt）を生成する内部エンドポイント
+      parameters:
+      - description: Password to hash
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordHashRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordHashResponse'
+      summary: Generate password hash
+      tags:
+      - internal
+  /internal/password_reset/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm password reset by providing the verification code and new
+        password.
+      parameters:
+      - description: Password Reset Confirmation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordResetConfirmResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Confirm password reset
+      tags:
+      - authentication
+  /internal/password_reset/request:
+    post:
+      consumes:
+      - application/json
+      description: Request password reset by providing external email. This sends
+        a password reset email with a code.
+      parameters:
+      - description: Password Reset Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordResetRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request password reset
+      tags:
+      - authentication
+  /internal/session_verify:
+    get:
+      consumes:
+      - application/json
+      description: 内部用のセッション検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: JTI
+        in: query
+        name: jti
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.SessionVerifyResponse'
+      summary: session verify endpoint
+      tags:
+      - internal
+  /internal/sessions/:
+    get:
+      description: '内部用: 指定ユーザーのセッション一覧を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。'
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.SessionListResponse'
+      summary: Get sessions for a user
+      tags:
+      - internal
+  /internal/sessions/:sid:
+    delete:
+      description: '内部用: 指定ユーザーのセッションを削除（ソフトデリート）する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。'
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete sessions for a user
+      tags:
+      - internal
+  /internal/sessions/{sid}:
+    get:
+      description: '内部用: セッションIDからセッション情報を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。'
+      parameters:
+      - description: Session ID
+        in: path
+        name: sid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.SessionResponse'
+      summary: Get session by ID
+      tags:
+      - internal
+  /internal/token_verify:
+    get:
+      consumes:
+      - application/json
+      description: 内部用のトークン検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: JTI
+        in: query
+        name: jti
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.TokenVerifyResponse'
+      summary: token verify endpoint
+      tags:
+      - internal
+  /internal/totp/{user_id}:
+    post:
+      consumes:
+      - application/json
+      description: TOTPのシークレットとQRコード用URIを生成します。ユーザーがTOTPをセットアップする際に使用します。
+      parameters:
+      - description: Generate TOTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.GenerateTOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.GenerateTOTPResponse'
+      summary: Generate TOTP secret and QR code
+      tags:
+      - internal
+  /internal/totp/{user_id}/disable:
+    post:
+      consumes:
+      - application/json
+      description: TOTPを無効化します。ユーザーがTOTPを無効にする際に使用します。
+      parameters:
+      - description: Disable TOTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.DisableTOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.DisableTOTPResponse'
+      summary: Disable TOTP
+      tags:
+      - internal
+  /internal/totp/{user_id}/verify:
+    post:
+      consumes:
+      - application/json
+      description: TOTPコードを検証し、is_totp_enabledをtrueに設定します。ユーザーがTOTPセットアップを完了する際に使用します。
+      parameters:
+      - description: Verify TOTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.VerifyTOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.VerifyTOTPResponse'
+      summary: Verify TOTP code
+      tags:
+      - internal
+  /internal/update_last_logined:
+    post:
+      description: 内部のLastLogined更新エンドポイント
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: "null"
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Last Logined
+      tags:
+      - internal
+  /revocation:
+    post:
+      description: RFC7009に基づいてアクセストークンを失効させる。
+      parameters:
+      - description: Token to revoke
+        in: formData
+        name: token
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Revoke a token RFC7009
+      tags:
+      - oauth2
+  /token:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: OAuth2 Token Endpoint
+      parameters:
+      - description: Grant Type
+        enum:
+        - authorization_code
+        - refresh_token
+        - client_credentials
+        in: formData
+        name: grant_type
+        required: true
+        type: string
+      - description: Authorization Code
+        in: formData
+        name: code
+        type: string
+      - description: Redirect URI
+        in: formData
+        name: redirect_uri
+        type: string
+      - description: Client ID
+        in: formData
+        name: client_id
+        type: string
+      - description: Client Secret
+        in: formData
+        name: client_secret
+        type: string
+      - description: Refresh Token
+        in: formData
+        name: refresh_token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.TokenGetResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Token Endpoint
+      tags:
+      - oauth2
+  /userinfo:
+    get:
+      consumes:
+      - application/json
+      description: OAuth2 UserInfo Endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.UserInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: UserInfo Endpoint
+      tags:
+      - userinfo
+swagger: "2.0"

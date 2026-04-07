@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  labels:
+    app: unique-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unique-auth
+  template:
+    metadata:
+      labels:
+        app: unique-auth
+    spec:
+      containers:
+        - name: unique-auth
+          image: registry.uniproject.jp/infra/unique-auth:1.0.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ENV
+              value: "production"
+            - name: TZ
+              value: Asia/Tokyo
+          envFrom:
+            - secretRef:
+                name: unique-auth-secrets
+          volumeMounts:
+            - name: auth-keys-volume
+              mountPath: /app/keys
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          resources:
+            requests:
+              cpu: 500m # 必要最低限の0.5CPUを確保
+              memory: 64Mi # 必要最低限の64MiBを確保
+            limits:
+              cpu: 1000m # 最大1CPUまで使用可能
+              memory: 128Mi # 最大128MiBまで使用可能
+      volumes:
+        - name: auth-keys-volume
+          persistentVolumeClaim:
+            claimName: auth-keys-pvc
+      imagePullSecrets:
+        - name: internal-harbor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  labels:
+    app: unique-auth
+spec:
+  selector:
+    app: unique-auth
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

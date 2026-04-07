@@ -1,0 +1,3 @@
+ALTER TABLE `external_identities` CHANGE `access_token` `access_token` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+ALTER TABLE `external_identities` CHANGE `id_token` `id_token` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+ALTER TABLE `external_identities` CHANGE `refresh_token` `refresh_token` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;

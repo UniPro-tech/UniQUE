@@ -1,0 +1,109 @@
+@layer theme, base, mui, components, utilities;
+@import "tailwindcss";
+
+/* Markdown Styles */
+.markdown {
+  @apply text-gray-900 leading-relaxed wrap-break-word w-full;
+}
+
+.markdown > * + * {
+  @apply mt-0;
+}
+
+.markdown li + li {
+  @apply mt-2;
+}
+
+.markdown li > p + p {
+  @apply mt-6;
+}
+
+.markdown strong {
+  @apply font-bold text-gray-900;
+}
+
+.markdown a {
+  @apply text-blue-600 font-medium hover:text-blue-700 transition-colors duration-200 underline decoration-blue-400/30 hover:decoration-blue-400;
+}
+
+.markdown strong a {
+  @apply font-bold;
+}
+
+.markdown h1 {
+  @apply text-4xl font-bold text-gray-900 mt-8 pb-2 border-b border-gray-200;
+}
+
+.markdown h2 {
+  @apply text-2xl font-bold text-gray-900 mt-10 pl-4 border-l-[3px] border-blue-500;
+}
+
+.markdown h3 {
+  @apply text-xl font-semibold text-gray-800 mt-6 border-l-4 border-gray-300 pl-3;
+}
+
+.markdown h4 {
+  @apply text-lg font-semibold text-gray-800 mt-6 border-b border-gray-200 pb-1;
+}
+
+.markdown h5 {
+  @apply text-base font-semibold text-gray-700 mt-6;
+}
+
+.markdown h6 {
+  @apply text-sm font-semibold text-gray-600 mt-6;
+}
+
+.markdown blockquote {
+  @apply pl-6 pr-4 py-1 my-6 border-l-4 border-blue-400 bg-blue-50/50 text-gray-700 rounded-r-lg;
+}
+
+.markdown code {
+  @apply font-mono text-sm px-1.5 py-0.5 bg-gray-100 text-gray-900 rounded-sm;
+}
+
+.markdown pre {
+  @apply bg-gray-900 rounded-lg p-4 overflow-x-auto;
+}
+
+.markdown pre code {
+  @apply block bg-transparent p-0 overflow-visible rounded-none text-gray-300 text-sm leading-6;
+}
+
+.markdown ul {
+  @apply list-disc pl-6 space-y-1 text-gray-700;
+}
+
+.markdown ol {
+  @apply list-decimal pl-6 space-y-1 text-gray-700;
+}
+
+.markdown kbd {
+  @apply px-2 py-1 text-xs font-mono bg-gray-100 border border-gray-300 rounded-sm shadow-xs;
+}
+
+.markdown table {
+  @apply w-full border-collapse;
+}
+
+.markdown th {
+  @apply px-4 py-2 border bg-gray-50 text-left font-semibold text-gray-700;
+}
+
+.markdown td {
+  @apply px-4 py-2 border text-gray-700;
+}
+
+.markdown img {
+  @apply rounded-lg shadow-md max-w-full h-auto mx-auto my-6;
+}
+
+/* シンタックスハイライトの背景色を上書き */
+.markdown .highlight pre {
+  @apply bg-gray-900!;
+}
+
+/* スムーズなアンカースクロール */
+.markdown {
+  scroll-behavior: smooth;
+}

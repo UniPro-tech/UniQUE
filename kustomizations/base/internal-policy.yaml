@@ -1,0 +1,99 @@
+---
+# Istio AuthorizationPolicy - API サービスの内部パスへのアクセス制限
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: internal-api-restricted
+spec:
+  selector:
+    matchLabels:
+      app: unique-api
+  rules:
+    # /internal/* へのアクセスはクラスタ内のサービスからのみ許可
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/default/sa/*"
+        - source:
+            namespaces:
+              - "default"
+      to:
+        - operation:
+            paths:
+              - "/internal/*"
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+    # 公開パスへのアクセス許可（外部からのアクセスも含む）
+    - {}
+---
+# Istio AuthorizationPolicy - Auth サービスの内部パスへのアクセス制限
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: internal-auth-restricted
+spec:
+  selector:
+    matchLabels:
+      app: unique-auth
+  rules:
+    # /internal/* へのアクセスはクラスタ内のサービスからのみ許可
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/default/sa/*"
+        - source:
+            namespaces:
+              - "default"
+      to:
+        - operation:
+            paths:
+              - "/internal/*"
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+    # 公開パスへのアクセス許可（外部からのアクセスも含む）
+    - {}
+---
+# RequestAuthorization - 認証情報の検証（オプション）
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: internal-jwt-auth
+spec:
+  selector:
+    matchLabels:
+      app: unique-api
+  jwtRules:
+    - issuer: "https://auth.uniproject.jp"
+      jwksUri: "https://auth.uniproject.jp/.well-known/jwks.json"
+      audiences: "internal-api"
+---
+# Traefik Middleware - 内部パスへのエラーレスポンス
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: block-internal-paths
+spec:
+  errors:
+    service: noop@internal
+    status:
+      - "403"
+---
+# ダミーサービス（内部ブロック用）
+apiVersion: v1
+kind: Service
+metadata:
+  name: internal-blocker
+spec:
+  ports:
+    - port: 9999
+      targetPort: 9999
+  selector:
+    app: none # マッチしないセレクタで意図的にエンドポイントをバインドしない

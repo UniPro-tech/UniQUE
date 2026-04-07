@@ -1,0 +1,30 @@
+# This is for kubernetes or docker deployments where the services can communicate internally
+AUTH_API_URL="http://localhost:8000"
+# This is for frontend applications where the services need to be accessed via public URLs
+NEXT_PUBLIC_AUTH_API_URL="http://localhost:8000"
+RESOURCE_API_URL="http://localhost:8001"
+
+
+DISCORD_CLIENT_ID="your-discord-client-id"
+DISCORD_CLIENT_SECRET="your-discord-client-secret"
+# Make sure this matches the redirect URI set in your Discord application settings
+DISCORD_REDIRECT_URI="http://localhost:3000/api/oauth/discord/callback"
+DISCORD_GUILD_ID="your-discord-guild-id"
+DISCORD_BOT_TOKEN="your-discord-bot-token"
+DISCORD_MEMBER_ROLE_ID="your-discord-member-role-id"
+
+GAS_MIGRATE_API_URL="your-gas-migrate-api-url"
+
+NODE_ENV="development"
+
+MAIL_HOST="mail.example.com"
+MAIL_PORT="465"
+MAIL_SECURE="true"
+MAIL_USER="xxxx@example.com"
+MAIL_PASS="qwertyuiop12345"
+MAIL_FROM_NAME="YourAppName"
+MAIL_FROM_EMAIL="xxxx@example.com"
+MAIL_ENVELOPE_FROM="xxxx@example.com"
+
+# CSRF_SECRET_KEY_PATH=""
+# CSRF_PUBLIC_KEY_PATH=""

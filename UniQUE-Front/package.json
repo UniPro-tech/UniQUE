@@ -1,0 +1,48 @@
+{
+  "name": "unique-front",
+  "version": "1.9.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check --write"
+  },
+  "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.9",
+    "@mui/lab": "^7.0.1-beta.23",
+    "@mui/material": "^7.3.9",
+    "@mui/material-nextjs": "^7.3.9",
+    "@mui/x-data-grid": "^8.27.4",
+    "@types/bun": "^1.3.10",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@unipro-tech/node-logger": "^1.0.2",
+    "install": "^0.13.0",
+    "jose": "^6.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "next": "^16.1.6",
+    "notistack": "^3.0.2",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
+    "ulid": "^3.0.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.7",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "bun": "^1.3.10",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3"
+  }
+}

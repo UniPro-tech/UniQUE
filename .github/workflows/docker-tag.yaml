@@ -1,0 +1,117 @@
+name: Docker Build and Push
+
+on:
+  push:
+    tags:
+      - "api/v*"
+      - "auth/v*"
+      - "mail/v*"
+      - "front/v*"
+      - "db/*"
+
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract service & version
+        run: |
+          REF=${GITHUB_REF#refs/tags/}
+          SERVICE=$(echo $REF | cut -d'/' -f1)
+          VERSION=$(echo $REF | cut -d'/' -f2 | sed 's/^v//')
+
+          echo "SERVICE=$SERVICE" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Set build context
+        run: |
+          case "$SERVICE" in
+            api)
+              echo "DIR=UniQUE-API" >> $GITHUB_ENV
+              echo "IMAGE=registry.uniproject.jp/infra/unique-api" >> $GITHUB_ENV
+              ;;
+            auth)
+              echo "DIR=UniQUE-Auth" >> $GITHUB_ENV
+              echo "IMAGE=registry.uniproject.jp/infra/unique-auth" >> $GITHUB_ENV
+              ;;
+            mail)
+              echo "DIR=UniQUE-MailServer" >> $GITHUB_ENV
+              echo "IMAGE=registry.uniproject.jp/infra/unique-mail" >> $GITHUB_ENV
+              ;;
+            front)
+              echo "DIR=UniQUE-Front" >> $GITHUB_ENV
+              echo "IMAGE=registry.uniproject.jp/infra/unique-front" >> $GITHUB_ENV
+              ;;
+            db)
+              echo "DIR=UniQUE-DB" >> $GITHUB_ENV
+              echo "IMAGE=registry.uniproject.jp/infra/unique-db" >> $GITHUB_ENV
+            *)
+              echo "Unknown service"; exit 1;
+          esac
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: registry.uniproject.jp
+          username: robot$github-publisher
+          password: ${{ secrets.HARBOR_TOKEN }}
+
+      - name: Extract version parts
+        run: |
+          VERSION=${{ env.VERSION }}
+
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+
+          echo "MAJOR=$MAJOR" >> $GITHUB_ENV
+          echo "MINOR=$MINOR" >> $GITHUB_ENV
+
+      - name: Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest 
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=${{ env.MAJOR }}.${{ env.MINOR }}
+            type=raw,value=${{ env.MAJOR }}
+            type=sha
+          labels: |
+            org.opencontainers.image.title="${{ env.SERVICE }}"
+            org.opencontainers.image.vendor="All-Japan Digital Creative Club UniPoroject"
+            org.opencontainers.image.licenses="AGPL-3.0"
+
+      - name: Build & Push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.DIR }}
+          file: ./${{ env.DIR }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Cosign sign
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          for tag in ${TAGS}; do
+            cosign sign --yes ${tag}@${DIGEST}
+          done

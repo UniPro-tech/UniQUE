@@ -1,0 +1,1 @@
+ALTER TABLE `roles` ADD `is_default` BOOLEAN NOT NULL DEFAULT FALSE AFTER `permission_bitmask`;

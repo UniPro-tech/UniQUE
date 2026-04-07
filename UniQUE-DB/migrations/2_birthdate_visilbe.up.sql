@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `birthdate_visible` BOOLEAN NOT NULL DEFAULT FALSE AFTER `birthdate`;

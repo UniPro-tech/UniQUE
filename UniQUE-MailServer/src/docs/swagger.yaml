@@ -1,0 +1,89 @@
+basePath: /
+definitions:
+  routes.EmailChangeRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+    type: object
+  routes.RegistrationRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /email-change:
+    post:
+      consumes:
+      - application/json
+      description: send an email-change verification email to a user
+      parameters:
+      - description: Email Change Info
+        in: body
+        name: emailChange
+        required: true
+        schema:
+          $ref: '#/definitions/routes.EmailChangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send Email Change Verification Email
+      tags:
+      - email
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: get the health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - health
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: send a registration email to a new user
+      parameters:
+      - description: Registration Info
+        in: body
+        name: registration
+        required: true
+        schema:
+          $ref: '#/definitions/routes.RegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send Registration Email
+      tags:
+      - registration
+swagger: "2.0"

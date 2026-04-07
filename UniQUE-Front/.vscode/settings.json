@@ -1,0 +1,15 @@
+{
+  // TypeScriptファイル用の設定
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome",
+    "editor.formatOnSave": true
+  },
+  // TypeScript React (TSX) ファイル用の設定
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome",
+    "editor.formatOnSave": true
+  },
+  // JS/TS全般に対する設定
+  "editor.defaultFormatter": "biomejs.biome",
+  "biome.configurationPath": "./biome.json"
+}

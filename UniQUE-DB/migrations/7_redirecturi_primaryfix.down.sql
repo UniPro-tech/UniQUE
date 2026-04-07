@@ -1,0 +1,1 @@
+ALTER TABLE `redirect_uris` ADD PRIMARY KEY (`application_id`, `redirect_uri`);

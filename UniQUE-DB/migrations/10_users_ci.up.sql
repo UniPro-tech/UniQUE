@@ -1,0 +1,1 @@
+ALTER TABLE users MODIFY custom_id VARCHAR(50) COLLATE utf8mb4_general_ci;

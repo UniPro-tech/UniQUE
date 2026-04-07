@@ -1,0 +1,1 @@
+ALTER TABLE `external_identities` ADD UNIQUE `uq_external_identities_external_user_id_deleted_at` (`external_user_id`, `deleted_at`);

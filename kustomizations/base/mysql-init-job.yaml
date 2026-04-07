@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-init-job
+  labels:
+    app: mysql-init
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mysql-init
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: mysql
+              image: registry.uniproject.jp/infra/unique-db:1.4.9
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: mysql-secret
+                      key: MYSQL_ACCESS_URI
+          imagePullSecrets:
+            - name: internal-harbor

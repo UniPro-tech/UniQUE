@@ -1,0 +1,26 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: unique
+  namespace: argocd
+spec:
+  namespace: argocd
+  applicationRefs:
+    - namePattern: "unique"
+      images:
+        - alias: "unique-front"
+          imageName: "registry.uniproject.jp/infra/unique-front:x.x.x"
+          commonUpdateSettings:
+            updateStrategy: "semver"
+        - alias: "unique-auth"
+          imageName: "registry.uniproject.jp/infra/unique-auth:x.x.x"
+          commonUpdateSettings:
+            updateStrategy: "semver"
+        - alias: "unique-api"
+          imageName: "registry.uniproject.jp/infra/unique-api:x.x.x"
+          commonUpdateSettings:
+            updateStrategy: "semver"
+        - alias: "unique-mail"
+          imageName: "registry.uniproject.jp/infra/unique-mail:x.x.x"
+          commonUpdateSettings:
+            updateStrategy: "semver"

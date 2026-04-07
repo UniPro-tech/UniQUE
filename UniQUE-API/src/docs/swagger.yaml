@@ -1,0 +1,1489 @@
+basePath: /
+definitions:
+  main.HealthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  routes.AnnouncementDTO:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        $ref: '#/definitions/routes.UserDTO'
+      deleted_at:
+        type: string
+      id:
+        type: string
+      is_pinned:
+        type: boolean
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  routes.AnnouncementListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/routes.AnnouncementDTO'
+        type: array
+    type: object
+  routes.ApplicationDTO:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      privacy_policy_url:
+        type: string
+      public_client:
+        type: boolean
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      website_url:
+        type: string
+    type: object
+  routes.ApplicationListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/routes.ApplicationDTO'
+        type: array
+    type: object
+  routes.CreateAnnouncementRequest:
+    properties:
+      content:
+        type: string
+      is_pinned:
+        type: boolean
+      title:
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  routes.CreateApplicationRequest:
+    properties:
+      client_secret:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      privacy_policy_url:
+        type: string
+      public_client:
+        type: boolean
+      user_id:
+        type: string
+      website_url:
+        type: string
+    required:
+    - name
+    - user_id
+    type: object
+  routes.CreateExternalIdentityRequest:
+    properties:
+      access_token:
+        type: string
+      external_user_id:
+        type: string
+      id_token:
+        type: string
+      provider:
+        type: string
+      refresh_token:
+        type: string
+      token_expires_at:
+        type: string
+    required:
+    - external_user_id
+    - provider
+    type: object
+  routes.CreateRedirectURIRequest:
+    properties:
+      uri:
+        type: string
+    required:
+    - uri
+    type: object
+  routes.CreateRoleRequest:
+    properties:
+      assign_to_existing:
+        type: boolean
+      custom_id:
+        type: string
+      description:
+        type: string
+      is_default:
+        type: boolean
+      name:
+        type: string
+      permission_bitmask:
+        minimum: 0
+        type: integer
+    required:
+    - custom_id
+    - name
+    type: object
+  routes.CreateUserRequest:
+    properties:
+      affiliation_period:
+        type: string
+      custom_id:
+        type: string
+      email:
+        type: string
+      external_email:
+        type: string
+      password:
+        type: string
+      profile:
+        $ref: '#/definitions/routes.ProfileDTO'
+      status:
+        type: string
+    required:
+    - custom_id
+    - external_email
+    type: object
+  routes.CreateUserRoleRequest:
+    properties:
+      role_id:
+        type: string
+    required:
+    - role_id
+    type: object
+  routes.EmailCodeCheckRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  routes.EmailCodeCheckResponse:
+    properties:
+      type:
+        description: '"signup", "change", or "migration"'
+        type: string
+      valid:
+        type: boolean
+    type: object
+  routes.EmailVerifyDiscordLinkRequest:
+    properties:
+      access_token:
+        type: string
+      code:
+        type: string
+      external_user_id:
+        type: string
+      refresh_token:
+        type: string
+      token_expires_at:
+        type: string
+    required:
+    - access_token
+    - code
+    - external_user_id
+    type: object
+  routes.ExternalIdentityDTO:
+    properties:
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      display_name:
+        type: string
+      email:
+        type: string
+      external_user_id:
+        type: string
+      id:
+        type: string
+      id_token_claims:
+        additionalProperties: true
+        description: Decoded ID Token claims (JWT payload)
+        type: object
+      provider:
+        type: string
+      provider_data:
+        additionalProperties: true
+        description: Raw provider-specific userinfo data
+        type: object
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      username:
+        description: Common normalised fields from provider userinfo
+        type: string
+    type: object
+  routes.ExternalIdentityListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/routes.ExternalIdentityDTO'
+        type: array
+    type: object
+  routes.Nullable-bool:
+    properties:
+      set:
+        type: boolean
+      value:
+        type: boolean
+    type: object
+  routes.Nullable-string:
+    properties:
+      set:
+        type: boolean
+      value:
+        type: string
+    type: object
+  routes.PatchAnnouncementRequest:
+    properties:
+      content:
+        type: string
+      is_pinned:
+        type: boolean
+      title:
+        type: string
+    type: object
+  routes.PatchApplicationRequest:
+    properties:
+      client_secret:
+        $ref: '#/definitions/routes.Nullable-string'
+      description:
+        $ref: '#/definitions/routes.Nullable-string'
+      name:
+        $ref: '#/definitions/routes.Nullable-string'
+      privacy_policy_url:
+        $ref: '#/definitions/routes.Nullable-string'
+      public_client:
+        $ref: '#/definitions/routes.Nullable-bool'
+      website_url:
+        $ref: '#/definitions/routes.Nullable-string'
+    type: object
+  routes.PatchProfileRequest:
+    properties:
+      bio:
+        $ref: '#/definitions/routes.Nullable-string'
+      birthdate:
+        $ref: '#/definitions/routes.Nullable-string'
+      birthdate_visible:
+        $ref: '#/definitions/routes.Nullable-bool'
+      display_name:
+        $ref: '#/definitions/routes.Nullable-string'
+      joined_at:
+        $ref: '#/definitions/routes.Nullable-string'
+      twitter_handle:
+        $ref: '#/definitions/routes.Nullable-string'
+      website_url:
+        $ref: '#/definitions/routes.Nullable-string'
+    type: object
+  routes.PatchRoleRequest:
+    properties:
+      description:
+        type: string
+      is_default:
+        type: boolean
+      name:
+        type: string
+      permission_bitmask:
+        type: integer
+    type: object
+  routes.PatchUserRequest:
+    properties:
+      affiliation_period:
+        $ref: '#/definitions/routes.Nullable-string'
+      custom_id:
+        $ref: '#/definitions/routes.Nullable-string'
+      email:
+        $ref: '#/definitions/routes.Nullable-string'
+      external_email:
+        $ref: '#/definitions/routes.Nullable-string'
+      profile:
+        $ref: '#/definitions/routes.PatchProfileRequest'
+      status:
+        $ref: '#/definitions/routes.Nullable-string'
+    type: object
+  routes.PermissionsResponse:
+    properties:
+      permission_bitmask:
+        type: integer
+      permissions_text:
+        items:
+          type: string
+        type: array
+    type: object
+  routes.ProfileDTO:
+    properties:
+      bio:
+        type: string
+      birthdate:
+        type: string
+      birthdate_visible:
+        type: boolean
+      display_name:
+        type: string
+      is_adult:
+        type: boolean
+      joined_at:
+        type: string
+      twitter_handle:
+        type: string
+      user_id:
+        type: string
+      website_url:
+        type: string
+    type: object
+  routes.RedirectURIDTO:
+    properties:
+      created_at:
+        type: string
+      updated_at:
+        type: string
+      uri:
+        type: string
+    type: object
+  routes.RedirectURIListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/routes.RedirectURIDTO'
+        type: array
+    type: object
+  routes.RoleDTO:
+    properties:
+      created_at:
+        type: string
+      custom_id:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      name:
+        type: string
+      permission_bitmask:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  routes.RoleListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/routes.RoleDTO'
+        type: array
+    type: object
+  routes.UpdateAnnouncementRequest:
+    properties:
+      content:
+        type: string
+      is_pinned:
+        type: boolean
+      title:
+        type: string
+    type: object
+  routes.UpdateApplicationRequest:
+    properties:
+      client_secret:
+        $ref: '#/definitions/routes.Nullable-string'
+      description:
+        $ref: '#/definitions/routes.Nullable-string'
+      name:
+        $ref: '#/definitions/routes.Nullable-string'
+      privacy_policy_url:
+        $ref: '#/definitions/routes.Nullable-string'
+      public_client:
+        $ref: '#/definitions/routes.Nullable-bool'
+      website_url:
+        $ref: '#/definitions/routes.Nullable-string'
+    type: object
+  routes.UpdateRoleRequest:
+    properties:
+      description:
+        type: string
+      is_default:
+        type: boolean
+      name:
+        type: string
+      permission_bitmask:
+        type: integer
+    type: object
+  routes.UpdateUserRequest:
+    properties:
+      affiliation_period:
+        type: string
+      custom_id:
+        type: string
+      email:
+        type: string
+      external_email:
+        type: string
+      profile:
+        $ref: '#/definitions/routes.PatchProfileRequest'
+      status:
+        type: string
+    type: object
+  routes.UserApproveDTO:
+    properties:
+      affiliation_period:
+        type: string
+      email:
+        type: string
+      joined_at:
+        type: string
+      sakura_email_password:
+        type: string
+    required:
+    - email
+    type: object
+  routes.UserDTO:
+    properties:
+      affiliation_period:
+        type: string
+      created_at:
+        type: string
+      custom_id:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      external_email:
+        type: string
+      id:
+        type: string
+      is_totp_enabled:
+        type: boolean
+      pending_email:
+        type: string
+      profile:
+        $ref: '#/definitions/routes.ProfileDTO'
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  routes.UserListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/routes.UserDTO'
+        type: array
+    type: object
+  routes.UserPasswordChangeDTO:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        type: string
+    required:
+    - new_password
+    type: object
+info:
+  contact: {}
+paths:
+  /announcements:
+    get:
+      description: List announcements, pinned first. Use `limit` query to limit results
+        and `deleted` to include deleted records.
+      parameters:
+      - description: Limit number of announcements
+        in: query
+        name: limit
+        type: integer
+      - description: Include deleted announcements
+        in: query
+        name: deleted
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.AnnouncementListResponse'
+      summary: List announcements
+      tags:
+      - announcements
+    post:
+      consumes:
+      - application/json
+      description: Create a new announcement
+      parameters:
+      - description: Create announcement
+        in: body
+        name: announcement
+        required: true
+        schema:
+          $ref: '#/definitions/routes.CreateAnnouncementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.AnnouncementDTO'
+      summary: Create an announcement
+      tags:
+      - announcements
+  /announcements/{id}:
+    delete:
+      description: Delete an announcement by ID
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+      summary: Delete an announcement
+      tags:
+      - announcements
+    get:
+      description: Get a single announcement by ID
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.AnnouncementDTO'
+      summary: Get an announcement
+      tags:
+      - announcements
+    patch:
+      consumes:
+      - application/json
+      description: Partially update announcement fields
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Patch announcement
+        in: body
+        name: announcement
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PatchAnnouncementRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.AnnouncementDTO'
+      summary: Partially update an announcement
+      tags:
+      - announcements
+    put:
+      consumes:
+      - application/json
+      description: Update announcement fields
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update announcement
+        in: body
+        name: announcement
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateAnnouncementRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.AnnouncementDTO'
+      summary: Update an announcement
+      tags:
+      - announcements
+  /announcements/{id}/pin:
+    post:
+      consumes:
+      - application/json
+      description: Toggle pin state for an announcement
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: '{\'
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.AnnouncementDTO'
+      summary: Pin or unpin an announcement
+      tags:
+      - announcements
+  /applications:
+    get:
+      description: List third-party applications
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.ApplicationListResponse'
+      summary: List applications
+      tags:
+      - applications
+    post:
+      consumes:
+      - application/json
+      description: Register a new third-party application
+      parameters:
+      - description: Create application
+        in: body
+        name: app
+        required: true
+        schema:
+          $ref: '#/definitions/routes.CreateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.ApplicationDTO'
+      summary: Create an application
+      tags:
+      - applications
+  /applications/{id}:
+    get:
+      description: Get a single application
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.ApplicationDTO'
+      summary: Get an application
+      tags:
+      - applications
+    patch:
+      consumes:
+      - application/json
+      description: パッチ更新。指定されたフィールドのみ更新（null を送ると NULL に）
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Patch application
+        in: body
+        name: app
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PatchApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.ApplicationDTO'
+      summary: Partially update an application
+      tags:
+      - applications
+    put:
+      consumes:
+      - application/json
+      description: Update application fields
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update application
+        in: body
+        name: app
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.ApplicationDTO'
+      summary: Update an application
+      tags:
+      - applications
+  /applications/{id}/redirect_uris:
+    delete:
+      description: Delete a registered redirect URI by application id and uri (query
+        param)
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Redirect URI
+        in: query
+        name: uri
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete redirect URI for an application
+      tags:
+      - applications
+    get:
+      description: Get redirect URIs registered for a given application
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.RedirectURIListResponse'
+      summary: List redirect URIs for an application
+      tags:
+      - applications
+    post:
+      consumes:
+      - application/json
+      description: Register a new redirect URI for the application
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Create redirect URI
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.CreateRedirectURIRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.RedirectURIDTO'
+      summary: Create redirect URI for an application
+      tags:
+      - applications
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: システムの稼働状況を確認するためのエンドポイントです。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+      summary: health check endpoint
+      tags:
+      - system info
+  /internal/users:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with optional profile
+      parameters:
+      - description: Create user
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/routes.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.UserDTO'
+      summary: Create a user
+      tags:
+      - users
+  /internal/users/email_verify:
+    post:
+      consumes:
+      - application/json
+      description: 認証コードを検証する
+      parameters:
+      - description: Email code verification
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.EmailCodeCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.EmailCodeCheckResponse'
+      summary: Verify email code
+      tags:
+      - users
+  /internal/users/email_verify/discord_link:
+    post:
+      consumes:
+      - application/json
+      description: メール検証コードを使ってDiscord連携を行う
+      parameters:
+      - description: Discord link request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.EmailVerifyDiscordLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.ExternalIdentityDTO'
+      summary: Link Discord account by email verification code
+      tags:
+      - users
+  /roles:
+    get:
+      description: List roles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.RoleListResponse'
+      summary: List roles
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      description: Create a new role
+      parameters:
+      - description: Create role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/routes.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.RoleDTO'
+      summary: Create a role
+      tags:
+      - roles
+  /roles/{id}:
+    delete:
+      description: Soft delete a role by ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete a role
+      tags:
+      - roles
+    get:
+      description: Get a single role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.RoleDTO'
+      summary: Get a role
+      tags:
+      - roles
+    patch:
+      consumes:
+      - application/json
+      description: Partially update role fields
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Patch role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PatchRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.RoleDTO'
+      summary: Patch a role
+      tags:
+      - roles
+    put:
+      consumes:
+      - application/json
+      description: Update role fields
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.RoleDTO'
+      summary: Update a role
+      tags:
+      - roles
+  /roles/{id}/assign_all:
+    post:
+      description: Assign the role to all users with status active or established
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Assign role to all existing users
+      tags:
+      - roles
+  /roles/{id}/users:
+    get:
+      description: Get users assigned to a role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.UserListResponse'
+      summary: List users for a role
+      tags:
+      - roles
+  /roles/{id}/users/{user_id}:
+    delete:
+      description: Unassign a role from a user
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Remove a user from a role
+      tags:
+      - roles
+    put:
+      consumes:
+      - application/json
+      description: Assign a role to a user
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Add a user to a role
+      tags:
+      - roles
+  /users:
+    get:
+      description: List users with embedded profile. Returns all data if USER_READ
+        permission, otherwise basic info only
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.UserListResponse'
+      summary: List users
+      tags:
+      - users
+  /users/{id}:
+    get:
+      description: Get a single user with optional profile
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.UserDTO'
+      summary: Get a user
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: 'パッチ更新。メールアドレスの変更は管理者のみ可能。プロフィールのフィールドは指定されたもののみ更新される（例: display_nameのみ更新など）'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update user
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PatchUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.UserDTO'
+      summary: Partially update a user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's fields and optional profile
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update user
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.UserDTO'
+      summary: Update a user
+      tags:
+      - users
+  /users/{id}/approve:
+    post:
+      description: ユーザ登録を承認する
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Approval details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UserApproveDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Approve user registration
+      tags:
+      - users
+  /users/{id}/apps:
+    get:
+      description: Get applications owned by a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.ApplicationListResponse'
+      summary: List applications for a user
+      tags:
+      - users
+  /users/{id}/external_identities:
+    get:
+      description: Get external identities linked to a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.ExternalIdentityListResponse'
+      summary: List external identities for a user
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Link an external identity to the user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: External identity
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.CreateExternalIdentityRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.ExternalIdentityDTO'
+      summary: Link an external account
+      tags:
+      - users
+  /users/{id}/external_identities/{eid}:
+    delete:
+      description: Remove an external identity linked to a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: External identity ID
+        in: path
+        name: eid
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Unlink an external account
+      tags:
+      - users
+  /users/{id}/password/change:
+    put:
+      consumes:
+      - application/json
+      description: Change a user's password. The requester must be the user themself
+        or have USER_UPDATE permission. If the requester is the user, the current
+        password must be provided.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Password change request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UserPasswordChangeDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Change user password
+      tags:
+      - users
+  /users/{id}/permissions:
+    get:
+      description: Get the combined permissions for a user based on their roles
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.PermissionsResponse'
+      summary: Get user permissions
+      tags:
+      - users
+  /users/{id}/reject:
+    post:
+      description: ユーザ登録を却下し、ユーザを物理削除する
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Reject user registration
+      tags:
+      - users
+  /users/{id}/resend_email_verification:
+    post:
+      description: メール認証メールを再送する
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Resend email verification
+      tags:
+      - users
+  /users/{id}/roles:
+    get:
+      description: Get roles assigned to a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.RoleListResponse'
+      summary: List roles for a user
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Assign the specified role to the user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role assignment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.CreateUserRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.RoleDTO'
+      summary: Assign a role to a user
+      tags:
+      - users
+  /users/{id}/roles/{roleId}:
+    delete:
+      description: Unassign the specified role from the user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Remove a role from a user
+      tags:
+      - users
+swagger: "2.0"
