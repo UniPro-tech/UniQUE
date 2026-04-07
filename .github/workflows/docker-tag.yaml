@@ -55,6 +55,7 @@ jobs:
             db)
               echo "DIR=UniQUE-DB" >> $GITHUB_ENV
               echo "IMAGE=registry.uniproject.jp/infra/unique-db" >> $GITHUB_ENV
+              ;;
             *)
               echo "Unknown service"; exit 1;
           esac
