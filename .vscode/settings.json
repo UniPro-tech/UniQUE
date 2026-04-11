@@ -9,7 +9,5 @@
     "editor.defaultFormatter": "biomejs.biome",
     "editor.formatOnSave": true
   },
-  // JS/TS全般に対する設定
-  "editor.defaultFormatter": "biomejs.biome",
   "biome.configurationPath": "./biome.json"
 }
