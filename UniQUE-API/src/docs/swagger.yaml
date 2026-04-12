@@ -446,6 +446,8 @@ definitions:
         type: string
       email:
         type: string
+      force:
+        type: boolean
       joined_at:
         type: string
       sakura_email_password:

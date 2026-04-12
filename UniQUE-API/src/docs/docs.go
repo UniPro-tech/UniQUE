@@ -2186,6 +2186,9 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "force": {
+                    "type": "boolean"
+                },
                 "joined_at": {
                     "type": "string"
                 },
