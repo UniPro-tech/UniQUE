@@ -1,0 +1,41 @@
+name: Pull Request Auto-Label
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  scope-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - uses: actions/labeler@v2
+        id: labeler
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      # コメントする
+      - name: Create comment file
+        if: ${{ steps.labeler.outputs.all-labels[0] != null }}
+        run: |
+          cat  << EOF > comment.md
+          ## PR Auto-Labeler
+          Thanks for your contribution! The following labels have been automatically applied to this PR:
+          EOF
+          for label in ${{ steps.labeler.outputs.all-labels }}; do
+            echo "- $label" >> comment.md
+          done
+      - name: Create PR comment
+        if: ${{ steps.labeler.outputs.all-labels[0] != null }}
+        run: |
+          gh pr comment ${{ github.event.number }} --body-file comment.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

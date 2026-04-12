@@ -1,0 +1,15 @@
+"scope/front":
+  - UniQUE-Front/**/*
+"scope/api":
+  - UniQUE-API/**/*
+"scope/auth":
+  - UniQUE-Auth/**/*
+"scope/mail":
+  - UniQUE-MailServer/**/*
+"scope/infra":
+  - kustomizations/**/*
+"scope/dev":
+  - .github/**/*
+  - .vscode/**/*
+  - docker-compose.yml
+  - renovate.json
