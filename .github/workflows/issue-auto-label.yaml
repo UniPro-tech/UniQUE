@@ -23,6 +23,8 @@ jobs:
           ISSUE_TITLE=$(gh issue view ${{ github.event.inputs.issue_number }} --json title -q .title)
           echo "::set-output name=title::$ISSUE_TITLE"
           echo "::set-output name=number::${{ github.event.inputs.issue_number }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get issue details from event
         id: get_issue_event
@@ -62,7 +64,7 @@ jobs:
             gh issue edit ${{ steps.get_issue.outputs.number }} --add-label "$LABELS"
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create comment file
         if: ${{ steps.determine_labels.outputs.labels[0] != null }}
@@ -80,4 +82,4 @@ jobs:
         run: |
           gh issue comment ${{ steps.get_issue.outputs.number }} --body-file comment.md
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
