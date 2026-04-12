@@ -39,8 +39,10 @@ jobs:
       - name: Read the issue-labeler.yaml file
         id: read_labeler
         run: |
-          LABELER_CONTENT=$(cat .github/issue-labeler.yaml)
-          echo "::set-output name=labeler::$LABELER_CONTENT"
+          # Use GITHUB_OUTPUT to safely set multiline output
+          echo "labeler<<EOF" >> "$GITHUB_OUTPUT"
+          cat .github/issue-labeler.yaml >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Determine labels based on the issue content
         id: determine_labels
@@ -48,6 +50,7 @@ jobs:
           ISSUE_TITLE="${{ steps.get_issue.outputs.title }}${{ steps.get_issue_event.outputs.title }}"
           ISSUE_NUMBER="${{ steps.get_issue.outputs.number }}${{ steps.get_issue_event.outputs.number }}"
           LABELS=""
+          LABELER_CONTENT="${{ steps.read_labeler.outputs.labeler }}"
           while IFS= read -r line; do
             echo "Processing line: $line" # デバッグ用の出力
             if [[ "$line" =~ ^\[(.+)\]: ]]; then
@@ -56,20 +59,25 @@ jobs:
               echo "Extracted label key: $LABEL_KEY" # デバッグ用の出力
               if [[ "$ISSUE_TITLE" == *"$LABEL_KEY"* ]]; then
                 echo "Issue title contains label key: $LABEL_KEY" # デバッグ用の出力
-                LABELS+=$(echo "${{ steps.read_labeler.outputs.labeler }}" | yq e ".\"[${LABEL_KEY}]\"[]" -)
-                LABELS+=" "
+                LABELS_PART=$(printf '%s\n' "$LABELER_CONTENT" | yq e ".[\"[${LABEL_KEY}]\"][]" -)
+                if [ -n "$LABELS_PART" ]; then
+                  LABELS+="$LABELS_PART"
+                  LABELS+=" "
+                fi
                 echo "Labels: $LABELS"
               fi
             fi
-          done <<< "${{ steps.read_labeler.outputs.labeler }}"
+          done <<< "$LABELER_CONTENT"
           echo "::set-output name=labels::$LABELS"
+          echo "::set-output name=number::$ISSUE_NUMBER"
 
       - name: Add labels to the issue
         if: ${{ steps.determine_labels.outputs.labels != null }}
         run: |
           LABELS="${{ steps.determine_labels.outputs.labels }}"
+          ISSUE_NUMBER="${{ steps.determine_labels.outputs.number }}"
           if [ -n "$LABELS" ]; then
-            gh issue edit ${{ steps.get_issue.outputs.number }}${{ steps.get_issue_event.outputs.number }} --add-label "$LABELS"
+            gh issue edit $ISSUE_NUMBER --add-label "$LABELS"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -88,6 +96,6 @@ jobs:
       - name: Post comment on the issue
         if: ${{ steps.determine_labels.outputs.labels != null }}
         run: |
-          gh issue comment ${{ steps.get_issue.outputs.number }}${{ steps.get_issue_event.outputs.number }} --body-file comment.md
+          gh issue comment ${{ steps.determine_labels.outputs.number }} --body-file comment.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
