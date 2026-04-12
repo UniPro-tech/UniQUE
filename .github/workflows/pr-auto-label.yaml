@@ -22,6 +22,7 @@ jobs:
         id: labeler
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labeler.yaml
       # コメントする
       - name: Create comment file
         if: ${{ steps.labeler.outputs.all-labels[0] != null }}
