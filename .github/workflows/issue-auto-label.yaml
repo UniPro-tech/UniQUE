@@ -49,6 +49,7 @@ jobs:
           ISSUE_NUMBER="${{ steps.get_issue.outputs.number }}"
           LABELS=""
           while IFS= read -r line; do
+            echo "Processing line: $line" # デバッグ用の出力
             if [[ "$line" =~ ^\[(.+)\]: ]]; then
               LABEL_KEY="${BASH_REMATCH[1]}"
               if [[ "$ISSUE_TITLE" == *"$LABEL_KEY"* ]]; then
