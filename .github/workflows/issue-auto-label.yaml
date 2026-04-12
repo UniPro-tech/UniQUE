@@ -51,10 +51,14 @@ jobs:
           while IFS= read -r line; do
             echo "Processing line: $line" # デバッグ用の出力
             if [[ "$line" =~ ^\[(.+)\]: ]]; then
+              echo "Matched line: $line" # デバッグ用の出力
               LABEL_KEY="${BASH_REMATCH[1]}"
+              echo "Extracted label key: $LABEL_KEY" # デバッグ用の出力
               if [[ "$ISSUE_TITLE" == *"$LABEL_KEY"* ]]; then
+                echo "Issue title contains label key: $LABEL_KEY" # デバッグ用の出力
                 LABELS+=$(echo "${{ steps.read_labeler.outputs.labeler }}" | yq e ".\"$LABEL_KEY\"[]" -)
                 LABELS+=" "
+                echo "Labels: $LABELS"
               fi
             fi
           done <<< "${{ steps.read_labeler.outputs.labeler }}"
