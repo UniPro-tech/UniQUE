@@ -1691,13 +1691,18 @@ func approveUserRegist(c *gin.Context) {
 		return
 	}
 
-	if dto.Force == nil || !*dto.Force {
-		// EmailVerifiedを確認
-		existedUser, err := q.User.Where(q.User.ID.Eq(user_id)).First()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	existedUser, err := q.User.Where(q.User.ID.Eq(user_id)).First()
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "notfound"})
 			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if dto.Force == nil || !*dto.Force {
+		// EmailVerifiedを確認
 		if !existedUser.EmailVerified {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "external_email_not_verified"})
 			return
