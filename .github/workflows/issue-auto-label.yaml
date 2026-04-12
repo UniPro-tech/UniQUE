@@ -1,0 +1,83 @@
+# [front]　などでscope/frontなどをつける
+
+name: Issue Auto Label
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to label"
+        required: true
+        type: number
+
+jobs:
+  auto-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get issue details
+        id: get_issue
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          ISSUE_TITLE=$(gh issue view ${{ github.event.inputs.issue_number }} --json title -q .title)
+          echo "::set-output name=title::$ISSUE_TITLE"
+          echo "::set-output name=number::${{ github.event.inputs.issue_number }}"
+
+      - name: Get issue details from event
+        id: get_issue_event
+        if: github.event_name == 'issues'
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          echo "::set-output name=title::$ISSUE_TITLE"
+          echo "::set-output name=number::${{ github.event.issue.number }}"
+
+      - name: Read the issue-labeler.yaml file
+        id: read_labeler
+        run: |
+          LABELER_CONTENT=$(cat .github/issue-labeler.yaml)
+          echo "::set-output name=labeler::$LABELER_CONTENT"
+
+      - name: Determine labels based on the issue content
+        id: determine_labels
+        run: |
+          ISSUE_TITLE="${{ steps.get_issue.outputs.title }}"
+          ISSUE_NUMBER="${{ steps.get_issue.outputs.number }}"
+          LABELS=""
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^\[(.+)\]: ]]; then
+              LABEL_KEY="${BASH_REMATCH[1]}"
+              if [[ "$ISSUE_TITLE" == *"$LABEL_KEY"* ]]; then
+                LABELS+=$(echo "${{ steps.read_labeler.outputs.labeler }}" | yq e ".\"$LABEL_KEY\"[]" -)
+                LABELS+=" "
+              fi
+            fi
+          done <<< "${{ steps.read_labeler.outputs.labeler }}"
+          echo "::set-output name=labels::$LABELS"
+
+      - name: Add labels to the issue
+        run: |
+          LABELS="${{ steps.determine_labels.outputs.labels }}"
+          if [ -n "$LABELS" ]; then
+            gh issue edit ${{ steps.get_issue.outputs.number }} --add-label "$LABELS"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create comment file
+        if: ${{ steps.determine_labels.outputs.labels[0] != null }}
+        run: |
+          cat  << EOF > comment.md
+          ## Issue Auto-Labeler
+          Thanks for your contribution! The following labels have been automatically applied to this issue:
+          EOF
+          for label in ${{ steps.determine_labels.outputs.labels }}; do
+            echo "- $label" >> comment.md
+          done"
+
+      - name: Post comment on the issue
+        if: ${{ steps.determine_labels.outputs.labels[0] != null }}
+        run: |
+          gh issue comment ${{ steps.get_issue.outputs.number }} --body-file comment.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
