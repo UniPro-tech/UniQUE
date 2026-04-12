@@ -51,23 +51,20 @@ jobs:
           ISSUE_NUMBER="${{ steps.get_issue.outputs.number }}${{ steps.get_issue_event.outputs.number }}"
           LABELS=""
           LABELER_CONTENT="${{ steps.read_labeler.outputs.labeler }}"
-          while IFS= read -r line; do
-            echo "Processing line: $line" # デバッグ用の出力
-            if [[ "$line" =~ ^\[(.+)\]: ]]; then
-              echo "Matched line: $line" # デバッグ用の出力
-              LABEL_KEY="${BASH_REMATCH[1]}"
-              echo "Extracted label key: $LABEL_KEY" # デバッグ用の出力
-              if [[ "$ISSUE_TITLE" == *"$LABEL_KEY"* ]]; then
-                echo "Issue title contains label key: $LABEL_KEY" # デバッグ用の出力
-                LABELS_PART=$(printf '%s\n' "$LABELER_CONTENT" | yq e ".[\"[${LABEL_KEY}]\"][]" -)
-                if [ -n "$LABELS_PART" ]; then
-                  LABELS+="$LABELS_PART"
-                  LABELS+=" "
-                fi
-                echo "Labels: $LABELS"
+          # Use yq to list all keys (e.g. [front], [api]) and iterate them
+          for KEY in $(printf '%s\n' "$LABELER_CONTENT" | yq e 'keys | .[]' -); do
+            echo "Checking key: $KEY" # デバッグ用
+            # KEY is like [front] including brackets
+            if [[ "$ISSUE_TITLE" == *"$KEY"* ]]; then
+              echo "Issue title contains label key: $KEY" # デバッグ用
+              LABELS_PART=$(printf '%s\n' "$LABELER_CONTENT" | yq e ".\"${KEY}\"[]" -)
+              if [ -n "$LABELS_PART" ]; then
+                LABELS+="$LABELS_PART"
+                LABELS+=" "
               fi
+              echo "Labels: $LABELS"
             fi
-          done <<< "$LABELER_CONTENT"
+          done
           echo "::set-output name=labels::$LABELS"
           echo "::set-output name=number::$ISSUE_NUMBER"
 
