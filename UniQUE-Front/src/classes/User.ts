@@ -464,11 +464,13 @@ export class User {
     email,
     sakuraEmailPassword,
     joinedAt,
+    force,
   }: {
     affiliationPeriod: string;
     email: string;
     sakuraEmailPassword: string;
     joinedAt?: string;
+    force?: boolean | null;
   }): Promise<void> {
     const response = await apiPost(`/users/${this.id}/approve`, {
       affiliationPeriod: affiliationPeriod,
@@ -479,6 +481,7 @@ export class User {
         : new Date().toLocaleDateString("sv-SE", {
             timeZone: "Asia/Tokyo",
           }), // 日付のみ
+      force: force ? force : null,
     });
     if (!response.ok) {
       switch (response.status) {

@@ -56,9 +56,12 @@ export default function ApproveRegistApplyDialog({
             }}
           >
             {!(user?.emailVerified && user.discordLinked) && (
-              <Alert severity={"warning"} variant="outlined">
-                このユーザーはメールアドレス認証もしくはDiscord認証が済んでいません。
-              </Alert>
+              <>
+                <Alert severity={"warning"} variant="outlined">
+                  このユーザーはメールアドレス認証もしくはDiscord認証が済んでいません。
+                </Alert>
+                <input type="hidden" name="force" value={"true"} />
+              </>
             )}
             <DialogContentText>
               下記の情報を入力後、承認ボタンを押してください。
