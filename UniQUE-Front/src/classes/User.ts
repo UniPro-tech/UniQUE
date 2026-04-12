@@ -481,7 +481,7 @@ export class User {
         : new Date().toLocaleDateString("sv-SE", {
             timeZone: "Asia/Tokyo",
           }), // 日付のみ
-      force: force ? force : null,
+      force: force == null ? undefined : force,
     });
     if (!response.ok) {
       switch (response.status) {
