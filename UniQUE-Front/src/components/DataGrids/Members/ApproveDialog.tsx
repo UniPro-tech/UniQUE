@@ -1,4 +1,4 @@
-import { FormHelperText, TextField } from "@mui/material";
+import { Alert, FormHelperText, TextField } from "@mui/material";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -7,15 +7,15 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { enqueueSnackbar, SnackbarProvider } from "notistack";
 import * as React from "react";
-import type { UserData } from "@/classes/types/User";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
 import PeriodSelectorOptions from "@/components/PeriodSelectorOptions";
+import type { UserDataGridRowType } from ".";
 import { approveAction } from "./actions/approveAction";
 
 interface ApproveRegistApplyProps {
   open: boolean;
   handleClose: () => void;
-  user: UserData | null;
+  user: UserDataGridRowType | null;
 }
 
 export default function ApproveRegistApplyDialog({
@@ -55,6 +55,11 @@ export default function ApproveRegistApplyDialog({
               width: "100%",
             }}
           >
+            {!(user?.emailVerified && user.discordLinked) && (
+              <Alert severity={"warning"} variant="outlined">
+                このユーザーはメールアドレス認証もしくはDiscord認証が済んでいません。
+              </Alert>
+            )}
             <DialogContentText>
               下記の情報を入力後、承認ボタンを押してください。
             </DialogContentText>
