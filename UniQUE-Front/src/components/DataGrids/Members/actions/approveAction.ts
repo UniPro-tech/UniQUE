@@ -35,6 +35,7 @@ export const approveAction = async (
       message: "メールアドレスが無効です。",
     };
   }
+  const force = formData?.get("force");
   try {
     const user = await User.getById(userId);
     if (!user) {
@@ -47,6 +48,7 @@ export const approveAction = async (
       affiliationPeriod: period,
       sakuraEmailPassword: mailboxPassword,
       email: email,
+      force: force == "true",
     });
     return {
       status: "success",

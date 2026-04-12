@@ -32,6 +32,10 @@ import {
 } from "@/constants/UserConstants";
 import { updateUserById } from "./actions/updateAction";
 
+export interface UserDataGridRowType extends UserData {
+  discordLinked?: boolean;
+}
+
 export default function MembersDataGrid({
   rows,
   beforeJoined = false,
@@ -39,7 +43,7 @@ export default function MembersDataGrid({
   canUpdate = false,
   canRead = false,
 }: {
-  rows: UserData[];
+  rows: UserDataGridRowType[];
   beforeJoined?: boolean;
   canDelete?: boolean;
   canUpdate?: boolean;
@@ -65,17 +69,19 @@ export default function MembersDataGrid({
       })),
     [],
   );
-  const [localRows, setLocalRows] = React.useState<UserData[]>(rows);
+  const [localRows, setLocalRows] = React.useState<UserDataGridRowType[]>(rows);
   React.useEffect(() => {
     setLocalRows(rows);
   }, [rows]);
 
   const [approveDialogOpen, setApproveDialogOpen] = React.useState(false);
-  const [approvedUser, setApprovedUser] = React.useState<UserData | null>(null);
+  const [approvedUser, setApprovedUser] =
+    React.useState<UserDataGridRowType | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [deletedUserId, setDeletedUserId] = React.useState<null | string>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = React.useState(false);
-  const [rejectUser, setRejectUser] = React.useState<UserData | null>(null);
+  const [rejectUser, setRejectUser] =
+    React.useState<UserDataGridRowType | null>(null);
   const unsavedChangesRef = React.useRef<{
     unsavedRows: Record<GridRowId, GridValidRowModel>;
     rowsBeforeChange: Record<GridRowId, GridValidRowModel>;
@@ -100,14 +106,11 @@ export default function MembersDataGrid({
               width: 140,
               getActions: ({ id }: { id: GridRowId }) => {
                 const user = localRows.find((u) => String(u.id) === String(id));
-                const canApprove =
-                  user?.emailVerified === true && user?.discordLinked === true;
                 return [
                   <GridActionsCellItem
                     key={"approve"}
                     icon={<CheckIcon />}
                     label="Approve"
-                    disabled={!canApprove}
                     onClick={() => {
                       setApprovedUser(user || null);
                       setApproveDialogOpen(true);
@@ -283,19 +286,13 @@ export default function MembersDataGrid({
               field: "emailVerified",
               headerName: "メール認証",
               width: 120,
-              renderCell: (params) => {
-                const verified = params.row.emailVerified === true;
-                return verified ? "✓ 認証済み" : "✗ 未認証";
-              },
+              type: "boolean",
             } as GridColDef,
             {
               field: "discordLinked",
               headerName: "Discord連携",
               width: 120,
-              renderCell: (params) => {
-                const linked = params.row.discordLinked === true;
-                return linked ? "✓ 連携済み" : "✗ 未連携";
-              },
+              type: "boolean",
             } as GridColDef,
           ]
         : []),
