@@ -60,6 +60,7 @@ jobs:
           echo "::set-output name=labels::$LABELS"
 
       - name: Add labels to the issue
+        if: ${{ steps.determine_labels.outputs.labels != null }}
         run: |
           LABELS="${{ steps.determine_labels.outputs.labels }}"
           if [ -n "$LABELS" ]; then
@@ -69,7 +70,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create comment file
-        if: ${{ steps.determine_labels.outputs.labels[0] != null }}
+        if: ${{ steps.determine_labels.outputs.labels != null }}
         run: |
           cat  << EOF > comment.md
           ## Issue Auto-Labeler
@@ -80,7 +81,7 @@ jobs:
           done"
 
       - name: Post comment on the issue
-        if: ${{ steps.determine_labels.outputs.labels[0] != null }}
+        if: ${{ steps.determine_labels.outputs.labels != null }}
         run: |
           gh issue comment ${{ steps.get_issue.outputs.number }} --body-file comment.md
         env:
