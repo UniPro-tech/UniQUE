@@ -184,6 +184,7 @@ func listUsers(c *gin.Context) {
 			ID:                u.ID,
 			CustomID:          u.CustomID,
 			Email:             u.Email,
+			EmailVerified:     u.EmailVerified,
 			AffiliationPeriod: ptrToString(u.AffiliationPeriod),
 			Status:            u.Status,
 			CreatedAt:         u.CreatedAt,
