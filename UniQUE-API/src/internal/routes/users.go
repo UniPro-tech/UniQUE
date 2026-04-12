@@ -1691,8 +1691,31 @@ func approveUserRegist(c *gin.Context) {
 		return
 	}
 
-	updates := map[string]interface{}{"status": "active"}
-	updateProfiles := map[string]interface{}{}
+	if dto.Force == nil || !*dto.Force {
+		// EmailVerifiedを確認
+		existedUser, err := q.User.Where(q.User.ID.Eq(user_id)).First()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if !existedUser.EmailVerified {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "external_email_not_verified"})
+			return
+		}
+		// Discord連携を確認
+		count, err := q.ExternalIdentity.Where(q.ExternalIdentity.UserID.Eq(existedUser.ID), q.ExternalIdentity.Provider.Eq("discord")).Count()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if count == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"erroor": "discord_is_not_linked"})
+			return
+		}
+	}
+
+	updates := map[string]any{"status": "active"}
+	updateProfiles := map[string]any{}
 
 	updates["email"] = dto.Email
 	updates["affiliation_period"] = dto.AffiliationPeriod
