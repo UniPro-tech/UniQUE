@@ -45,8 +45,8 @@ jobs:
       - name: Determine labels based on the issue content
         id: determine_labels
         run: |
-          ISSUE_TITLE="${{ steps.get_issue.outputs.title }}"
-          ISSUE_NUMBER="${{ steps.get_issue.outputs.number }}"
+          ISSUE_TITLE="${{ steps.get_issue.outputs.title }}${{ steps.get_issue_event.outputs.title }}"
+          ISSUE_NUMBER="${{ steps.get_issue.outputs.number }}${{ steps.get_issue_event.outputs.number }}"
           LABELS=""
           while IFS= read -r line; do
             echo "Processing line: $line" # デバッグ用の出力
@@ -56,7 +56,7 @@ jobs:
               echo "Extracted label key: $LABEL_KEY" # デバッグ用の出力
               if [[ "$ISSUE_TITLE" == *"$LABEL_KEY"* ]]; then
                 echo "Issue title contains label key: $LABEL_KEY" # デバッグ用の出力
-                LABELS+=$(echo "${{ steps.read_labeler.outputs.labeler }}" | yq e ".\"$LABEL_KEY\"[]" -)
+                LABELS+=$(echo "${{ steps.read_labeler.outputs.labeler }}" | yq e ".\"[${LABEL_KEY}]\"[]" -)
                 LABELS+=" "
                 echo "Labels: $LABELS"
               fi
@@ -83,7 +83,7 @@ jobs:
           EOF
           for label in ${{ steps.determine_labels.outputs.labels }}; do
             echo "- $label" >> comment.md
-          done"
+          done
 
       - name: Post comment on the issue
         if: ${{ steps.determine_labels.outputs.labels != null }}
