@@ -16,6 +16,8 @@ jobs:
   auto-label:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Get issue details
         id: get_issue
         if: github.event_name == 'workflow_dispatch'
