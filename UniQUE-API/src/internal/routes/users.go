@@ -1714,7 +1714,7 @@ func approveUserRegist(c *gin.Context) {
 			return
 		}
 		if count == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"erroor": "discord_is_not_linked"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "discord_is_not_linked"})
 			return
 		}
 	}
