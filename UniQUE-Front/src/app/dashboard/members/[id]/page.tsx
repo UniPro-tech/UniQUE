@@ -29,7 +29,9 @@ export default async function UserDetailPage({
   }
 
   const currentUser = await (await Session.getCurrent())?.getUser();
-  const canUpdate = await currentUser?.hasPermission(PermissionBitsFields.USER_UPDATE);
+  const canUpdate = await currentUser?.hasPermission(
+    PermissionBitsFields.USER_UPDATE,
+  );
 
   const userData = user.toJson();
   return (

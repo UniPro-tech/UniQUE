@@ -53,7 +53,13 @@ export default function PasswordResetAdmin({
           <DialogContentText>
             パスワードをリセットするには、新しいパスワードを入力してください。
           </DialogContentText>
-          <TextField label={"新しいパスワード"} name={"newPassword"} required />
+          <TextField
+            label={"新しいパスワード"}
+            name={"newPassword"}
+            type="password"
+            autoComplete="new-password"
+            required
+          />
         </DialogContent>
         <DialogActions sx={{ pb: 3, px: 3 }}>
           <Button
@@ -64,7 +70,7 @@ export default function PasswordResetAdmin({
             キャンセル
           </Button>
           <Button variant="contained" type="submit" color="error">
-            削除
+            リセット
           </Button>
         </DialogActions>
       </form>

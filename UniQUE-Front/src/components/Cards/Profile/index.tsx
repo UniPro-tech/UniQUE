@@ -54,7 +54,7 @@ export default function Profile({
         }}
       >
         <Box>
-          {variant === "detail" && (
+          {(variant === "detail" || variant === "admin") && (
             <Button
               startIcon={<ArrowBackIcon />}
               onClick={() => {
@@ -353,13 +353,15 @@ export default function Profile({
           </Typography>
         )}
       </Box>
-      <PasswordResetAdmin
-        open={passwordResetOpen}
-        userId={user.id}
-        onClose={() => {
-          setPasswordResetOpen(false);
-        }}
-      />
+      <SnackbarProvider>
+        <PasswordResetAdmin
+          open={passwordResetOpen}
+          userId={user.id}
+          onClose={() => {
+            setPasswordResetOpen(false);
+          }}
+        />
+      </SnackbarProvider>
     </Stack>
   );
 }
