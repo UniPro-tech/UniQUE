@@ -419,11 +419,11 @@ export class User {
   }
 
   async changePassword(
-    currentPassword: string,
+    currentPassword: string | null,
     newPassword: string,
   ): Promise<void> {
     const response = await apiPut(`/users/${this.id}/password/change`, {
-      currentPassword,
+      currentPassword: currentPassword ? currentPassword : undefined,
       newPassword,
     });
     if (!response.ok) {

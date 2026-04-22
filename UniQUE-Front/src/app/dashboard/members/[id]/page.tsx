@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { Session } from "@/classes/Session";
 import { User } from "@/classes/User";
 import Profile from "@/components/Cards/Profile";
+import { PermissionBitsFields } from "@/constants/Permission";
 
 export const metadata = {
   title: "ユーザー詳細",
@@ -26,6 +28,17 @@ export default async function UserDetailPage({
     notFound();
   }
 
+  const currentUser = await (await Session.getCurrent())?.getUser();
+  const canUpdate = await currentUser?.hasPermission(
+    PermissionBitsFields.USER_UPDATE,
+  );
+
   const userData = user.toJson();
-  return <Profile user={userData} variant="detail" showTimestamps />;
+  return (
+    <Profile
+      user={userData}
+      variant={canUpdate ? "admin" : "detail"}
+      showTimestamps
+    />
+  );
 }
