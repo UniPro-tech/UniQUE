@@ -7,6 +7,7 @@ import {
   CalendarToday as CalendarIcon,
   Edit as EditIcon,
   Email as EmailIcon,
+  Password,
   Person as PersonIcon,
   Web as WebIcon,
   X as XIcon,
@@ -16,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { SnackbarProvider } from "notistack";
 import { useState } from "react";
 import { type UserData, UserStatus } from "@/classes/types/User";
+import PasswordResetAdmin from "@/components/Dialogs/PasswordResetAdmin";
 import ProfileEditForm from "@/components/Forms/ProfileEditForm";
 import {
   getAffiliationPeriodLabel,
@@ -24,9 +26,7 @@ import {
 
 interface ProfileProps {
   user: UserData;
-  /** 'self' は編集ボタン表示など自分用の表示。'detail' は戻るボタンなど管理者向けの表示 */
-  variant?: "self" | "detail";
-  onEdit?: () => void;
+  variant?: "self" | "detail" | "admin";
   onBack?: () => void;
   showTimestamps?: boolean;
 }
@@ -40,10 +40,9 @@ export default function Profile({
   const router = useRouter();
 
   const [userProfile, setUserProfile] = useState(user.profile);
-
   const hasFullData = user?.email !== undefined || user?.status !== undefined;
-
   const [editMode, setEditMode] = useState(false);
+  const [passwordResetOpen, setPasswordResetOpen] = useState(false);
 
   return (
     <Stack spacing={3}>
@@ -88,13 +87,22 @@ export default function Profile({
           )}
         </Box>
 
-        {variant === "self" && (
+        {(variant === "self" || variant === "admin") && (
           <Button
             variant="contained"
             startIcon={<EditIcon />}
             onClick={() => setEditMode(true)}
           >
             編集
+          </Button>
+        )}
+        {variant === "admin" && (
+          <Button
+            variant={"contained"}
+            startIcon={<Password />}
+            onClick={() => setPasswordResetOpen(true)}
+          >
+            パスワードリセット
           </Button>
         )}
       </Box>
@@ -345,6 +353,13 @@ export default function Profile({
           </Typography>
         )}
       </Box>
+      <PasswordResetAdmin
+        open={passwordResetOpen}
+        userId={user.id}
+        onClose={() => {
+          setPasswordResetOpen(false);
+        }}
+      />
     </Stack>
   );
 }
