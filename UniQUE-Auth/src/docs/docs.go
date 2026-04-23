@@ -802,6 +802,17 @@ const docTemplate = `{
                     "internal"
                 ],
                 "summary": "Update Last Logined",
+                "parameters": [
+                    {
+                        "description": "Session Data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.UpdateLastLoginedRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
@@ -1352,6 +1363,17 @@ const docTemplate = `{
             "properties": {
                 "valid": {
                     "type": "boolean"
+                }
+            }
+        },
+        "router.UpdateLastLoginedRequest": {
+            "type": "object",
+            "required": [
+                "sid"
+            ],
+            "properties": {
+                "sid": {
+                    "type": "string"
                 }
             }
         },

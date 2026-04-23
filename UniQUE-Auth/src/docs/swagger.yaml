@@ -249,6 +249,13 @@ definitions:
       valid:
         type: boolean
     type: object
+  router.UpdateLastLoginedRequest:
+    properties:
+      sid:
+        type: string
+    required:
+    - sid
+    type: object
   router.UserInfoResponse:
     properties:
       affiliation_period:
@@ -856,6 +863,13 @@ paths:
   /internal/update_last_logined:
     post:
       description: 内部のLastLogined更新エンドポイント
+      parameters:
+      - description: Session Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.UpdateLastLoginedRequest'
       responses:
         "201":
           description: Created

@@ -16,6 +16,7 @@ type UpdateLastLoginedRequest struct {
 // @Summary      Update Last Logined
 // @Description  内部のLastLogined更新エンドポイント
 // @Tags         internal
+// @Param request body UpdateLastLoginedRequest true "Session Data"
 // @Success      201  {null}  ""
 // @Failure      400  {object}  map[string]string
 // @Router       /internal/update_last_logined [post]
