@@ -515,7 +515,7 @@ func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
 	defer resp.Body.Close()
 
 	// 必要に応じてステータスコードなどをチェック
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 		return
 	}
