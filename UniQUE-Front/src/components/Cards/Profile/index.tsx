@@ -87,7 +87,8 @@ export default function Profile({
           )}
         </Box>
 
-        {(variant === "self" || variant === "admin") && (
+        <Stack direction={"row"} justifyContent={"end"} gap={2}>
+          {(variant === "self" || variant === "admin") && (
           <Button
             variant="contained"
             startIcon={<EditIcon />}
@@ -105,6 +106,7 @@ export default function Profile({
             パスワードリセット
           </Button>
         )}
+        </Stack>
       </Box>
 
       <Card sx={{ p: 3 }}>
