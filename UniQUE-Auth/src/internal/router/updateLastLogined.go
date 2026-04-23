@@ -1,6 +1,7 @@
 package router
 
 import (
+	"errors"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -36,8 +37,12 @@ func UpdateLastLogined(c *gin.Context) {
 	q := query.Use(db)
 
 	session, err := q.Session.Where(q.Session.ID.Eq(req.SID), q.Session.DeletedAt.IsNull()).First()
-	if err != nil || session == nil {
-		c.JSON(400, gin.H{"error": "invalid session id"})
+	if errors.Is(err, gorm.ErrRecordNotFound) || session == nil {
+		c.JSON(404, gin.H{"error": "session not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(500, gin.H{"error": "failed to fetch session"})
 		return
 	}
 
