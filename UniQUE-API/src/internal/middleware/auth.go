@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
@@ -341,7 +342,7 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 			}
 		}
 		// LastLoginを更新
-		UpdateLastLoginedAt(cfg, sessionID)
+		go UpdateLastLoginedAt(cfg, sessionID)
 	} else {
 		// アクセストークン: jti(claims.ID)で検証
 		isValidToken, _ = verifyJIT(claims.ID, cfg, "/internal/token_verify")
@@ -478,14 +479,14 @@ func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
 
 	// 1. 送信するデータをMap等で定義
 	payload := map[string]string{
-		"SID": sessionID,
+		"sid": sessionID,
 	}
 
 	// 2. JSONにエンコード
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		// JSON変換エラーのハンドリング
-		fmt.Printf("JSON marshaling failed: %v\n", err)
+		log.Printf("UpdateLastLoginedAt: JSON marshaling failed: %v", err)
 		return
 	}
 
@@ -496,7 +497,7 @@ func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		// リクエスト作成エラーのハンドリング
-		fmt.Printf("Request creation failed: %v\n", err)
+		log.Printf("UpdateLastLoginedAt: request creation failed: %v", err)
 		return
 	}
 
@@ -504,19 +505,21 @@ func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
 	req.Header.Set("Content-Type", "application/json")
 
 	// 5. リクエストを実行
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		// リクエスト送信エラーのハンドリング
-		fmt.Printf("HTTP request failed: %v\n", err)
+		log.Printf("UpdateLastLoginedAt: HTTP request failed: %v", err)
 		return
 	}
 	// レスポンスボディは必ず閉じる
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	// 必要に応じてステータスコードなどをチェック
 	if resp.StatusCode != http.StatusCreated {
-		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
+		log.Printf("UpdateLastLoginedAt: unexpected status code: %d", resp.StatusCode)
 		return
 	}
 }
