@@ -1951,7 +1951,7 @@ func changePassword(c *gin.Context) {
 	}
 
 	// If requester is self, verify current password
-	if isSelf {
+	if isSelf && !hasPerm {
 		if input.CurrentPassword == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "current_password required"})
 			return
