@@ -41,6 +41,18 @@ func UpdateLastLogined(c *gin.Context) {
 	}
 
 	session.LastLoginAt = time.Now()
+
+	// ExpiresAt と CreatedAt の差分（time.Duration）を取得
+	duration := session.ExpiresAt.Sub(session.CreatedAt)
+
+	// 差分が30日（30 * 24時間）未満かどうかを比較
+	if duration < 30*24*time.Hour {
+		// rememberなし
+		session.ExpiresAt = time.Now().AddDate(0, 0, 7)
+	} else {
+		// rememberあり
+		session.ExpiresAt = time.Now().AddDate(0, 1, 0)
+	}
 	if err := q.Session.Save(session); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
