@@ -329,6 +329,9 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 		sessionID := strings.TrimPrefix(claims.Subject, "SID_")
 		log.Printf("Session verify: sessionID=%s, path=/internal/session_verify", sessionID)
 		isValidToken, userIDFromVerify = verifyJIT(sessionID, cfg, "/internal/session_verify")
+		if !isValidToken {
+			return nil, nil, false, ""
+		}
 		// Auth側から返されたuser_idを優先、なければトークン内のuser_idクレームを使用
 		userID := userIDFromVerify
 		if userID == "" {
