@@ -120,7 +120,7 @@ export default function SignInCard() {
           onClick={validateInputs}
           disabled={inProgress}
         >
-          {inProgress ? "サインイン" : "サインイン中..."}
+          {!inProgress ? "サインイン" : "サインイン中..."}
         </Button>
       </Box>
       <Divider>or</Divider>

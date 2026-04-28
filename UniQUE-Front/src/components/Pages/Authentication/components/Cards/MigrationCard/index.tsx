@@ -271,7 +271,9 @@ export default function MigrationCard() {
           type="submit"
           fullWidth
           variant="contained"
-          onClick={validateInputs}
+          onClick={(e) => {
+            if (!validateInputs()) e.preventDefault();  
+          }}
           disabled={inProgress}
         >
           {!inProgress ? "アカウントを移行" : "アカウントを移行中..."}
