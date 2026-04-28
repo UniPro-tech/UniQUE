@@ -89,23 +89,23 @@ export default function Profile({
 
         <Stack direction={"row"} justifyContent={"end"} gap={2}>
           {(variant === "self" || variant === "admin") && (
-          <Button
-            variant="contained"
-            startIcon={<EditIcon />}
-            onClick={() => setEditMode(true)}
-          >
-            編集
-          </Button>
-        )}
-        {variant === "admin" && (
-          <Button
-            variant={"contained"}
-            startIcon={<Password />}
-            onClick={() => setPasswordResetOpen(true)}
-          >
-            パスワードリセット
-          </Button>
-        )}
+            <Button
+              variant="contained"
+              startIcon={<EditIcon />}
+              onClick={() => setEditMode(true)}
+            >
+              編集
+            </Button>
+          )}
+          {variant === "admin" && (
+            <Button
+              variant={"contained"}
+              startIcon={<Password />}
+              onClick={() => setPasswordResetOpen(true)}
+            >
+              パスワードリセット
+            </Button>
+          )}
         </Stack>
       </Box>
 

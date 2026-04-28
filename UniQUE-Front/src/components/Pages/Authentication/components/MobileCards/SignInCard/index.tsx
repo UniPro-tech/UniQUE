@@ -22,7 +22,10 @@ export default function SignInCard() {
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
 
+  const [inProgress, setInProgress] = React.useState(false);
+
   const validateInputs = () => {
+    setInProgress(true);
     const password = document.getElementById("password") as HTMLInputElement;
 
     let isValid = true;
@@ -35,6 +38,8 @@ export default function SignInCard() {
       setPasswordError(false);
       setPasswordErrorMessage("");
     }
+
+    if (!isValid) setInProgress(false);
 
     return isValid;
   };
@@ -56,10 +61,12 @@ export default function SignInCard() {
         noValidate
         sx={{ display: "flex", flexDirection: "column", width: "100%", gap: 2 }}
         action={async (data: FormData) => {
+          setInProgress(true);
           const result = await submitSignIn(data);
           if (result.redirectTo) {
             redirect(result.redirectTo, RedirectType.push);
           }
+          setInProgress(false);
         }}
       >
         <input
@@ -111,8 +118,9 @@ export default function SignInCard() {
           fullWidth
           variant="contained"
           onClick={validateInputs}
+          disabled={inProgress}
         >
-          サインイン
+          {inProgress ? "サインイン" : "サインイン中..."}
         </Button>
       </Box>
       <Divider>or</Divider>

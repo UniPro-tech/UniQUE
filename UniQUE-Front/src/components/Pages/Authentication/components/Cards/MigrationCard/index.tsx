@@ -35,8 +35,10 @@ export default function MigrationCard() {
     React.useState("");
   const [agreeTosError, setAgreeTosError] = React.useState(false);
   const [agreeTosErrorMessage, setAgreeTosErrorMessage] = React.useState("");
+  const [inProgress, setInProgress] = React.useState(false);
 
   const validateInputs = () => {
+    setInProgress(true);
     const email = document.getElementById("email") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
     const confirmPassword = document.getElementById(
@@ -108,6 +110,8 @@ export default function MigrationCard() {
       );
     }
 
+    if (!isValid) setInProgress(false);
+
     return isValid;
   };
 
@@ -143,7 +147,11 @@ export default function MigrationCard() {
         component="form"
         noValidate
         sx={{ display: "flex", flexDirection: "column", width: "100%", gap: 2 }}
-        action={submitMigration}
+        action={async (formdata: FormData) => {
+          setInProgress(true);
+          await submitMigration(formdata);
+          setInProgress(false);
+        }}
       >
         <FormControl>
           <FormLabel htmlFor="name">お名前</FormLabel>
@@ -264,8 +272,9 @@ export default function MigrationCard() {
           fullWidth
           variant="contained"
           onClick={validateInputs}
+          disabled={inProgress}
         >
-          サインアップ
+          {!inProgress ? "アカウントを移行" : "アカウントを移行中..."}
         </Button>
       </Box>
     </Card>

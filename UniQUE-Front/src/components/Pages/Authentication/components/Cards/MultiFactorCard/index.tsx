@@ -1,3 +1,4 @@
+"use client";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -5,6 +6,7 @@ import FormLabel from "@mui/material/FormLabel";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { RedirectType, redirect } from "next/navigation";
+import { useState } from "react";
 import { useInitialFormState, useRedirectTo } from "../../../Client";
 import { submitSignIn } from "../../actions/signIn";
 import { SitemarkIcon } from "../../CustomIcons";
@@ -13,6 +15,8 @@ import { Card } from "../Base";
 export default function MultiFactorCard() {
   const initialState = useInitialFormState();
   const redirectTo = useRedirectTo();
+
+  const [inProgress, setInProgress] = useState(false);
 
   return (
     <Card variant="outlined">
@@ -31,10 +35,12 @@ export default function MultiFactorCard() {
         noValidate
         sx={{ display: "flex", flexDirection: "column", width: "100%", gap: 2 }}
         action={async (data: FormData) => {
+          setInProgress(true);
           const result = await submitSignIn(data);
           if (result.redirectTo) {
             redirect(result.redirectTo, RedirectType.push);
           }
+          setInProgress(false);
         }}
       >
         <input type="hidden" name="redirectTo" value={redirectTo} />
@@ -79,8 +85,13 @@ export default function MultiFactorCard() {
           name="remember"
           value={initialState?.rememberMe ? "on" : "off"}
         />
-        <Button type="submit" fullWidth variant="contained">
-          サインイン
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          disabled={inProgress}
+        >
+          {!inProgress ? "サインイン" : "サインイン中..."}
         </Button>
       </Box>
     </Card>
