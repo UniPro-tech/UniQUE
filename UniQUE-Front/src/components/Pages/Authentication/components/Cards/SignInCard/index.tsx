@@ -37,7 +37,7 @@ export default function SignUpCard() {
   };
 
   const validateInputs = () => {
-    setInProgress(false);
+    setInProgress(true);
     const password = document.getElementById("password") as HTMLInputElement;
 
     let isValid = true;
