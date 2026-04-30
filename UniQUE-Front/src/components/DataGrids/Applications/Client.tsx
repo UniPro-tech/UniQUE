@@ -141,6 +141,34 @@ export default function ApplicationsDataGridClient({
         },
       },
       {
+        field: "termsUrl",
+        headerName: "利用規約",
+        width: 200,
+        flex: 1,
+        renderCell: (params) => {
+          if (!params.value) return null;
+          return (
+            <MuiLink
+              href={params.value as string}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+            >
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {params.value as string}
+              </span>
+              <OpenInNewIcon fontSize="small" />
+            </MuiLink>
+          );
+        },
+      },
+      {
         field: "privacyPolicyUrl",
         headerName: "プライバシーポリシー",
         width: 200,

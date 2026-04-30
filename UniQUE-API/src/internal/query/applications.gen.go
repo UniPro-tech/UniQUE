@@ -32,6 +32,7 @@ func newApplication(db *gorm.DB, opts ...gen.DOOption) application {
 	_application.Name = field.NewString(tableName, "name")
 	_application.Description = field.NewString(tableName, "description")
 	_application.WebsiteURL = field.NewString(tableName, "website_url")
+	_application.TermsURL = field.NewString(tableName, "terms_url")
 	_application.PrivacyPolicyURL = field.NewString(tableName, "privacy_policy_url")
 	_application.ClientSecret = field.NewString(tableName, "client_secret")
 	_application.UserID = field.NewString(tableName, "user_id")
@@ -53,6 +54,7 @@ type application struct {
 	Name             field.String
 	Description      field.String
 	WebsiteURL       field.String
+	TermsURL         field.String
 	PrivacyPolicyURL field.String
 	ClientSecret     field.String
 	UserID           field.String
@@ -79,6 +81,7 @@ func (a *application) updateTableName(table string) *application {
 	a.Name = field.NewString(table, "name")
 	a.Description = field.NewString(table, "description")
 	a.WebsiteURL = field.NewString(table, "website_url")
+	a.TermsURL = field.NewString(table, "terms_url")
 	a.PrivacyPolicyURL = field.NewString(table, "privacy_policy_url")
 	a.ClientSecret = field.NewString(table, "client_secret")
 	a.UserID = field.NewString(table, "user_id")
@@ -106,6 +109,7 @@ func (a *application) fillFieldMap() {
 	a.fieldMap["name"] = a.Name
 	a.fieldMap["description"] = a.Description
 	a.fieldMap["website_url"] = a.WebsiteURL
+	a.fieldMap["terms_url"] = a.TermsURL
 	a.fieldMap["privacy_policy_url"] = a.PrivacyPolicyURL
 	a.fieldMap["client_secret"] = a.ClientSecret
 	a.fieldMap["user_id"] = a.UserID

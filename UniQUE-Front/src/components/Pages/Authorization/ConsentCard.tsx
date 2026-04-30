@@ -87,7 +87,22 @@ export default function ConsentCard(props: {
               underline="hover"
               sx={{ ml: 0.5 }}
             >
-              {app.websiteUrl}
+              表示する
+            </Link>
+          </Typography>
+        )}
+
+        {app.termsUrl && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            利用規約:
+            <Link
+              href={app.termsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="hover"
+              sx={{ ml: 0.5 }}
+            >
+              表示する
             </Link>
           </Typography>
         )}
@@ -106,6 +121,10 @@ export default function ConsentCard(props: {
             </Link>
           </Typography>
         )}
+
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          { app.name}の利用規約およびプライバシーポリシーをよくご確認の上同意してください。
+        </Typography>
       </Box>
 
       <Divider sx={{ my: 1.5 }} />

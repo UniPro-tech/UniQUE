@@ -1576,6 +1576,9 @@ const docTemplate = `{
                 "public_client": {
                     "type": "boolean"
                 },
+                "terms_url": {
+                    "type": "string"
+                },
                 "updated_at": {
                     "type": "string"
                 },
@@ -1637,6 +1640,9 @@ const docTemplate = `{
                 },
                 "public_client": {
                     "type": "boolean"
+                },
+                "terms_url": {
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
@@ -1912,6 +1918,9 @@ const docTemplate = `{
                 "public_client": {
                     "$ref": "#/definitions/routes.Nullable-bool"
                 },
+                "terms_url": {
+                    "$ref": "#/definitions/routes.Nullable-string"
+                },
                 "website_url": {
                     "$ref": "#/definitions/routes.Nullable-string"
                 }
@@ -2128,6 +2137,9 @@ const docTemplate = `{
                 },
                 "public_client": {
                     "$ref": "#/definitions/routes.Nullable-bool"
+                },
+                "terms_url": {
+                    "$ref": "#/definitions/routes.Nullable-string"
                 },
                 "website_url": {
                     "$ref": "#/definitions/routes.Nullable-string"

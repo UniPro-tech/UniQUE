@@ -25,6 +25,7 @@ export interface ConsentDTO {
   applicationDescription?: string;
   applicationWebsiteUrl?: string;
   applicationPrivacyPolicyUrl?: string;
+  applicationTermsUrl?:string
 }
 
 async function clientRevokeConsent(consentId: string): Promise<boolean> {
@@ -151,6 +152,22 @@ export default function ConsentSettingsCardClient({
                             rel="noopener noreferrer"
                           >
                             {consent.applicationWebsiteUrl}
+                          </a>
+                        </Typography>
+                      )}
+                      {consent.applicationTermsUrl && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          noWrap
+                        >
+                          利用規約:{" "}
+                          <a
+                            href={consent.applicationTermsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {consent.applicationTermsUrl}
                           </a>
                         </Typography>
                       )}

@@ -84,6 +84,7 @@ func listApplications(c *gin.Context) {
 			Description:      ptrToString(a.Description),
 			WebsiteURL:       ptrToString(a.WebsiteURL),
 			PrivacyPolicyURL: ptrToString(a.PrivacyPolicyURL),
+			TermsURL:         ptrToString(a.TermsURL),
 			UserID:           a.UserID,
 			PublicClient:     a.PublicClient,
 			CreatedAt:        a.CreatedAt,
@@ -140,6 +141,7 @@ func createApplication(c *gin.Context) {
 		Description:      stringToPtr(input.Description),
 		WebsiteURL:       stringToPtr(input.WebsiteURL),
 		PrivacyPolicyURL: stringToPtr(input.PrivacyPolicyURL),
+		TermsURL:         stringToPtr(input.TermsURL),
 		ClientSecret:     input.ClientSecret,
 		PublicClient:     input.PublicClient,
 		UserID:           input.UserID,
@@ -161,6 +163,7 @@ func createApplication(c *gin.Context) {
 		Description:      ptrToString(app.Description),
 		WebsiteURL:       ptrToString(app.WebsiteURL),
 		PrivacyPolicyURL: ptrToString(app.PrivacyPolicyURL),
+		TermsURL:         ptrToString(app.TermsURL),
 		UserID:           app.UserID,
 		PublicClient:     app.PublicClient,
 		CreatedAt:        app.CreatedAt,
@@ -201,6 +204,7 @@ func getApplication(c *gin.Context) {
 		Description:      ptrToString(a.Description),
 		WebsiteURL:       ptrToString(a.WebsiteURL),
 		PrivacyPolicyURL: ptrToString(a.PrivacyPolicyURL),
+		TermsURL:         ptrToString(a.TermsURL),
 		UserID:           a.UserID,
 		PublicClient:     a.PublicClient,
 		CreatedAt:        a.CreatedAt,
@@ -256,6 +260,13 @@ func updateApplication(c *gin.Context) {
 			updates["website_url"] = nil
 		} else {
 			updates["website_url"] = *input.WebsiteURL.Value
+		}
+	}
+	if input.TermsURL.Set {
+		if input.TermsURL.Value == nil {
+			updates["terms_url"] = nil
+		} else {
+			updates["terms_url"] = *input.TermsURL.Value
 		}
 	}
 	if input.PrivacyPolicyURL.Set {
@@ -323,6 +334,7 @@ func updateApplication(c *gin.Context) {
 		Name:             updated.Name,
 		Description:      ptrToString(updated.Description),
 		WebsiteURL:       ptrToString(updated.WebsiteURL),
+		TermsURL:         ptrToString(updated.TermsURL),
 		PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
 		UserID:           updated.UserID,
 		PublicClient:     updated.PublicClient,
@@ -378,6 +390,13 @@ func patchApplication(c *gin.Context) {
 			updates["website_url"] = nil
 		} else {
 			updates["website_url"] = *body.WebsiteURL.Value
+		}
+	}
+	if body.TermsURL.Set {
+		if body.TermsURL.Value == nil {
+			updates["terms_url"] = nil
+		} else {
+			updates["terms_url"] = *body.TermsURL.Value
 		}
 	}
 	if body.PrivacyPolicyURL.Set {
@@ -450,6 +469,7 @@ func patchApplication(c *gin.Context) {
 		Name:             updated.Name,
 		Description:      ptrToString(updated.Description),
 		WebsiteURL:       ptrToString(updated.WebsiteURL),
+		TermsURL:         ptrToString(updated.TermsURL),
 		PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
 		UserID:           updated.UserID,
 		PublicClient:     updated.PublicClient,

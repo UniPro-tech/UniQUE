@@ -9,6 +9,7 @@ export interface ApplicationData {
   name: string;
   description: string | null;
   websiteUrl: string | null;
+  termsUrl: string | null;
   privacyPolicyUrl: string | null;
   userId?: string;
   owner?: User | UserData;
@@ -24,6 +25,7 @@ export class Application {
   name: string;
   description: string | null;
   websiteUrl: string | null;
+  termsUrl: string | null;
   privacyPolicyUrl: string | null;
   private ownerId: string;
   clientSecret: string | null;
@@ -41,6 +43,7 @@ export class Application {
     this.name = data.name;
     this.description = data.description;
     this.websiteUrl = data.websiteUrl;
+    this.termsUrl = data.termsUrl;
     this.privacyPolicyUrl = data.privacyPolicyUrl;
     if (!data.userId && !data.owner) {
       throw new Error("Either ownerId or owner must be provided");
@@ -84,6 +87,7 @@ export class Application {
       name: this.name,
       description: this.description,
       websiteUrl: this.websiteUrl,
+      termsUrl: this.termsUrl,
       privacyPolicyUrl: this.privacyPolicyUrl,
       userId: this.ownerId,
       owner,
@@ -181,6 +185,7 @@ export class Application {
         name: this.name,
         description: this.description,
         websiteUrl: this.websiteUrl,
+        termsUrl: this.termsUrl,
         privacyPolicyUrl: this.privacyPolicyUrl,
         userId: this.ownerId,
         clientSecret: this.clientSecret,
