@@ -33,7 +33,10 @@ export default function SignUpCard() {
   const [agreeTosError, setAgreeTosError] = React.useState(false);
   const [agreeTosErrorMessage, setAgreeTosErrorMessage] = React.useState("");
 
+  const [inProgress, setInProgress] = React.useState(false);
+
   const validateInputs = () => {
+    setInProgress(true);
     const email = document.getElementById("email") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
     const confirmPassword = document.getElementById(
@@ -123,6 +126,8 @@ export default function SignUpCard() {
       );
     }
 
+    if (!isValid) setInProgress(false);
+
     return isValid;
   };
 
@@ -148,7 +153,11 @@ export default function SignUpCard() {
             width: "100%",
             gap: 2,
           }}
-          action={submitSignUp}
+          action={async (formdata: FormData) => {
+            setInProgress(true);
+            await submitSignUp(formdata);
+            setInProgress(false);
+          }}
         >
           <FormControl>
             <FormLabel htmlFor="name">お名前</FormLabel>
@@ -269,8 +278,9 @@ export default function SignUpCard() {
             fullWidth
             variant="contained"
             onClick={validateInputs}
+            disabled={inProgress}
           >
-            サインアップ
+            {!inProgress ? "サインアップ" : "サインアップ中..."}
           </Button>
         </Box>
         <Divider>or</Divider>

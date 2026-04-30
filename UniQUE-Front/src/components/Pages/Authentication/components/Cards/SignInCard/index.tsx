@@ -1,3 +1,4 @@
+"use client";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -23,17 +24,20 @@ export default function SignUpCard() {
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
 
-  const [open, setOpen] = React.useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
+
+  const [inProgress, setInProgress] = React.useState(false);
 
   const handleClickOpen = () => {
-    setOpen(true);
+    setForgotPasswordOpen(true);
   };
 
   const handleClose = () => {
-    setOpen(false);
+    setForgotPasswordOpen(false);
   };
 
   const validateInputs = () => {
+    setInProgress(true);
     const password = document.getElementById("password") as HTMLInputElement;
 
     let isValid = true;
@@ -46,6 +50,8 @@ export default function SignUpCard() {
       setPasswordError(false);
       setPasswordErrorMessage("");
     }
+
+    if (!isValid) setInProgress(false);
 
     return isValid;
   };
@@ -83,10 +89,12 @@ export default function SignUpCard() {
         noValidate
         sx={{ display: "flex", flexDirection: "column", width: "100%", gap: 2 }}
         action={async (data: FormData) => {
+          setInProgress(true);
           const result = await submitSignIn(data);
           if (result.redirectTo) {
             redirect(result.redirectTo, RedirectType.push);
           }
+          setInProgress(false);
         }}
       >
         <input
@@ -118,6 +126,7 @@ export default function SignUpCard() {
               type="button"
               onClick={handleClickOpen}
               variant="body2"
+              disabled={inProgress}
               sx={{ alignSelf: "baseline" }}
             >
               パスワードをお忘れですか？
@@ -147,12 +156,13 @@ export default function SignUpCard() {
           fullWidth
           variant="contained"
           onClick={validateInputs}
+          disabled={inProgress}
         >
-          サインイン
+          {!inProgress ? "サインイン" : "サインイン中..."}
         </Button>
       </Box>
       <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-        <ForgotPassword open={open} handleClose={handleClose} />
+        <ForgotPassword open={forgotPasswordOpen} handleClose={handleClose} />
       </SnackbarProvider>
     </Card>
   );
