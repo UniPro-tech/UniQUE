@@ -58,7 +58,7 @@ export default function ApplicationCreateForm({
     description: "",
     websiteUrl: "",
     privacyPolicyUrl: "",
-    termsUrl: ""
+    termsUrl: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -95,7 +95,7 @@ export default function ApplicationCreateForm({
         description: formData.description,
         websiteUrl: formData.websiteUrl,
         privacyPolicyUrl: formData.privacyPolicyUrl,
-        termsUrl: formData.termsUrl
+        termsUrl: formData.termsUrl,
       });
 
       if (result.success) {

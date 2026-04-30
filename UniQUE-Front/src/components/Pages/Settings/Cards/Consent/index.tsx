@@ -52,7 +52,7 @@ export default async function ConsentSettingsCard({
             applicationDescription: app.description,
             applicationWebsiteUrl: app.website_url,
             applicationPrivacyPolicyUrl: app.privacy_policy_url,
-            applicationTermsUrl: app.terms_url
+            applicationTermsUrl: app.terms_url,
           };
         }
       } catch {

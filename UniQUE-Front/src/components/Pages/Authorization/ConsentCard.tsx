@@ -123,7 +123,8 @@ export default function ConsentCard(props: {
         )}
 
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          { app.name}の利用規約およびプライバシーポリシーをよくご確認の上同意してください。
+          {app.name}
+          の利用規約およびプライバシーポリシーをよくご確認の上同意してください。
         </Typography>
       </Box>
 

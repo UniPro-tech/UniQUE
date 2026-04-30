@@ -38,7 +38,7 @@ interface UpdateApplicationFormData {
   description: string;
   websiteUrl: string;
   privacyPolicyUrl: string;
-  termsUrl: string
+  termsUrl: string;
 }
 
 export default function ApplicationEditForm({
@@ -60,7 +60,7 @@ export default function ApplicationEditForm({
     description: application.description || "",
     websiteUrl: application.websiteUrl || "",
     privacyPolicyUrl: application.privacyPolicyUrl || "",
-    termsUrl: application.termsUrl || ""
+    termsUrl: application.termsUrl || "",
   });
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -149,7 +149,7 @@ export default function ApplicationEditForm({
         description: formData.description,
         websiteUrl: formData.websiteUrl,
         privacyPolicyUrl: formData.privacyPolicyUrl,
-        termsUrl: formData.termsUrl
+        termsUrl: formData.termsUrl,
       };
       if (clientSecret) {
         payload.clientSecret = clientSecret;
@@ -410,9 +410,7 @@ export default function ApplicationEditForm({
                 fullWidth
                 type="url"
                 value={formData.termsUrl}
-                onChange={(e) =>
-                  handleChange("termsUrl", e.target.value)
-                }
+                onChange={(e) => handleChange("termsUrl", e.target.value)}
                 helperText="利用規約のURL（任意）"
                 disabled={loading}
               />

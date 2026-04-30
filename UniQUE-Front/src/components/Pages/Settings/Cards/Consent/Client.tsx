@@ -25,7 +25,7 @@ export interface ConsentDTO {
   applicationDescription?: string;
   applicationWebsiteUrl?: string;
   applicationPrivacyPolicyUrl?: string;
-  applicationTermsUrl?:string
+  applicationTermsUrl?: string;
 }
 
 async function clientRevokeConsent(consentId: string): Promise<boolean> {

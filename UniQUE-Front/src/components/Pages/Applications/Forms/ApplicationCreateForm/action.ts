@@ -9,7 +9,7 @@ export interface CreateApplicationFormData {
   description: string;
   websiteUrl: string;
   privacyPolicyUrl: string;
-  termsUrl: string
+  termsUrl: string;
 }
 
 export async function createApplication(
