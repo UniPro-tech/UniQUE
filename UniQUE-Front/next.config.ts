@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     authInterrupts: true,
   },
   output: "standalone",
+  poweredByHeader: false,
   async headers() {
     return [
       {
