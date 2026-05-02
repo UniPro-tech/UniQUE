@@ -272,7 +272,7 @@ export default function MigrationCard() {
           fullWidth
           variant="contained"
           onClick={(e) => {
-            if (!validateInputs()) e.preventDefault();  
+            if (!validateInputs()) e.preventDefault();
           }}
           disabled={inProgress}
         >
