@@ -24,9 +24,13 @@ const nextConfig: NextConfig = {
             value: "strict-origin-when-cross-origin",
           },
           {
-            key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self'",
-          },
+           {
+             key: "Content-Security-Policy",
+             value:
+               process.env.NODE_ENV === "production"
+                 ? "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+                 : "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'",
+           },
         ],
       }
     ];
