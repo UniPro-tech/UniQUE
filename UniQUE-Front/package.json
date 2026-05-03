@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "biome check --write"
+    "lint": "biome check --write --config-path='../.config/biome.json'"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
