@@ -1,5 +1,4 @@
 "use server";
-import { RedirectType, redirect } from "next/navigation";
 import { UserStatus } from "@/classes/types/User";
 import { User } from "@/classes/User";
 import { AuthenticationErrors } from "@/errors/AuthenticationErrors";
@@ -19,7 +18,7 @@ export const submitMigration = async (formData: FormData) => {
       external_email,
       agreeTos: agreeTos ? "1" : "0",
     });
-    redirect(`/migrate?${queryParams.toString()}`, RedirectType.replace);
+    return `/migrate?${queryParams.toString()}`;
   }
   try {
     // emailの最初の.より前の部分をperiodとして使用
@@ -38,12 +37,6 @@ export const submitMigration = async (formData: FormData) => {
     );
     const verifyData = await verifyRes.json();
     if (!verifyRes.ok || verifyData.status !== 200) {
-      console.log(
-        `${process.env.GAS_MIGRATE_API_URL}?external_email=${encodeURIComponent(
-          external_email,
-        )}&internal_email=${encodeURIComponent(internalEmail)}`,
-      );
-      console.log("Migration verification failed:", verifyData);
       throw AuthenticationErrors.MigrationError;
     }
 
@@ -73,8 +66,8 @@ export const submitMigration = async (formData: FormData) => {
       agreeTos: agreeTos ? "1" : "0",
       error: errorCode,
     });
-    redirect(`/migrate?${queryParams.toString()}`, RedirectType.replace);
+    return `/migrate?${queryParams.toString()}`;
   }
 
-  redirect("/signin?migration=1", RedirectType.replace);
+  return "/signin?migration=1";
 };

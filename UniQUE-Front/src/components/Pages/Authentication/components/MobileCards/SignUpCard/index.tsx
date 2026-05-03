@@ -8,6 +8,7 @@ import FormLabel from "@mui/material/FormLabel";
 import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useInitialFormState } from "../../../Client";
 import { submitSignUp } from "../../actions/signUp";
@@ -131,6 +132,8 @@ export default function SignUpCard() {
     return isValid;
   };
 
+  const router = useRouter();
+
   return (
     <SignInContainer direction="column" justifyContent="space-between">
       <Card variant="outlined">
@@ -155,8 +158,9 @@ export default function SignUpCard() {
           }}
           action={async (formdata: FormData) => {
             setInProgress(true);
-            await submitSignUp(formdata);
+            const path = await submitSignUp(formdata);
             setInProgress(false);
+            router.push(path);
           }}
         >
           <FormControl>

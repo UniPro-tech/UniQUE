@@ -8,6 +8,7 @@ import FormLabel from "@mui/material/FormLabel";
 import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useInitialFormState } from "../../../Client";
 import { submitMigration } from "../../actions/migration";
@@ -116,6 +117,8 @@ export default function MigrationCard() {
     return isValid;
   };
 
+  const router = useRouter();
+
   return (
     <SignInContainer direction="column" justifyContent="space-between">
       <Card variant="outlined">
@@ -140,8 +143,9 @@ export default function MigrationCard() {
           }}
           action={async (formdata: FormData) => {
             setInProgress(true);
-            await submitMigration(formdata);
+            const path = await submitMigration(formdata);
             setInProgress(false);
+            router.replace(path);
           }}
         >
           <FormControl>
@@ -264,7 +268,7 @@ export default function MigrationCard() {
             type="submit"
             fullWidth
             variant="contained"
-            onClick={validateInputs}
+            onSubmit={validateInputs}
             disabled={inProgress}
           >
             {!inProgress ? "サインアップ" : "サインアップ中..."}

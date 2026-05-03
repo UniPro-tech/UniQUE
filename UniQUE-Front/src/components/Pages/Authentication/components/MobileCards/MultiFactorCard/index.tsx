@@ -5,7 +5,7 @@ import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { RedirectType, redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useInitialFormState, useRedirectTo } from "../../../Client";
 import { submitSignIn } from "../../actions/signIn";
@@ -17,6 +17,8 @@ export default function MultiFactorCard() {
   const redirectTo = useRedirectTo();
 
   const [inProgress, setInProgress] = useState(false);
+
+  const router = useRouter();
 
   return (
     <Card variant="outlined">
@@ -38,7 +40,7 @@ export default function MultiFactorCard() {
           setInProgress(true);
           const result = await submitSignIn(data);
           if (result.redirectTo) {
-            redirect(result.redirectTo, RedirectType.push);
+            router.push(result.redirectTo);
           }
           setInProgress(false);
         }}

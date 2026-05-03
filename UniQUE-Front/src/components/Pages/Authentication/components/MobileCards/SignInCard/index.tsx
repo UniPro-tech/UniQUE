@@ -8,7 +8,7 @@ import FormLabel from "@mui/material/FormLabel";
 import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { RedirectType, redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useInitialFormState, useRedirectTo } from "../../../Client";
 import { submitSignIn } from "../../actions/signIn";
@@ -44,6 +44,8 @@ export default function SignInCard() {
     return isValid;
   };
 
+  const router = useRouter();
+
   return (
     <Card variant="outlined">
       <Box sx={{ display: { xs: "flex", md: "none" } }}>
@@ -64,7 +66,7 @@ export default function SignInCard() {
           setInProgress(true);
           const result = await submitSignIn(data);
           if (result.redirectTo) {
-            redirect(result.redirectTo, RedirectType.push);
+            router.push(result.redirectTo);
           }
           setInProgress(false);
         }}
@@ -117,7 +119,7 @@ export default function SignInCard() {
           type="submit"
           fullWidth
           variant="contained"
-          onClick={validateInputs}
+          onSubmit={validateInputs}
           disabled={inProgress}
         >
           {!inProgress ? "サインイン" : "サインイン中..."}

@@ -76,7 +76,8 @@ services:
       db-migrate:
         condition: service_completed_successfully
     environment:
-      DB_DSN: "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&loc=Local"
+      DB_DSN: "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
+        c=Local"
       CONFIG_APP_NAME: UniQUE
       CONFIG_FRONTEND_URL: "http://localhost:3000"
       CONFIG_ISSUER_URL: "http://localhost:8000"
@@ -114,7 +115,8 @@ services:
       auth:
         condition: service_started
     environment:
-      DB_DSN: "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&loc=Local"
+      DB_DSN: "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
+        c=Local"
       CONFIG_APP_NAME: UniQUE
       CONFIG_FRONTEND_URL: "http://localhost:3000"
       CONFIG_ISSUER_URL: "http://localhost:8000"

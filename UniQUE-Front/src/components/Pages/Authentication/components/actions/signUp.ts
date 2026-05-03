@@ -1,5 +1,4 @@
 "use server";
-import { RedirectType, redirect } from "next/navigation";
 import { User } from "@/classes/User";
 
 export const submitSignUp = async (formData: FormData) => {
@@ -17,7 +16,7 @@ export const submitSignUp = async (formData: FormData) => {
       external_email,
       remember: remember ? "1" : "0",
     });
-    redirect(`/signup?${queryParams.toString()}`, RedirectType.replace);
+    return `/signup?${queryParams.toString()}`;
   }
 
   await User.create(
@@ -40,8 +39,8 @@ export const submitSignUp = async (formData: FormData) => {
       remember: remember ? "1" : "0",
       error: errorCode,
     });
-    redirect(`/signup?${queryParams.toString()}`, RedirectType.replace);
+    return `/signup?${queryParams.toString()}`;
   });
 
-  redirect("/signup/success", RedirectType.replace);
+  return `/signup/success`;
 };
