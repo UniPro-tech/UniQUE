@@ -243,6 +243,11 @@ func createUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// カスタムIDの検証
+	if !utils.IsValidCustomID(input.CustomID) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
+		return
+	}
 	// auth-server/internal/password_hash
 	req := map[string]string{
 		"password": input.Password,
@@ -506,6 +511,11 @@ func updateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// カスタムIDの検証
+	if input.CustomID != nil && !utils.IsValidCustomID(*input.CustomID) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
+		return
+	}
 	// apply updates to user
 	updates := map[string]interface{}{}
 	if input.Email != nil && *input.Email != user.Email {
@@ -740,6 +750,20 @@ func patchUser(c *gin.Context) {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+	// カスタムIDの検証
+	if body.CustomID.Set {
+		if body.CustomID.Value != nil {
+			if !utils.IsValidCustomID(*body.CustomID.Value) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
+				return
+			}
+			// custom_idを更新
+			if _, err := q.User.Where(query.User.ID.Eq(id)).Update(query.User.CustomID, *body.CustomID.Value); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		}
 	}
 	if body.Email.Set {
 		// メールアドレスの変更は管理者のみ可能

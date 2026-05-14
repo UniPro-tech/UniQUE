@@ -9,6 +9,7 @@ import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
+import { useSnackbar } from "notistack";
 import * as React from "react";
 import { useInitialFormState } from "../../../Client";
 import { submitSignUp } from "../../actions/signUp";
@@ -17,6 +18,7 @@ import { Card, SignInContainer } from "../Base";
 
 export default function SignUpCard() {
   const initialState = useInitialFormState();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
@@ -29,16 +31,16 @@ export default function SignUpCard() {
     React.useState("");
   const [usernameError, setUsernameError] = React.useState(false);
   const [usernameErrorMessage, setUsernameErrorMessage] = React.useState(
-    "カスタムIDは半角英数字とアンダースコアのみで設定してください。",
+    "カスタムIDは半角英数字とアンダースコア、ハイフンのみ、3-30文字で設定してください。",
   );
   const [agreeTosError, setAgreeTosError] = React.useState(false);
   const [agreeTosErrorMessage, setAgreeTosErrorMessage] = React.useState("");
 
   const [inProgress, setInProgress] = React.useState(false);
 
-  const validateInputs = () => {
+  const validateInputs = (e: React.SubmitEvent<HTMLFormElement>) => {
     setInProgress(true);
-    const email = document.getElementById("email") as HTMLInputElement;
+    const email = document.getElementById("external_email") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
     const confirmPassword = document.getElementById(
       "confirm_password",
@@ -49,14 +51,14 @@ export default function SignUpCard() {
 
     if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
       setEmailError(true);
-      setEmailErrorMessage("有効なメールアドレスを入力してください。");
+      setEmailErrorMessage("Please enter a valid email address.");
       isValid = false;
     } else {
       setEmailError(false);
       setEmailErrorMessage("");
     }
 
-    if (!password.value || password.value.length < 6) {
+    if (!password.value || password.value.length < 8) {
       setPasswordError(true);
       setPasswordErrorMessage("パスワードは8文字以上で設定してください。");
       isValid = false;
@@ -67,43 +69,43 @@ export default function SignUpCard() {
 
     if (confirmPassword.value !== password.value) {
       setConfirmPasswordError(true);
-      setConfirmPasswordErrorMessage("パスワードが一致しません。");
+      setConfirmPasswordErrorMessage("Passwords do not match.");
       isValid = false;
     } else {
       setConfirmPasswordError(false);
       setConfirmPasswordErrorMessage("");
     }
 
-    if (!username.value || !/^[a-zA-Z0-9_]+$/.test(username.value)) {
+    if (!username.value || !/^[a-zA-Z0-9_-]{3,30}$/.test(username.value)) {
       // カスタムIDが空であるか、半角英数字とアンダースコア以外の文字が含まれている場合はエラー
       setUsernameError(true);
       setUsernameErrorMessage(
-        "カスタムIDは半角英数字とアンダースコアのみで設定してください。",
+        "カスタムIDは半角英数字とアンダースコア、ハイフンのみ、3-30文字で設定してください。",
       );
       isValid = false;
     } else {
       setUsernameError(false);
       setUsernameErrorMessage(
-        "カスタムIDは半角英数字とアンダースコアのみで設定してください。",
+        "カスタムIDは半角英数字とアンダースコア、ハイフンのみ、3-30文字で設定してください。",
       );
     }
 
-    // もし数字や_のみであればエラー
-    if (/^[0-9_]+$/.test(username.value)) {
+    // もし数字や_-のみであればエラー
+    if (/^[0-9_-]+$/.test(username.value)) {
       setUsernameError(true);
       setUsernameErrorMessage("カスタムIDは半角英字も含めて設定してください。");
       isValid = false;
     }
 
-    // 先頭の文字が数字や_であればエラー
-    if (/^[0-9_]/.test(username.value)) {
+    // 先頭の文字が数字や_-であればエラー
+    if (/^[0-9_-]/.test(username.value)) {
       setUsernameError(true);
       setUsernameErrorMessage("カスタムIDの先頭は半角英字で設定してください。");
       isValid = false;
     }
 
-    // 最後の文字が_であればエラー
-    if (/_$/.test(username.value)) {
+    // 最後の文字が_-であればエラー
+    if (/[_-]$/.test(username.value)) {
       setUsernameError(true);
       setUsernameErrorMessage(
         "カスタムIDの最後は半角英字または数字で設定してください。",
@@ -111,9 +113,7 @@ export default function SignUpCard() {
       isValid = false;
     }
 
-    const agreeTos = document.querySelector(
-      'input[name="agreeTos"]',
-    ) as HTMLInputElement;
+    const agreeTos = document.getElementById("agreeTos") as HTMLInputElement;
     if (!agreeTos.checked) {
       setAgreeTosError(true);
       setAgreeTosErrorMessage(
@@ -126,10 +126,13 @@ export default function SignUpCard() {
         "利用規約、プライバシーポリシー、サークル規約に同意してください。",
       );
     }
-
-    if (!isValid) setInProgress(false);
-
-    return isValid;
+    if (!isValid) {
+      setInProgress(false);
+      enqueueSnackbar("入力にエラーがあります。内容を確認してください。", {
+        variant: "error",
+      });
+      e.preventDefault();
+    }
   };
 
   const router = useRouter();
@@ -162,6 +165,7 @@ export default function SignUpCard() {
             setInProgress(false);
             router.push(path);
           }}
+          onSubmit={validateInputs}
         >
           <FormControl>
             <FormLabel htmlFor="name">お名前</FormLabel>
@@ -256,7 +260,7 @@ export default function SignUpCard() {
             />
           </FormControl>
           <FormControlLabel
-            control={<Checkbox value="agreeTos" color="primary" />}
+            control={<Checkbox id="agreeTos" color="primary" />}
             label={
               <>
                 <Link href="/terms" target="_blank">
@@ -281,7 +285,6 @@ export default function SignUpCard() {
             type="submit"
             fullWidth
             variant="contained"
-            onClick={validateInputs}
             disabled={inProgress}
           >
             {!inProgress ? "サインアップ" : "サインアップ中..."}

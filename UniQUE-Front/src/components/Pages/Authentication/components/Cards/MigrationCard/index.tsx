@@ -166,14 +166,13 @@ export default function MigrationCard() {
             id="name"
             type="text"
             name="name"
-            placeholder="your name"
+            placeholder="ゆに太郎"
             defaultValue={initialState?.name}
             autoComplete="name"
             autoFocus
             required
             fullWidth
             variant="outlined"
-            color={emailError ? "error" : "primary"}
           />
         </FormControl>
         <FormControl>
