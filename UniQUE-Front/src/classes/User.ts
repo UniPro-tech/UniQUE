@@ -132,6 +132,22 @@ export class User {
     },
     password: string,
   ): Promise<User> {
+    // カスタムIDは英数と_-のみ許可、3文字以上30文字以下
+    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(userData.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDは数字や_のみであればエラー
+    if (/^[0-9_-]+$/.test(userData.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDの先頭の文字が数字や_、-であればエラー
+    if (/^[0-9_-]/.test(userData.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDの最後の文字が_もしくは-であればエラー
+    if (/[_-]$/.test(userData.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
     const response = await apiPost("/internal/users", {
       ...userData,
       profile: {
@@ -199,6 +215,25 @@ export class User {
       Omit<UserData, "id" | "createdAt" | "updatedAt" | "deletedAt">
     >,
   ): Promise<User> {
+    // カスタムIDは英数と_-のみ許可、3文字以上30文字以下
+    if (
+      updateData.customId &&
+      !/^[a-zA-Z0-9_-]{3,30}$/.test(updateData.customId)
+    ) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDは数字や_のみであればエラー
+    if (updateData.customId && /^[0-9_-]+$/.test(updateData.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDの先頭の文字が数字や_、-であればエラー
+    if (updateData.customId && /^[0-9_-]/.test(updateData.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDの最後の文字が_もしくは-であればエラー
+    if (updateData.customId && /[_-]$/.test(updateData.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
     const response = await apiPatch(`/users/${id}`, updateData);
     if (!response.ok) {
       console.error("Failed to update user:", await response.text());
@@ -295,6 +330,22 @@ export class User {
   async save(): Promise<void> {
     if (this.isDeleted) {
       throw new Error("Cannot save a deleted user.");
+    }
+    // カスタムIDは英数と_-のみ許可、3文字以上30文字以下
+    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(this.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDは数字や_のみであればエラー
+    if (/^[0-9_-]+$/.test(this.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDの先頭の文字が数字や_、-であればエラー
+    if (/^[0-9_-]/.test(this.customId)) {
+      throw FrontendErrors.InvalidInput;
+    }
+    // カスタムIDの最後の文字が_もしくは-であればエラー
+    if (/[_-]$/.test(this.customId)) {
+      throw FrontendErrors.InvalidInput;
     }
     const updateData: Partial<
       Omit<UserData, "id" | "createdAt" | "updatedAt" | "deletedAt">

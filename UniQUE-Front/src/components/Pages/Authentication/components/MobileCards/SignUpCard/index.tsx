@@ -9,6 +9,7 @@ import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
+import { useSnackbar } from "notistack";
 import * as React from "react";
 import { useInitialFormState } from "../../../Client";
 import { submitSignUp } from "../../actions/signUp";
@@ -17,6 +18,7 @@ import { Card, SignInContainer } from "../Base";
 
 export default function SignUpCard() {
   const initialState = useInitialFormState();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
@@ -29,7 +31,7 @@ export default function SignUpCard() {
     React.useState("");
   const [usernameError, setUsernameError] = React.useState(false);
   const [usernameErrorMessage, setUsernameErrorMessage] = React.useState(
-    "カスタムIDは半角英数字とアンダースコアのみで設定してください。",
+    "カスタムIDは半角英数字とアンダースコアのみ、3-30文字で設定してください。",
   );
   const [agreeTosError, setAgreeTosError] = React.useState(false);
   const [agreeTosErrorMessage, setAgreeTosErrorMessage] = React.useState("");
@@ -56,7 +58,7 @@ export default function SignUpCard() {
       setEmailErrorMessage("");
     }
 
-    if (!password.value || password.value.length < 6) {
+    if (!password.value || password.value.length < 8) {
       setPasswordError(true);
       setPasswordErrorMessage("パスワードは8文字以上で設定してください。");
       isValid = false;
@@ -74,36 +76,36 @@ export default function SignUpCard() {
       setConfirmPasswordErrorMessage("");
     }
 
-    if (!username.value || !/^[a-zA-Z0-9_]+$/.test(username.value)) {
+    if (!username.value || !/^[a-zA-Z0-9_-]{3,30}$/.test(username.value)) {
       // カスタムIDが空であるか、半角英数字とアンダースコア以外の文字が含まれている場合はエラー
       setUsernameError(true);
       setUsernameErrorMessage(
-        "カスタムIDは半角英数字とアンダースコアのみで設定してください。",
+        "カスタムIDは半角英数字とアンダースコア、ハイフンのみ、3-30文字で設定してください。",
       );
       isValid = false;
     } else {
       setUsernameError(false);
       setUsernameErrorMessage(
-        "カスタムIDは半角英数字とアンダースコアのみで設定してください。",
+        "カスタムIDは半角英数字とアンダースコア、ハイフンのみ、3-30文字で設定してください。",
       );
     }
 
-    // もし数字や_のみであればエラー
-    if (/^[0-9_]+$/.test(username.value)) {
+    // もし数字や_-のみであればエラー
+    if (/^[0-9_-]+$/.test(username.value)) {
       setUsernameError(true);
       setUsernameErrorMessage("カスタムIDは半角英字も含めて設定してください。");
       isValid = false;
     }
 
-    // 先頭の文字が数字や_であればエラー
-    if (/^[0-9_]/.test(username.value)) {
+    // 先頭の文字が数字や_-であればエラー
+    if (/^[0-9_-]/.test(username.value)) {
       setUsernameError(true);
       setUsernameErrorMessage("カスタムIDの先頭は半角英字で設定してください。");
       isValid = false;
     }
 
-    // 最後の文字が_であればエラー
-    if (/_$/.test(username.value)) {
+    // 最後の文字が_-であればエラー
+    if (/[_-]$/.test(username.value)) {
       setUsernameError(true);
       setUsernameErrorMessage(
         "カスタムIDの最後は半角英字または数字で設定してください。",
@@ -127,7 +129,12 @@ export default function SignUpCard() {
       );
     }
 
-    if (!isValid) setInProgress(false);
+    if (!isValid) {
+      enqueueSnackbar("入力にエラーがあります。内容を確認してください。", {
+        variant: "error",
+      });
+      setInProgress(false);
+    }
 
     return isValid;
   };

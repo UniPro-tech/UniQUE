@@ -243,6 +243,11 @@ func createUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// カスタムIDの検証
+	if !utils.IsValidCustomID(input.CustomID) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
+		return
+	}
 	// auth-server/internal/password_hash
 	req := map[string]string{
 		"password": input.Password,
@@ -506,6 +511,11 @@ func updateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// カスタムIDの検証
+	if !utils.IsValidCustomID(*input.CustomID) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
+		return
+	}
 	// apply updates to user
 	updates := map[string]interface{}{}
 	if input.Email != nil && *input.Email != user.Email {
@@ -739,6 +749,11 @@ func patchUser(c *gin.Context) {
 	var body PatchUserRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// カスタムIDの検証
+	if !utils.IsValidCustomID(*body.CustomID.Value) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
 		return
 	}
 	if body.Email.Set {
