@@ -132,8 +132,8 @@ export class User {
     },
     password: string,
   ): Promise<User> {
-    // カスタムIDは英数と_-のみ許可、3文字以上20文字以下
-    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(userData.customId)) {
+    // カスタムIDは英数と_-のみ許可、3文字以上30文字以下
+    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(userData.customId)) {
       throw FrontendErrors.InvalidInput;
     }
     // カスタムIDは数字や_のみであればエラー

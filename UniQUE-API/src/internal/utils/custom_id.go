@@ -1,7 +1,7 @@
 package utils
 
 func IsValidCustomID(id string) bool {
-	if len(id) < 3 || len(id) > 20 {
+	if len(id) < 3 || len(id) > 30 {
 		return false
 	}
 	// 先頭と末尾は英数字でなければならない
