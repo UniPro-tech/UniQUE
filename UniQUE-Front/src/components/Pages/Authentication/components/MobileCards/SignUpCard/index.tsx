@@ -260,7 +260,7 @@ export default function SignUpCard() {
             />
           </FormControl>
           <FormControlLabel
-            control={<Checkbox value="agreeTos" color="primary" />}
+            control={<Checkbox id="agreeTos" color="primary" />}
             label={
               <>
                 <Link href="/terms" target="_blank">
