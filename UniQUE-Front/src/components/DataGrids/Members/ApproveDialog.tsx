@@ -93,8 +93,20 @@ export default function ApproveRegistApplyDialog({
               required
               fullWidth
               variant="outlined"
-              value={!isManual ? email : undefined}
-              onChange={(_) => setIsManual(true)}
+             <TextField
+               label="メールアドレス"
+               type="email"
+               name="email"
+               required
+               fullWidth
+               variant="outlined"
+               value={email}
+               onChange={(e) => {
+                 setEmail(e.target.value);
+                 setIsManual(true);
+               }}
+               placeholder="メールアドレスを入力してください"
+             />
               placeholder="メールアドレスを入力してください"
             />
             <FormHelperText>
