@@ -1,3 +1,4 @@
+"use client";
 import { Alert, FormHelperText, TextField } from "@mui/material";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -23,6 +24,16 @@ export default function ApproveRegistApplyDialog({
   handleClose,
   user,
 }: ApproveRegistApplyProps) {
+  const [email, setEmail] = React.useState("");
+  const [isManual, setIsManual] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setEmail("");
+      setIsManual(false);
+    }
+  }, [open]);
+
   const [state, action, isPending] = React.useActionState(
     approveAction,
     null as null | FormStatus,
@@ -67,7 +78,15 @@ export default function ApproveRegistApplyDialog({
               下記の情報を入力後、承認ボタンを押してください。
             </DialogContentText>
             <input type="hidden" name="userId" value={user?.id || ""} />
-            <PeriodSelectorOptions />
+            <PeriodSelectorOptions
+              onChange={(e) => {
+                if (!isManual && user) {
+                  setEmail(
+                    `${e.target.value as string}.${user?.customId}@uniproject.jp`,
+                  );
+                }
+              }}
+            />
             <TextField
               label="メールアドレス"
               type="email"
@@ -75,8 +94,12 @@ export default function ApproveRegistApplyDialog({
               required
               fullWidth
               variant="outlined"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setIsManual(true);
+              }}
               placeholder="メールアドレスを入力してください"
-              defaultValue={user?.email || ""}
             />
             <FormHelperText>
               メールアドレスはtemp_を削除し、(所属期).xxxxx@uniproject.jpの形式としてください。

@@ -5,6 +5,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  type SelectChangeEvent,
   Typography,
 } from "@mui/material";
 import { useMemo } from "react";
@@ -18,7 +19,13 @@ import {
  *　所属期の選択肢を生成するコンポーネント
  * @returns React.JSX 所属期のMenuItem
  */
-export default function PeriodSelectorOptions() {
+export default function PeriodSelectorOptions({
+  onChange,
+}: {
+  onChange?:
+    | ((event: SelectChangeEvent, child: React.ReactNode) => void)
+    | undefined;
+}) {
   // 所属期のオプション配列をメモ化
   const affiliationPeriodValueOptionsArray = useMemo(
     () => getSelectableAffiliationPeriods(),
@@ -39,6 +46,7 @@ export default function PeriodSelectorOptions() {
         variant="outlined"
         required
         sx={{ display: "flex", flexDirection: "row" }}
+        onChange={onChange}
       >
         {affiliationPeriodValueOptionsArray.map((p) => {
           const period = p.value;

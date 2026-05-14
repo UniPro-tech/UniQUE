@@ -48,7 +48,7 @@ export const approveAction = async (
       affiliationPeriod: period,
       sakuraEmailPassword: mailboxPassword,
       email: email,
-      force: force == "true",
+      force: force === "true",
     });
     return {
       status: "success",
@@ -61,5 +61,4 @@ export const approveAction = async (
       message: "メンバーの承認に失敗しました。",
     };
   }
-  return null;
 };
