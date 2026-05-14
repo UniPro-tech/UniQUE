@@ -79,11 +79,13 @@ export default function ApproveRegistApplyDialog({
             </DialogContentText>
             <input type="hidden" name="userId" value={user?.id || ""} />
             <PeriodSelectorOptions
-              onChange={(e) =>
-                setEmail(
-                  `${e.target.value as string}.${user?.customId}@uniproject.jp`,
-                )
-              }
+              onChange={(e) => {
+                if (!isManual && user) {
+                  setEmail(
+                    `${e.target.value as string}.${user?.customId}@uniproject.jp`,
+                  );
+                }
+              }}
             />
             <TextField
               label="メールアドレス"

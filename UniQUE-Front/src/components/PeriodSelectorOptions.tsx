@@ -5,9 +5,10 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  type SelectChangeEvent,
   Typography,
 } from "@mui/material";
-import { type ChangeEvent, useMemo } from "react";
+import { useMemo } from "react";
 import {
   getAffiliationPeriodInfo,
   getSelectableAffiliationPeriods,
@@ -22,17 +23,7 @@ export default function PeriodSelectorOptions({
   onChange,
 }: {
   onChange?:
-    | ((
-        event:
-          | ChangeEvent<HTMLInputElement, Element>
-          | (Event & {
-              target: {
-                value: unknown;
-                name: string;
-              };
-            }),
-        child: React.ReactNode,
-      ) => void)
+    | ((event: SelectChangeEvent, child: React.ReactNode) => void)
     | undefined;
 }) {
   // 所属期のオプション配列をメモ化

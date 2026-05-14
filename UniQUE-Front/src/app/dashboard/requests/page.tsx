@@ -39,7 +39,7 @@ export default async function Page() {
         <Typography variant="h5">メンバー申請一覧</Typography>
         <Typography variant="body1">メンバー申請一覧です。</Typography>
       </Stack>
-      <MembersDataGrid rows={rows} beforeJoined />
+      <MembersDataGrid rows={rows} beforeJoined canRead={true} />
     </Stack>
   );
 }
