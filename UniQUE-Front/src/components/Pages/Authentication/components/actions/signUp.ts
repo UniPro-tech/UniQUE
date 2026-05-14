@@ -1,7 +1,8 @@
 "use server";
 import { User } from "@/classes/User";
 
-export const submitSignUp = async (formData: FormData) => {
+export const submitSignUp = async (formData: FormData): Promise<string> => {
+  console.log("Submitting sign-up form...");
   const external_email = formData.get("external_email") as string;
   const username = formData.get("username") as string;
   const name = formData.get("name") as string;
@@ -19,18 +20,21 @@ export const submitSignUp = async (formData: FormData) => {
     return `/signup?${queryParams.toString()}`;
   }
 
-  await User.create(
-    {
-      email: `temp_${Date.now()}@uniproject.jp`,
-      externalEmail: external_email,
-      customId: username,
-      profile: {
-        displayName: name,
+  try {
+    await User.create(
+      {
+        email: `temp_${Date.now()}@uniproject.jp`,
+        externalEmail: external_email,
+        customId: username,
+        profile: {
+          displayName: name,
+        },
       },
-    },
-    password,
-  ).catch((error) => {
-    const errorCodeMatch = error.message.match(/\[(.*?)\]/);
+      password,
+    );
+    return `/signup/success`;
+  } catch (error) {
+    const errorCodeMatch = (error as Error).message.match(/\[(.*?)\]/);
     const errorCode = errorCodeMatch ? errorCodeMatch[1] : "E0001";
     const queryParams = new URLSearchParams({
       username,
@@ -40,7 +44,5 @@ export const submitSignUp = async (formData: FormData) => {
       error: errorCode,
     });
     return `/signup?${queryParams.toString()}`;
-  });
-
-  return `/signup/success`;
+  }
 };

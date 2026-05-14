@@ -163,6 +163,7 @@ export class User {
       password,
     });
     if (!response.ok) {
+      console.log("Failed to create user:", await response.text());
       switch (response.status) {
         case 400: {
           const errorText = await response.json();
@@ -194,6 +195,7 @@ export class User {
       }
     }
     const responseJson = await response.json();
+    console.log("User created successfully:", responseJson);
     return User.fromJson(responseJson);
   }
 

@@ -76,7 +76,8 @@ services:
       db-migrate:
         condition: service_completed_successfully
     environment:
-      DB_DSN: "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
+      DB_DSN:
+        "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
         c=Local"
       CONFIG_APP_NAME: UniQUE
       CONFIG_FRONTEND_URL: "http://localhost:3000"
@@ -115,7 +116,8 @@ services:
       auth:
         condition: service_started
     environment:
-      DB_DSN: "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
+      DB_DSN:
+        "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
         c=Local"
       CONFIG_APP_NAME: UniQUE
       CONFIG_FRONTEND_URL: "http://localhost:3000"
@@ -166,43 +168,6 @@ services:
   # Frontend (Next.js / Bun)
   # Port 3000
   # ──────────────────────────────────────────────
-  front:
-    build:
-      context: ./UniQUE-Front
-      dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-    container_name: unique-front
-    depends_on:
-      auth:
-        condition: service_started
-      api:
-        condition: service_started
-    environment:
-      AUTH_API_URL: "http://auth:8080"
-      NEXT_PUBLIC_AUTH_API_URL: "http://localhost:8000"
-      RESOURCE_API_URL: "http://api:8080"
-      NEXT_PUBLIC_RESOURCE_API_URL: "http://localhost:8001"
-      DISCORD_CLIENT_ID: ""
-      DISCORD_CLIENT_SECRET: ""
-      DISCORD_REDIRECT_URI: "http://localhost:3000/api/oauth/discord/callback"
-      DISCORD_GUILD_ID: ""
-      DISCORD_BOT_TOKEN: ""
-      DISCORD_MEMBER_ROLE_ID: ""
-      GAS_MIGRATE_API_URL: ""
-      MAIL_HOST: mailpit
-      MAIL_PORT: "1025"
-      MAIL_SECURE: "false"
-      MAIL_USER: ""
-      MAIL_PASS: ""
-      MAIL_FROM_NAME: "UniQUE Dev"
-      MAIL_FROM_EMAIL: "noreply@unique.local"
-      MAIL_ENVELOPE_FROM: "noreply@unique.local"
-      RESOURCE_API_KEY: "KE8B6ZXdVjMdsjRAmZu53EKa8UJ7MLcWBWerFREF"
-    ports:
-      - "3000:3000"
-    networks:
-      - unique
 
   # ──────────────────────────────────────────────
   # Dev Tools

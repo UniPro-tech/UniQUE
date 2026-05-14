@@ -35,9 +35,9 @@ export default function SignUpCard() {
   const [agreeTosErrorMessage, setAgreeTosErrorMessage] = React.useState("");
   const [inProgress, setInProgress] = React.useState(false);
 
-  const validateInputs = () => {
+  const validateInputs = (e: React.MouseEvent<HTMLButtonElement>) => {
     setInProgress(true);
-    const email = document.getElementById("email") as HTMLInputElement;
+    const email = document.getElementById("external_email") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
     const confirmPassword = document.getElementById(
       "confirm_password",
@@ -110,9 +110,7 @@ export default function SignUpCard() {
       isValid = false;
     }
 
-    const agreeTos = document.querySelector(
-      'input[name="agreeTos"]',
-    ) as HTMLInputElement;
+    const agreeTos = document.getElementById("agreeTos") as HTMLInputElement;
     if (!agreeTos.checked) {
       setAgreeTosError(true);
       setAgreeTosErrorMessage(
@@ -126,10 +124,11 @@ export default function SignUpCard() {
       );
     }
     if (!isValid) {
+      setInProgress(false);
       enqueueSnackbar("入力にエラーがあります。内容を確認してください。", {
         variant: "error",
       });
-      setInProgress(false);
+      e.preventDefault();
     }
     return isValid;
   };
@@ -182,7 +181,7 @@ export default function SignUpCard() {
             id="name"
             type="text"
             name="name"
-            placeholder="your name"
+            placeholder="ゆに太郎"
             defaultValue={initialState?.name}
             autoComplete="name"
             autoFocus
@@ -266,7 +265,7 @@ export default function SignUpCard() {
           />
         </FormControl>
         <FormControlLabel
-          control={<Checkbox value="agreeTos" color="primary" />}
+          control={<Checkbox id="agreeTos" color="primary" />}
           label={
             <>
               <Link href="/terms" target="_blank">
@@ -291,7 +290,7 @@ export default function SignUpCard() {
           type="submit"
           fullWidth
           variant="contained"
-          onSubmit={validateInputs}
+          onClick={validateInputs}
           disabled={inProgress}
         >
           {!inProgress ? "サインアップ" : "サインアップ中..."}

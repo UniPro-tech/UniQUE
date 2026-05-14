@@ -38,9 +38,9 @@ export default function SignUpCard() {
 
   const [inProgress, setInProgress] = React.useState(false);
 
-  const validateInputs = () => {
+  const validateInputs = (e: React.MouseEvent<HTMLButtonElement>) => {
     setInProgress(true);
-    const email = document.getElementById("email") as HTMLInputElement;
+    const email = document.getElementById("external_email") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
     const confirmPassword = document.getElementById(
       "confirm_password",
@@ -51,7 +51,7 @@ export default function SignUpCard() {
 
     if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
       setEmailError(true);
-      setEmailErrorMessage("有効なメールアドレスを入力してください。");
+      setEmailErrorMessage("Please enter a valid email address.");
       isValid = false;
     } else {
       setEmailError(false);
@@ -69,7 +69,7 @@ export default function SignUpCard() {
 
     if (confirmPassword.value !== password.value) {
       setConfirmPasswordError(true);
-      setConfirmPasswordErrorMessage("パスワードが一致しません。");
+      setConfirmPasswordErrorMessage("Passwords do not match.");
       isValid = false;
     } else {
       setConfirmPasswordError(false);
@@ -113,9 +113,7 @@ export default function SignUpCard() {
       isValid = false;
     }
 
-    const agreeTos = document.querySelector(
-      'input[name="agreeTos"]',
-    ) as HTMLInputElement;
+    const agreeTos = document.getElementById("agreeTos") as HTMLInputElement;
     if (!agreeTos.checked) {
       setAgreeTosError(true);
       setAgreeTosErrorMessage(
@@ -128,14 +126,13 @@ export default function SignUpCard() {
         "利用規約、プライバシーポリシー、サークル規約に同意してください。",
       );
     }
-
     if (!isValid) {
+      setInProgress(false);
       enqueueSnackbar("入力にエラーがあります。内容を確認してください。", {
         variant: "error",
       });
-      setInProgress(false);
+      e.preventDefault();
     }
-
     return isValid;
   };
 
