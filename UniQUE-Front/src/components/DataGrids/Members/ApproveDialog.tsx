@@ -26,6 +26,15 @@ export default function ApproveRegistApplyDialog({
 }: ApproveRegistApplyProps) {
   const [email, setEmail] = React.useState("");
   const [isManual, setIsManual] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setEmail("");
+      setIsManual(false);
+    }
+  }, [open]);
+
+  const [state, action, isPending] = React.useActionState(
   const [state, action, isPending] = React.useActionState(
     approveAction,
     null as null | FormStatus,
