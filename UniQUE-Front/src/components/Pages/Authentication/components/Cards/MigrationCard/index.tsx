@@ -173,7 +173,6 @@ export default function MigrationCard() {
             required
             fullWidth
             variant="outlined"
-            color={emailError ? "error" : "primary"}
           />
         </FormControl>
         <FormControl>
