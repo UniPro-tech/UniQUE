@@ -34,7 +34,8 @@ export const submitSignUp = async (formData: FormData): Promise<string> => {
     );
     return `/signup/success`;
   } catch (error) {
-    const errorCodeMatch = (error as Error).message.match(/\[(.*?)\]/);
+    const message = error instanceof Error ? error.message : "";
+    const errorCodeMatch = message.match(/\[(.*?)\]/);
     const errorCode = errorCodeMatch ? errorCodeMatch[1] : "E0001";
     const queryParams = new URLSearchParams({
       username,
