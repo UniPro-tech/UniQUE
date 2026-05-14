@@ -512,7 +512,7 @@ func updateUser(c *gin.Context) {
 		return
 	}
 	// カスタムIDの検証
-	if !utils.IsValidCustomID(*input.CustomID) {
+	if input.CustomID != nil && !utils.IsValidCustomID(*input.CustomID) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
 		return
 	}
@@ -752,9 +752,18 @@ func patchUser(c *gin.Context) {
 		return
 	}
 	// カスタムIDの検証
-	if !utils.IsValidCustomID(*body.CustomID.Value) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
-		return
+	if body.CustomID.Set {
+		if body.CustomID.Value != nil {
+			if !utils.IsValidCustomID(*body.CustomID.Value) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
+				return
+			}
+			// custom_idを更新
+			if _, err := q.User.Where(query.User.ID.Eq(id)).Update(query.User.CustomID, *body.CustomID.Value); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		}
 	}
 	if body.Email.Set {
 		// メールアドレスの変更は管理者のみ可能
