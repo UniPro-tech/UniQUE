@@ -48,7 +48,7 @@ export const approveAction = async (
       affiliationPeriod: period,
       sakuraEmailPassword: mailboxPassword,
       email: email,
-      force: force == "true",
+      force: force === "true",
     });
     return {
       status: "success",

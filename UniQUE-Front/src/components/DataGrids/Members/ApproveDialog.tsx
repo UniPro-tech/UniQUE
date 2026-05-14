@@ -35,7 +35,6 @@ export default function ApproveRegistApplyDialog({
   }, [open]);
 
   const [state, action, isPending] = React.useActionState(
-  const [state, action, isPending] = React.useActionState(
     approveAction,
     null as null | FormStatus,
   );
@@ -93,20 +92,11 @@ export default function ApproveRegistApplyDialog({
               required
               fullWidth
               variant="outlined"
-             <TextField
-               label="メールアドレス"
-               type="email"
-               name="email"
-               required
-               fullWidth
-               variant="outlined"
-               value={email}
-               onChange={(e) => {
-                 setEmail(e.target.value);
-                 setIsManual(true);
-               }}
-               placeholder="メールアドレスを入力してください"
-             />
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setIsManual(true);
+              }}
               placeholder="メールアドレスを入力してください"
             />
             <FormHelperText>
