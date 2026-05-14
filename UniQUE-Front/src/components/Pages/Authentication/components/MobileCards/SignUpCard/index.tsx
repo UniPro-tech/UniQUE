@@ -31,7 +31,7 @@ export default function SignUpCard() {
     React.useState("");
   const [usernameError, setUsernameError] = React.useState(false);
   const [usernameErrorMessage, setUsernameErrorMessage] = React.useState(
-    "カスタムIDは半角英数字とアンダースコアのみ、3-30文字で設定してください。",
+    "カスタムIDは半角英数字とアンダースコア、ハイフンのみ、3-30文字で設定してください。",
   );
   const [agreeTosError, setAgreeTosError] = React.useState(false);
   const [agreeTosErrorMessage, setAgreeTosErrorMessage] = React.useState("");
