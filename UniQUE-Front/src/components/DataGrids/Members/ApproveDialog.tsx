@@ -81,9 +81,8 @@ export default function ApproveRegistApplyDialog({
             <PeriodSelectorOptions
               onChange={(e) => {
                 if (!isManual && user) {
-                  setEmail(
-                    `${e.target.value as string}.${user?.customId}@uniproject.jp`,
-                  );
+                  const generatedEmail =`${e.target.value as string}.${user?.customId}@uniproject.jp`;
+                  setEmail(generatedEmail.toLowerCase());
                 }
               }}
             />
@@ -96,7 +95,7 @@ export default function ApproveRegistApplyDialog({
               variant="outlined"
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value);
+                setEmail(e.target.value.toLowerCase());
                 setIsManual(true);
               }}
               placeholder="メールアドレスを入力してください"
