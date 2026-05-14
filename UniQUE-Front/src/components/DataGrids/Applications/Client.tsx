@@ -146,10 +146,19 @@ export default function ApplicationsDataGridClient({
         width: 200,
         flex: 1,
         renderCell: (params) => {
-          if (!params.value) return null;
+          const raw = String(params.value ?? "");
+          if (!raw) return null;
+          let safeHref: string;
+          try {
+            const parsed = new URL(raw);
+            if (!["http:", "https:"].includes(parsed.protocol)) return null;
+            safeHref = parsed.toString();
+          } catch {
+            return null;
+          }
           return (
             <MuiLink
-              href={params.value as string}
+              href={safeHref}
               target="_blank"
               rel="noopener noreferrer"
               sx={{ display: "flex", alignItems: "center", gap: 0.5 }}

@@ -147,9 +147,9 @@ export default function ApplicationEditForm({
         id: application.id,
         name: formData.name,
         description: formData.description,
-        websiteUrl: formData.websiteUrl,
-        privacyPolicyUrl: formData.privacyPolicyUrl,
-        termsUrl: formData.termsUrl,
+        websiteUrl: formData.websiteUrl.trim() || null,
+        privacyPolicyUrl: formData.privacyPolicyUrl.trim() || null,
+        termsUrl: formData.termsUrl.trim() || null,
       };
       if (clientSecret) {
         payload.clientSecret = clientSecret;
@@ -401,7 +401,19 @@ export default function ApplicationEditForm({
                 type="url"
                 value={formData.websiteUrl}
                 onChange={(e) => handleChange("websiteUrl", e.target.value)}
-                helperText="アプリケーションのWebサイトURL（任意）"
+                helperText={
+                  formData.websiteUrl &&
+                  (!/^https?:\/\//.test(formData.websiteUrl) ||
+                    formData.websiteUrl.length > 200)
+                    ? "アプリケーションのWebサイトURL（任意）"
+                    : "有効なURLを200文字以下で入力してください"
+                }
+                error={
+                  formData.websiteUrl
+                    ? !/^https?:\/\//.test(formData.websiteUrl) ||
+                      formData.websiteUrl.length > 200
+                    : false
+                }
                 disabled={loading}
               />
 
@@ -411,7 +423,19 @@ export default function ApplicationEditForm({
                 type="url"
                 value={formData.termsUrl}
                 onChange={(e) => handleChange("termsUrl", e.target.value)}
-                helperText="利用規約のURL（任意）"
+                helperText={
+                  formData.termsUrl &&
+                  (!/^https?:\/\//.test(formData.termsUrl) ||
+                    formData.termsUrl.length > 200)
+                    ? "利用規約のURL（任意）"
+                    : "有効なURLを200文字以下で入力してください"
+                }
+                error={
+                  formData.termsUrl
+                    ? !/^https?:\/\//.test(formData.termsUrl) ||
+                      formData.termsUrl.length > 200
+                    : false
+                }
                 disabled={loading}
               />
 
@@ -423,7 +447,19 @@ export default function ApplicationEditForm({
                 onChange={(e) =>
                   handleChange("privacyPolicyUrl", e.target.value)
                 }
-                helperText="プライバシーポリシーのURL（任意）"
+                helperText={
+                  formData.privacyPolicyUrl &&
+                  (!/^https?:\/\//.test(formData.privacyPolicyUrl) ||
+                    formData.privacyPolicyUrl.length > 200)
+                    ? "プライバシーポリシーのURL（任意）"
+                    : "有効なURLを200文字以下で入力してください"
+                }
+                error={
+                  formData.privacyPolicyUrl
+                    ? !/^https?:\/\//.test(formData.privacyPolicyUrl) ||
+                      formData.privacyPolicyUrl.length > 200
+                    : false
+                }
                 disabled={loading}
               />
 
