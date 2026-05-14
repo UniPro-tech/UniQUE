@@ -35,7 +35,7 @@ export default function SignUpCard() {
   const [agreeTosErrorMessage, setAgreeTosErrorMessage] = React.useState("");
   const [inProgress, setInProgress] = React.useState(false);
 
-  const validateInputs = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const validateInputs = (e: React.SubmitEvent<HTMLFormElement>) => {
     setInProgress(true);
     const email = document.getElementById("external_email") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
@@ -130,7 +130,6 @@ export default function SignUpCard() {
       });
       e.preventDefault();
     }
-    return isValid;
   };
 
   const router = useRouter();
@@ -173,6 +172,7 @@ export default function SignUpCard() {
           setInProgress(false);
           router.replace(path);
         }}
+        onSubmit={validateInputs}
       >
         <FormControl>
           <FormLabel htmlFor="name">お名前</FormLabel>
@@ -290,7 +290,6 @@ export default function SignUpCard() {
           type="submit"
           fullWidth
           variant="contained"
-          onClick={validateInputs}
           disabled={inProgress}
         >
           {!inProgress ? "サインアップ" : "サインアップ中..."}
