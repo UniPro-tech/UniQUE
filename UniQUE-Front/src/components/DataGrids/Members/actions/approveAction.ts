@@ -61,5 +61,4 @@ export const approveAction = async (
       message: "メンバーの承認に失敗しました。",
     };
   }
-  return null;
 };
