@@ -17,12 +17,14 @@ interface ApproveRegistApplyProps {
   open: boolean;
   handleClose: () => void;
   user: UserDataGridRowType | null;
+  deleteRowAction: (userId: string) => void;
 }
 
 export default function ApproveRegistApplyDialog({
   open,
   handleClose,
   user,
+  deleteRowAction,
 }: ApproveRegistApplyProps) {
   const [email, setEmail] = React.useState("");
   const [isManual, setIsManual] = React.useState(false);
@@ -56,7 +58,13 @@ export default function ApproveRegistApplyDialog({
           },
         }}
       >
-        <form action={action} id="approve-regist-apply-data-dialog">
+        <form
+          action={async (formdata: FormData) => {
+            action(formdata);
+            deleteRowAction(formdata.get("userId") as string);
+          }}
+          id="approve-regist-apply-data-dialog"
+        >
           <DialogTitle>メンバーの承認</DialogTitle>
           <DialogContent
             sx={{
@@ -81,7 +89,7 @@ export default function ApproveRegistApplyDialog({
             <PeriodSelectorOptions
               onChange={(e) => {
                 if (!isManual && user) {
-                  const generatedEmail =`${e.target.value as string}.${user?.customId}@uniproject.jp`;
+                  const generatedEmail = `${e.target.value as string}.${user?.customId}@uniproject.jp`;
                   setEmail(generatedEmail.toLowerCase());
                 }
               }}

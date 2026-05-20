@@ -10,17 +10,19 @@ import type { UserData } from "@/classes/types/User";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
 import { rejectRegistApplyAction } from "./actions/rejectRegistApplyAction";
 
-interface ApproveRegistApplyProps {
+interface RejectRegistApplyProps {
   open: boolean;
   handleClose: () => void;
   user: UserData | null;
+  deleteRowAction?: (userId: string) => void;
 }
 
 export default function RejectDialog({
   open,
   handleClose,
   user,
-}: ApproveRegistApplyProps) {
+  deleteRowAction,
+}: RejectRegistApplyProps) {
   const [state, action, isPending] = React.useActionState(
     rejectRegistApplyAction,
     null as null | FormStatus,
@@ -43,7 +45,14 @@ export default function RejectDialog({
           },
         }}
       >
-        <form action={action} id="reject-regist-apply-data-dialog">
+        <form
+          action={async (formdata: FormData) => {
+            action(formdata);
+            if (deleteRowAction)
+              deleteRowAction(formdata.get("userId") as string);
+          }}
+          id="reject-regist-apply-data-dialog"
+        >
           <DialogTitle>メンバーの却下</DialogTitle>
           <DialogContent
             sx={{
