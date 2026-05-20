@@ -4,7 +4,6 @@ metadata:
   name: unique
   namespace: argocd
 spec:
-  namespace: argocd
   applicationRefs:
     - namePattern: "unique"
       images:
