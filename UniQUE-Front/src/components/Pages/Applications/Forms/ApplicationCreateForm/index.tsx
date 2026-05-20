@@ -32,6 +32,7 @@ interface CreateApplicationFormData {
   description: string;
   websiteUrl: string;
   privacyPolicyUrl: string;
+  termsUrl: string;
 }
 
 export default function ApplicationCreateForm({
@@ -57,6 +58,7 @@ export default function ApplicationCreateForm({
     description: "",
     websiteUrl: "",
     privacyPolicyUrl: "",
+    termsUrl: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -93,6 +95,7 @@ export default function ApplicationCreateForm({
         description: formData.description,
         websiteUrl: formData.websiteUrl,
         privacyPolicyUrl: formData.privacyPolicyUrl,
+        termsUrl: formData.termsUrl,
       });
 
       if (result.success) {
@@ -220,6 +223,22 @@ export default function ApplicationCreateForm({
               setError(null);
             }}
             helperText="アプリケーションのWebサイトURL（任意）"
+            disabled={loading}
+          />
+
+          <TextField
+            label="利用規約 URL"
+            fullWidth
+            type="url"
+            value={formData.termsUrl}
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                termsUrl: e.target.value,
+              }));
+              setError(null);
+            }}
+            helperText="利用規約のURL（任意）"
             disabled={loading}
           />
 

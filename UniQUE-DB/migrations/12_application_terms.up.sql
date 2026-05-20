@@ -1,0 +1,2 @@
+ALTER TABLE applications
+ADD COLUMN terms_url VARCHAR(255) NULL DEFAULT NULL;

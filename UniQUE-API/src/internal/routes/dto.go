@@ -168,6 +168,7 @@ type ApplicationDTO struct {
 	Description      string     `json:"description,omitempty"`
 	WebsiteURL       string     `json:"website_url,omitempty"`
 	PrivacyPolicyURL string     `json:"privacy_policy_url,omitempty"`
+	TermsURL         string     `json:"terms_url,omitempty"`
 	UserID           string     `json:"user_id"`
 	PublicClient     bool       `json:"public_client,omitempty"`
 	CreatedAt        time.Time  `json:"created_at"`
@@ -226,13 +227,14 @@ type EmailVerifyDiscordLinkRequest struct {
 
 // CreateApplicationRequest is used for POST /applications
 type CreateApplicationRequest struct {
-	Name             string `json:"name" binding:"required"`
-	Description      string `json:"description,omitempty"`
-	WebsiteURL       string `json:"website_url,omitempty"`
-	PrivacyPolicyURL string `json:"privacy_policy_url,omitempty"`
-	ClientSecret     string `json:"client_secret,omitempty"`
-	PublicClient     bool   `json:"public_client,omitempty"`
-	UserID           string `json:"user_id" binding:"required"`
+	Name             string           `json:"name" binding:"required"`
+	Description      Nullable[string] `json:"description,omitempty"`
+	WebsiteURL       Nullable[string] `json:"website_url,omitempty"`
+	TermsURL         Nullable[string] `json:"terms_url,omitempty"`
+	PrivacyPolicyURL Nullable[string] `json:"privacy_policy_url,omitempty"`
+	ClientSecret     string           `json:"client_secret,omitempty"`
+	PublicClient     bool             `json:"public_client,omitempty"`
+	UserID           string           `json:"user_id" binding:"required"`
 }
 
 // UpdateApplicationRequest is used for PUT /applications/:id
@@ -245,6 +247,7 @@ type PatchApplicationRequest struct {
 	Name             Nullable[string] `json:"name,omitempty"`
 	Description      Nullable[string] `json:"description,omitempty"`
 	WebsiteURL       Nullable[string] `json:"website_url,omitempty"`
+	TermsURL         Nullable[string] `json:"terms_url,omitempty"`
 	PrivacyPolicyURL Nullable[string] `json:"privacy_policy_url,omitempty"`
 	ClientSecret     Nullable[string] `json:"client_secret,omitempty"`
 	PublicClient     Nullable[bool]   `json:"public_client,omitempty"`

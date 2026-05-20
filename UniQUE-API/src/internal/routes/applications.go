@@ -1,7 +1,10 @@
 package routes
 
 import (
+	"errors"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/constants"
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
@@ -84,6 +87,7 @@ func listApplications(c *gin.Context) {
 			Description:      ptrToString(a.Description),
 			WebsiteURL:       ptrToString(a.WebsiteURL),
 			PrivacyPolicyURL: ptrToString(a.PrivacyPolicyURL),
+			TermsURL:         ptrToString(a.TermsURL),
 			UserID:           a.UserID,
 			PublicClient:     a.PublicClient,
 			CreatedAt:        a.CreatedAt,
@@ -134,12 +138,44 @@ func createApplication(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client_secret is required for confidential clients"})
 		return
 	}
+	if input.WebsiteURL.Set && input.WebsiteURL.Value != nil {
+		if err := validateExternalURL(*input.WebsiteURL.Value); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid website_url"})
+			return
+		}
+	}
+	if input.PrivacyPolicyURL.Set && input.PrivacyPolicyURL.Value != nil {
+		if err := validateExternalURL(*input.PrivacyPolicyURL.Value); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid privacy_policy_url"})
+			return
+		}
+	}
+	if input.TermsURL.Set && input.TermsURL.Value != nil {
+		if err := validateExternalURL(*input.TermsURL.Value); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid terms_url"})
+			return
+		}
+	}
+	// 文字数を200文字に制限
+	if len(*input.WebsiteURL.Value) > 200 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "website_url must be 200 characters or less"})
+		return
+	}
+	if len(*input.PrivacyPolicyURL.Value) > 200 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "privacy_policy_url must be 200 characters or less"})
+		return
+	}
+	if len(*input.TermsURL.Value) > 200 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "terms_url must be 200 characters or less"})
+		return
+	}
 	app := model.Application{
 		ID:               ulid.Make().String(),
 		Name:             input.Name,
-		Description:      stringToPtr(input.Description),
-		WebsiteURL:       stringToPtr(input.WebsiteURL),
-		PrivacyPolicyURL: stringToPtr(input.PrivacyPolicyURL),
+		Description:      input.Description.Value,
+		WebsiteURL:       input.WebsiteURL.Value,
+		PrivacyPolicyURL: input.PrivacyPolicyURL.Value,
+		TermsURL:         input.TermsURL.Value,
 		ClientSecret:     input.ClientSecret,
 		PublicClient:     input.PublicClient,
 		UserID:           input.UserID,
@@ -161,6 +197,7 @@ func createApplication(c *gin.Context) {
 		Description:      ptrToString(app.Description),
 		WebsiteURL:       ptrToString(app.WebsiteURL),
 		PrivacyPolicyURL: ptrToString(app.PrivacyPolicyURL),
+		TermsURL:         ptrToString(app.TermsURL),
 		UserID:           app.UserID,
 		PublicClient:     app.PublicClient,
 		CreatedAt:        app.CreatedAt,
@@ -201,6 +238,7 @@ func getApplication(c *gin.Context) {
 		Description:      ptrToString(a.Description),
 		WebsiteURL:       ptrToString(a.WebsiteURL),
 		PrivacyPolicyURL: ptrToString(a.PrivacyPolicyURL),
+		TermsURL:         ptrToString(a.TermsURL),
 		UserID:           a.UserID,
 		PublicClient:     a.PublicClient,
 		CreatedAt:        a.CreatedAt,
@@ -256,6 +294,13 @@ func updateApplication(c *gin.Context) {
 			updates["website_url"] = nil
 		} else {
 			updates["website_url"] = *input.WebsiteURL.Value
+		}
+	}
+	if input.TermsURL.Set {
+		if input.TermsURL.Value == nil {
+			updates["terms_url"] = nil
+		} else {
+			updates["terms_url"] = *input.TermsURL.Value
 		}
 	}
 	if input.PrivacyPolicyURL.Set {
@@ -323,6 +368,7 @@ func updateApplication(c *gin.Context) {
 		Name:             updated.Name,
 		Description:      ptrToString(updated.Description),
 		WebsiteURL:       ptrToString(updated.WebsiteURL),
+		TermsURL:         ptrToString(updated.TermsURL),
 		PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
 		UserID:           updated.UserID,
 		PublicClient:     updated.PublicClient,
@@ -378,6 +424,13 @@ func patchApplication(c *gin.Context) {
 			updates["website_url"] = nil
 		} else {
 			updates["website_url"] = *body.WebsiteURL.Value
+		}
+	}
+	if body.TermsURL.Set {
+		if body.TermsURL.Value == nil {
+			updates["terms_url"] = nil
+		} else {
+			updates["terms_url"] = *body.TermsURL.Value
 		}
 	}
 	if body.PrivacyPolicyURL.Set {
@@ -450,6 +503,7 @@ func patchApplication(c *gin.Context) {
 		Name:             updated.Name,
 		Description:      ptrToString(updated.Description),
 		WebsiteURL:       ptrToString(updated.WebsiteURL),
+		TermsURL:         ptrToString(updated.TermsURL),
 		PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
 		UserID:           updated.UserID,
 		PublicClient:     updated.PublicClient,
@@ -642,4 +696,19 @@ func deleteRedirectURIForApplication(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}
+
+func validateExternalURL(raw string) error {
+	if raw == "" {
+		return nil
+	}
+	u, err := url.ParseRequestURI(raw)
+	if err != nil {
+		return err
+	}
+	s := strings.ToLower(u.Scheme)
+	if s != "http" && s != "https" {
+		return errors.New("invalid url scheme")
+	}
+	return nil
 }
