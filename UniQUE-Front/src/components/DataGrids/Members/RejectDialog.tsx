@@ -30,9 +30,11 @@ export default function RejectDialog({
   React.useEffect(() => {
     if (state) {
       enqueueSnackbar(state.message, { variant: state.status });
-      // biome-ignore lint/style/noNonNullAssertion: 上流で保証されている
-      deleteRowAction(user!.id);
-      handleClose();
+      if (state.status === "success") {
+        // biome-ignore lint/style/noNonNullAssertion: 上流で保証されている
+        deleteRowAction(user!.id);
+        handleClose();
+      }
     }
   }, [handleClose, state, deleteRowAction, user?.id]);
 
