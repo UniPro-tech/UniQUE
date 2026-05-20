@@ -427,8 +427,8 @@ export default function ApplicationEditForm({
                   formData.termsUrl &&
                   (!/^https?:\/\//.test(formData.termsUrl) ||
                     formData.termsUrl.length > 200)
-                    ? "利用規約のURL（任意）"
-                    : "有効なURLを200文字以下で入力してください"
+                    ? "有効なURLを200文字以下で入力してください"
+                    : "利用規約のURL（任意）"
                 }
                 error={
                   formData.termsUrl
