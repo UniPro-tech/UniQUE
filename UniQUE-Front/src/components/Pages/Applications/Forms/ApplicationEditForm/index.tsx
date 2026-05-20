@@ -405,8 +405,8 @@ export default function ApplicationEditForm({
                   formData.websiteUrl &&
                   (!/^https?:\/\//.test(formData.websiteUrl) ||
                     formData.websiteUrl.length > 200)
-                    ? "アプリケーションのWebサイトURL（任意）"
-                    : "有効なURLを200文字以下で入力してください"
+                    ? "有効なURLを200文字以下で入力してください"
+                    : "アプリケーションのWebサイトURL（任意）"
                 }
                 error={
                   formData.websiteUrl
