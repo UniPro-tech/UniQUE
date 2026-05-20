@@ -16,10 +16,7 @@ import {
 import { useSnackbar } from "notistack";
 import { useState } from "react";
 import type { ProfileData } from "@/classes/Profile";
-import {
-  type UpdateProfileData,
-  updateProfile,
-} from "@/components/Cards/Profile/action";
+import { type UpdateProfileData, updateProfile } from "./action";
 
 interface ProfileEditFormProps {
   userId: string;
