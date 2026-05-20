@@ -43,9 +43,13 @@ export default function ApproveRegistApplyDialog({
   React.useEffect(() => {
     if (state) {
       enqueueSnackbar(state.message, { variant: state.status });
-      handleClose();
+      if (state.status === "success") {
+        // biome-ignore lint/style/noNonNullAssertion: 上流で保証されている
+        deleteRowAction(user!.id);
+        handleClose();
+      }
     }
-  }, [handleClose, state]);
+  }, [handleClose, state, deleteRowAction, user?.id]);
 
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
@@ -58,13 +62,7 @@ export default function ApproveRegistApplyDialog({
           },
         }}
       >
-        <form
-          action={async (formdata: FormData) => {
-            action(formdata);
-            deleteRowAction(formdata.get("userId") as string);
-          }}
-          id="approve-regist-apply-data-dialog"
-        >
+        <form action={action} id="approve-regist-apply-data-dialog">
           <DialogTitle>メンバーの承認</DialogTitle>
           <DialogContent
             sx={{
@@ -85,7 +83,8 @@ export default function ApproveRegistApplyDialog({
             <DialogContentText>
               下記の情報を入力後、承認ボタンを押してください。
             </DialogContentText>
-            <input type="hidden" name="userId" value={user?.id || ""} />
+            {/** biome-ignore lint/style/noNonNullAssertion: 上流で保証されている */}
+            <input type="hidden" name="userId" value={user!.id} />
             <PeriodSelectorOptions
               onChange={(e) => {
                 if (!isManual && user) {

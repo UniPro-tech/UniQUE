@@ -14,7 +14,7 @@ interface RejectRegistApplyProps {
   open: boolean;
   handleClose: () => void;
   user: UserData | null;
-  deleteRowAction?: (userId: string) => void;
+  deleteRowAction: (userId: string) => void;
 }
 
 export default function RejectDialog({
@@ -30,9 +30,11 @@ export default function RejectDialog({
   React.useEffect(() => {
     if (state) {
       enqueueSnackbar(state.message, { variant: state.status });
+      // biome-ignore lint/style/noNonNullAssertion: 上流で保証されている
+      deleteRowAction(user!.id);
       handleClose();
     }
-  }, [handleClose, state]);
+  }, [handleClose, state, deleteRowAction, user?.id]);
 
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
@@ -45,14 +47,7 @@ export default function RejectDialog({
           },
         }}
       >
-        <form
-          action={async (formdata: FormData) => {
-            action(formdata);
-            if (deleteRowAction)
-              deleteRowAction(formdata.get("userId") as string);
-          }}
-          id="reject-regist-apply-data-dialog"
-        >
+        <form action={action} id="reject-regist-apply-data-dialog">
           <DialogTitle>メンバーの却下</DialogTitle>
           <DialogContent
             sx={{
@@ -69,7 +64,8 @@ export default function RejectDialog({
               カスタムID:{" "}
               {user?.customId || user?.profile?.displayName || "不明なユーザー"}
             </DialogContentText>
-            <input type="hidden" name="userId" value={user?.id || ""} />
+            {/** biome-ignore lint/style/noNonNullAssertion: 上流で保証されている */}
+            <input type="hidden" name="userId" value={user!.id} />
           </DialogContent>
           <DialogActions sx={{ pb: 3, px: 3 }}>
             <Button onClick={handleClose} disabled={isPending}>
