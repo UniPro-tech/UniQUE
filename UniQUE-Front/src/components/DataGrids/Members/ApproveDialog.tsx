@@ -44,12 +44,12 @@ export default function ApproveRegistApplyDialog({
     if (state) {
       enqueueSnackbar(state.message, { variant: state.status });
       if (state.status === "success") {
-        // biome-ignore lint/style/noNonNullAssertion: 上流で保証されている
-        deleteRowAction(user!.id);
+        if (!user) return;
+        deleteRowAction(user.id);
         handleClose();
       }
     }
-  }, [handleClose, state, deleteRowAction, user?.id]);
+  }, [handleClose, state, deleteRowAction, user]);
 
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
