@@ -160,6 +160,7 @@ export default function Profile({
           {editMode ? (
             <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
               <ProfileEditForm
+                userId={user.id}
                 profile={userProfile}
                 onCancel={() => setEditMode(false)}
                 onSuccess={() => {

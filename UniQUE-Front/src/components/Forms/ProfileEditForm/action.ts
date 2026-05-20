@@ -1,6 +1,8 @@
 "use server";
 
 import { Session } from "@/classes/Session";
+import { User } from "@/classes/User";
+import { PermissionBitsFields } from "@/constants/Permission";
 
 export interface UpdateProfileData {
   displayName?: string;
@@ -10,24 +12,28 @@ export interface UpdateProfileData {
   birthdateVisible?: boolean;
 }
 
-export async function updateProfile(data: UpdateProfileData) {
+export async function updateProfile(userId: string, data: UpdateProfileData) {
   try {
-    const session = await Session.getCurrent();
+    const hasUpdatePermission = await (
+      await (await Session.getCurrent())?.getUser()
+    )?.hasPermission(PermissionBitsFields.USER_UPDATE);
+    if (!hasUpdatePermission)
+      return {
+        success: false,
+        error: "権限がありません。",
+      };
+    const user = await User.getById(userId);
 
-    const user = await session?.getUser();
-
-    if (!user) {
+    if (!user)
       return {
         success: false,
         error: "ユーザーが見つかりませんでした",
       };
-    }
 
     // プロフィール情報を更新
     if (data.displayName !== undefined)
       user.profile.displayName = data.displayName;
-    if (data.bio !== undefined) user.profile.bio = data.bio;
-    if (data.bio === "") user.profile.bio = null; // 空文字はnullに変換
+    if (data.bio !== undefined) user.profile.bio = data.bio || null;
     if (data.websiteUrl !== undefined)
       user.profile.websiteUrl = data.websiteUrl;
     if (data.websiteUrl === "") user.profile.websiteUrl = null; // 空文字はnullに変換

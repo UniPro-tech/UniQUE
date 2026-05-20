@@ -16,12 +16,10 @@ import {
 import { useSnackbar } from "notistack";
 import { useState } from "react";
 import type { ProfileData } from "@/classes/Profile";
-import {
-  type UpdateProfileData,
-  updateProfile,
-} from "@/components/Cards/Profile/action";
+import { type UpdateProfileData, updateProfile } from "./action";
 
 interface ProfileEditFormProps {
+  userId: string;
   profile?: ProfileData;
   onCancel?: () => void;
   onSuccess?: () => void;
@@ -29,6 +27,7 @@ interface ProfileEditFormProps {
 }
 
 export default function ProfileEditForm({
+  userId,
   profile,
   onCancel,
   onSuccess,
@@ -63,7 +62,7 @@ export default function ProfileEditForm({
     setSuccess(false);
 
     try {
-      const result = await updateProfile(formData);
+      const result = await updateProfile(userId, formData);
 
       if (result.success) {
         enqueueSnackbar(result.message || "プロフィールを更新しました", {
