@@ -1,6 +1,6 @@
 "use server";
 
-import { Session } from "@/classes/Session";
+import { User } from "@/classes/User";
 
 export interface UpdateProfileData {
   displayName?: string;
@@ -10,11 +10,9 @@ export interface UpdateProfileData {
   birthdateVisible?: boolean;
 }
 
-export async function updateProfile(data: UpdateProfileData) {
+export async function updateProfile(userId: string, data: UpdateProfileData) {
   try {
-    const session = await Session.getCurrent();
-
-    const user = await session?.getUser();
+    const user = await User.getById(userId);
 
     if (!user) {
       return {
