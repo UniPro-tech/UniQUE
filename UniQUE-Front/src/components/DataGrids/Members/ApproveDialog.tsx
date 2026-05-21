@@ -17,12 +17,14 @@ interface ApproveRegistApplyProps {
   open: boolean;
   handleClose: () => void;
   user: UserDataGridRowType | null;
+  deleteRowAction: (userId: string) => void;
 }
 
 export default function ApproveRegistApplyDialog({
   open,
   handleClose,
   user,
+  deleteRowAction,
 }: ApproveRegistApplyProps) {
   const [email, setEmail] = React.useState("");
   const [isManual, setIsManual] = React.useState(false);
@@ -38,12 +40,24 @@ export default function ApproveRegistApplyDialog({
     approveAction,
     null as null | FormStatus,
   );
+
+  const submittingUserIdRef = React.useRef<string | null>(null);
+  const handleSubmit = React.useCallback(() => {
+    if (user) {
+      submittingUserIdRef.current = user.id;
+    }
+  }, [user]);
   React.useEffect(() => {
     if (state) {
       enqueueSnackbar(state.message, { variant: state.status });
-      handleClose();
+      if (state.status === "success") {
+        const userId = submittingUserIdRef.current;
+        if (!userId) return;
+        deleteRowAction(userId);
+        handleClose();
+      }
     }
-  }, [handleClose, state]);
+  }, [handleClose, state, deleteRowAction]);
 
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
@@ -56,7 +70,11 @@ export default function ApproveRegistApplyDialog({
           },
         }}
       >
-        <form action={action} id="approve-regist-apply-data-dialog">
+        <form
+          action={action}
+          onSubmit={handleSubmit}
+          id="approve-regist-apply-data-dialog"
+        >
           <DialogTitle>メンバーの承認</DialogTitle>
           <DialogContent
             sx={{
@@ -77,11 +95,12 @@ export default function ApproveRegistApplyDialog({
             <DialogContentText>
               下記の情報を入力後、承認ボタンを押してください。
             </DialogContentText>
-            <input type="hidden" name="userId" value={user?.id || ""} />
+            {/** biome-ignore lint/style/noNonNullAssertion: 上流で保証されている */}
+            <input type="hidden" name="userId" value={user!.id} />
             <PeriodSelectorOptions
               onChange={(e) => {
                 if (!isManual && user) {
-                  const generatedEmail =`${e.target.value as string}.${user?.customId}@uniproject.jp`;
+                  const generatedEmail = `${e.target.value as string}.${user?.customId}@uniproject.jp`;
                   setEmail(generatedEmail.toLowerCase());
                 }
               }}

@@ -508,11 +508,17 @@ export default function MembersDataGrid({
         open={approveDialogOpen}
         handleClose={() => setApproveDialogOpen(false)}
         user={approvedUser}
+        deleteRowAction={(userId: string) => {
+          apiRef.current?.updateRows([{ id: userId, _action: "delete" }]);
+        }}
       />
       <RejectDialog
         open={rejectDialogOpen}
         user={rejectUser}
         handleClose={() => setRejectDialogOpen(false)}
+        deleteRowAction={(userId: string) => {
+          apiRef.current?.updateRows([{ id: userId, _action: "delete" }]);
+        }}
       />
       {canDelete && (
         <DeleteDialog
