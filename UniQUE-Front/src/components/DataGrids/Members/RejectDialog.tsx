@@ -27,16 +27,26 @@ export default function RejectDialog({
     rejectRegistApplyAction,
     null as null | FormStatus,
   );
+
+  const submittingUserIdRef = React.useRef<string | null>(null);
+  const handleSubmit = React.useCallback(() => {
+    if (user) {
+      submittingUserIdRef.current = user.id;
+    }
+  }, [user]);
+
   React.useEffect(() => {
     if (state) {
       enqueueSnackbar(state.message, { variant: state.status });
       if (state.status === "success") {
-        if (!user) return;
-        deleteRowAction(user.id);
+        const userId = submittingUserIdRef.current;
+        if (!userId) return;
+        deleteRowAction(userId);
+        submittingUserIdRef.current = null; // リセットして再実行を防ぐ
         handleClose();
       }
     }
-  }, [handleClose, state, deleteRowAction, user]);
+  }, [handleClose, state, deleteRowAction]);
 
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
@@ -49,7 +59,11 @@ export default function RejectDialog({
           },
         }}
       >
-        <form action={action} id="reject-regist-apply-data-dialog">
+        <form
+          action={action}
+          id="reject-regist-apply-data-dialog"
+          onSubmit={handleSubmit}
+        >
           <DialogTitle>メンバーの却下</DialogTitle>
           <DialogContent
             sx={{
