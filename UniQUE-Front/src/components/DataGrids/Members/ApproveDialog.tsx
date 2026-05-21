@@ -95,8 +95,7 @@ export default function ApproveRegistApplyDialog({
             <DialogContentText>
               下記の情報を入力後、承認ボタンを押してください。
             </DialogContentText>
-            {/** biome-ignore lint/style/noNonNullAssertion: 上流で保証されている */}
-            <input type="hidden" name="userId" value={user!.id} />
+            <input type="hidden" name="userId" value={user?.id} />
             <PeriodSelectorOptions
               onChange={(e) => {
                 if (!isManual && user) {

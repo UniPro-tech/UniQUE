@@ -80,8 +80,7 @@ export default function RejectDialog({
               カスタムID:{" "}
               {user?.customId || user?.profile?.displayName || "不明なユーザー"}
             </DialogContentText>
-            {/** biome-ignore lint/style/noNonNullAssertion: 上流で保証されている */}
-            <input type="hidden" name="userId" value={user!.id} />
+            <input type="hidden" name="userId" value={user?.id} />
           </DialogContent>
           <DialogActions sx={{ pb: 3, px: 3 }}>
             <Button onClick={handleClose} disabled={isPending}>
