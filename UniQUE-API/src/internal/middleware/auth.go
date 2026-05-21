@@ -324,11 +324,14 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 	var isValidToken bool = true
 	var user *model.User
 	var userIDFromVerify string
-	if strings.HasPrefix(claims.Subject, "SID_") {
+	if after, ok0 := strings.CutPrefix(claims.Subject, "SID_"); ok0 {
 		// セッショントークン: jtiなし、subから"SID_"を除いた素のセッションIDで検証
-		sessionID := strings.TrimPrefix(claims.Subject, "SID_")
+		sessionID := after
 		log.Printf("Session verify: sessionID=%s, path=/internal/session_verify", sessionID)
 		isValidToken, userIDFromVerify = verifyJIT(sessionID, cfg, "/internal/session_verify")
+		if !isValidToken {
+			return nil, nil, false, ""
+		}
 		if !isValidToken {
 			return nil, nil, false, ""
 		}
@@ -345,7 +348,7 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 			}
 		}
 		// LastLoginを更新
-		go UpdateLastLoginedAt(cfg, sessionID)
+		UpdateLastLoginedAt(cfg, sessionID)
 	} else {
 		// アクセストークン: jti(claims.ID)で検証
 		isValidToken, _ = verifyJIT(claims.ID, cfg, "/internal/token_verify")

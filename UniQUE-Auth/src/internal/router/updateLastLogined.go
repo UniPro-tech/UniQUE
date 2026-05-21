@@ -48,16 +48,12 @@ func UpdateLastLogined(c *gin.Context) {
 
 	session.LastLoginAt = time.Now()
 
-	// ExpiresAt と CreatedAt の差分（time.Duration）を取得
-	duration := session.ExpiresAt.Sub(session.CreatedAt)
-
-	// 差分が30日（30 * 24時間）未満かどうかを比較
-	if duration < 30*24*time.Hour {
-		// rememberなし
-		session.ExpiresAt = time.Now().AddDate(0, 0, 7)
+	// CreatedAt 基準の当初期間を使うことで、更新を重ねても remember/非 remember の区分が保たれる
+	isRemember := session.IsRemember
+	if isRemember {
+		session.ExpiresAt = time.Now().Add(30 * 24 * time.Hour) // remember: 30日
 	} else {
-		// rememberあり
-		session.ExpiresAt = time.Now().AddDate(0, 1, 0)
+		session.ExpiresAt = time.Now().Add(7 * 24 * time.Hour) // 非 remember: 7日
 	}
 	if err := q.Session.Save(session); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})

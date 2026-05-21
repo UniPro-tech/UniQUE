@@ -18,6 +18,7 @@ type Session struct {
 	UserID      string         `gorm:"column:user_id;not null" json:"user_id"`
 	IPAddress   string         `gorm:"column:ip_address" json:"ip_address"`
 	UserAgent   string         `gorm:"column:user_agent" json:"user_agent"`
+	IsRemember  bool           `gorm:"column:is_remember" json:"is_remember"`
 	ExpiresAt   time.Time      `gorm:"column:expires_at;not null" json:"expires_at"`
 	LastLoginAt time.Time      `gorm:"column:last_login_at;not null" json:"last_login_at"`
 	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`

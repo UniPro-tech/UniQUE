@@ -21,7 +21,7 @@ type AuthenticationRequest struct {
 	IPAddress string `json:"ip_address"`
 	UserAgent string `json:"user_agent"`
 	Type      string `json:"type" binding:"required,oneof=password mfa totp"`
-	Remember  bool   `json:"remember" default:"false"`
+	Remember  bool   `json:"is_remember" default:"false"`
 }
 
 type AuthenticationResponse struct {
@@ -143,6 +143,7 @@ func AuthenticationPost(c *gin.Context) {
 			UserID:      user.ID,
 			IPAddress:   req.IPAddress,
 			UserAgent:   req.UserAgent,
+			IsRemember:  req.Remember,
 			ExpiresAt:   CalculateSessionExpiry(req.Remember),
 			LastLoginAt: time.Now(),
 		})

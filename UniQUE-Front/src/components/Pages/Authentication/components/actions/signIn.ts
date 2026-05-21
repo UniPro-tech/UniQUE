@@ -6,7 +6,7 @@ import { SetSessionCookie } from "@/libs/cookies";
 export const submitSignIn = async (formData: FormData) => {
   const username = formData.get("username") as string;
   const password = formData.get("password") as string | undefined;
-  const remember = formData.get("remember") === "on";
+  const is_remember = formData.get("remember") === "on";
   const code = formData.get("code") as string | undefined;
   const rawRedirectTo = formData.get("redirectTo") as string | undefined;
   const redirectTo =
@@ -20,7 +20,7 @@ export const submitSignIn = async (formData: FormData) => {
     username,
     password,
     code,
-    remember,
+    is_remember,
   };
 
   try {
@@ -35,7 +35,7 @@ export const submitSignIn = async (formData: FormData) => {
         maxAge: 5 * 60, // 5分間有効
       });
 
-      cookieStore.set("pending_mfa_remember", remember ? "1" : "0", {
+      cookieStore.set("pending_mfa_remember", is_remember ? "1" : "0", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -55,7 +55,7 @@ export const submitSignIn = async (formData: FormData) => {
     const errorCode = errorCodeMatch ? errorCodeMatch[1] : "E0001";
     const queryParams = new URLSearchParams({
       username,
-      remember: remember ? "1" : "0",
+      remember: is_remember ? "1" : "0",
       error: errorCode,
       ...(redirectTo ? { redirect: redirectTo } : {}),
     });
