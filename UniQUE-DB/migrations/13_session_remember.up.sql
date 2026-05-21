@@ -1,0 +1,2 @@
+ALTER TABLE sessions
+ADD COLUMN is_remember BOOLEAN DEFAULT FALSE NOT NULL AFTER `expires_at`;

@@ -12,11 +12,11 @@ definitions:
         type: string
       ip_address:
         type: string
-      password:
-        type: string
-      remember:
+      is_remember:
         default: false
         type: boolean
+      password:
+        type: string
       type:
         enum:
         - password
@@ -213,6 +213,8 @@ definitions:
         type: string
       ip_address:
         type: string
+      is_remember:
+        type: boolean
       last_login_at:
         type: string
       updated_at:
@@ -248,6 +250,13 @@ definitions:
     properties:
       valid:
         type: boolean
+    type: object
+  router.UpdateLastLoginedRequest:
+    properties:
+      sid:
+        type: string
+    required:
+    - sid
     type: object
   router.UserInfoResponse:
     properties:
@@ -856,6 +865,13 @@ paths:
   /internal/update_last_logined:
     post:
       description: 内部のLastLogined更新エンドポイント
+      parameters:
+      - description: Session Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.UpdateLastLoginedRequest'
       responses:
         "201":
           description: Created

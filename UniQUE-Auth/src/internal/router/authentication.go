@@ -15,13 +15,13 @@ import (
 )
 
 type AuthenticationRequest struct {
-	Username  string `json:"username" binding:"omitempty"`
-	Password  string `json:"password" binding:"omitempty"`
-	Code      string `json:"code" binding:"omitempty"` // for MFA/TOTP
-	IPAddress string `json:"ip_address"`
-	UserAgent string `json:"user_agent"`
-	Type      string `json:"type" binding:"required,oneof=password mfa totp"`
-	Remember  bool   `json:"remember" default:"false"`
+	Username   string `json:"username" binding:"omitempty"`
+	Password   string `json:"password" binding:"omitempty"`
+	Code       string `json:"code" binding:"omitempty"` // for MFA/TOTP
+	IPAddress  string `json:"ip_address"`
+	UserAgent  string `json:"user_agent"`
+	Type       string `json:"type" binding:"required,oneof=password mfa totp"`
+	IsRemember bool   `json:"is_remember" default:"false"`
 }
 
 type AuthenticationResponse struct {
@@ -79,7 +79,8 @@ func AuthenticationPost(c *gin.Context) {
 			UserID:      user.ID,
 			IPAddress:   req.IPAddress,
 			UserAgent:   req.UserAgent,
-			ExpiresAt:   CalculateSessionExpiry(req.Remember),
+			IsRemember:  req.IsRemember,
+			ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
 			LastLoginAt: time.Now(),
 		})
 		if err != nil {
@@ -118,7 +119,7 @@ func AuthenticationPost(c *gin.Context) {
 			"ip":         ip,
 			"user_agent": userAgent,
 			"auth_type":  req.Type,
-			"remember":   req.Remember,
+			"remember":   req.IsRemember,
 			"session_id": session.ID,
 			"user_id":    user.ID,
 			"timestamp":  time.Now().UTC(),
@@ -143,7 +144,8 @@ func AuthenticationPost(c *gin.Context) {
 			UserID:      user.ID,
 			IPAddress:   req.IPAddress,
 			UserAgent:   req.UserAgent,
-			ExpiresAt:   CalculateSessionExpiry(req.Remember),
+			IsRemember:  req.IsRemember,
+			ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
 			LastLoginAt: time.Now(),
 		})
 		if err != nil {
@@ -181,7 +183,7 @@ func AuthenticationPost(c *gin.Context) {
 			"ip":         ip,
 			"user_agent": userAgent,
 			"auth_type":  req.Type,
-			"remember":   req.Remember,
+			"remember":   req.IsRemember,
 			"session_id": session.ID,
 			"user_id":    user.ID,
 			"timestamp":  time.Now().UTC(),

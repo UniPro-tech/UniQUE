@@ -16,6 +16,7 @@ type SessionResponse struct {
 	UserID      string     `json:"user_id"`
 	IPAddress   string     `json:"ip_address"`
 	UserAgent   string     `json:"user_agent"`
+	IsRemember  bool       `json:"is_remember"`
 	ExpiresAt   time.Time  `json:"expires_at"`
 	LastLoginAt time.Time  `json:"last_login_at"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -70,6 +71,7 @@ func SessionsGet(c *gin.Context) {
 			UserID:      s.UserID,
 			IPAddress:   s.IPAddress,
 			UserAgent:   s.UserAgent,
+			IsRemember:  s.IsRemember,
 			ExpiresAt:   s.ExpiresAt,
 			LastLoginAt: s.LastLoginAt,
 			CreatedAt:   s.CreatedAt,
@@ -158,6 +160,7 @@ func GetSessionById(c *gin.Context) {
 		UserID:      session.UserID,
 		IPAddress:   session.IPAddress,
 		UserAgent:   session.UserAgent,
+		IsRemember:  session.IsRemember,
 		ExpiresAt:   session.ExpiresAt,
 		LastLoginAt: session.LastLoginAt,
 		CreatedAt:   session.CreatedAt,

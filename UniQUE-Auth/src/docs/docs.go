@@ -802,6 +802,17 @@ const docTemplate = `{
                     "internal"
                 ],
                 "summary": "Update Last Logined",
+                "parameters": [
+                    {
+                        "description": "Session Data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.UpdateLastLoginedRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
@@ -999,12 +1010,12 @@ const docTemplate = `{
                 "ip_address": {
                     "type": "string"
                 },
-                "password": {
-                    "type": "string"
-                },
-                "remember": {
+                "is_remember": {
                     "type": "boolean",
                     "default": false
+                },
+                "password": {
+                    "type": "string"
                 },
                 "type": {
                     "type": "string",
@@ -1299,6 +1310,9 @@ const docTemplate = `{
                 "ip_address": {
                     "type": "string"
                 },
+                "is_remember": {
+                    "type": "boolean"
+                },
                 "last_login_at": {
                     "type": "string"
                 },
@@ -1352,6 +1366,17 @@ const docTemplate = `{
             "properties": {
                 "valid": {
                     "type": "boolean"
+                }
+            }
+        },
+        "router.UpdateLastLoginedRequest": {
+            "type": "object",
+            "required": [
+                "sid"
+            ],
+            "properties": {
+                "sid": {
+                    "type": "string"
                 }
             }
         },

@@ -10,6 +10,7 @@ export interface SessionData {
   userId: string;
   ipAddress: string;
   userAgent: string;
+  isRemember: boolean;
   expiresAt: string | Date;
   lastLoginAt: string | Date;
   createdAt: string | Date;
@@ -28,6 +29,7 @@ export class Session {
   userId: string;
   ipAddress: string;
   userAgent: string;
+  isRemember: boolean;
   expiresAt: Date;
   lastLoginAt: Date;
   createdAt: Date;
@@ -43,6 +45,7 @@ export class Session {
     this.userId = data.userId;
     this.ipAddress = data.ipAddress;
     this.userAgent = data.userAgent;
+    this.isRemember = data.isRemember;
     this.expiresAt =
       data.expiresAt instanceof Date
         ? data.expiresAt
@@ -78,6 +81,7 @@ export class Session {
       userId: this.userId,
       ipAddress: this.ipAddress,
       userAgent: this.userAgent,
+      isRemember: this.isRemember,
       expiresAt:
         this.expiresAt instanceof Date
           ? this.expiresAt.toISOString()

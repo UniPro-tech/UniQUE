@@ -13,7 +13,7 @@ export interface Credentials {
   username?: string;
   password?: string;
   code?: string;
-  remember?: boolean;
+  is_remember?: boolean;
 }
 
 enum AuthenticationType {
@@ -25,7 +25,7 @@ interface AuthenticationRequest {
   code?: string;
   ipAddress: string;
   password?: string;
-  remember: boolean;
+  is_remember: boolean;
   type: AuthenticationType;
   userAgent: string;
   username: string;
@@ -56,7 +56,7 @@ export const AuthenticationRequest = async (
     code,
     ipAddress,
     userAgent,
-    remember: credentials.remember || false,
+    is_remember: credentials.is_remember || false,
   };
 
   const apiClient = createApiClient(process.env.AUTH_API_URL);

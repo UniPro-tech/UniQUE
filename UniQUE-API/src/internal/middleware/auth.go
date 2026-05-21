@@ -1,10 +1,12 @@
 package middleware
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
@@ -322,11 +324,17 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 	var isValidToken bool = true
 	var user *model.User
 	var userIDFromVerify string
-	if strings.HasPrefix(claims.Subject, "SID_") {
+	if after, ok0 := strings.CutPrefix(claims.Subject, "SID_"); ok0 {
 		// セッショントークン: jtiなし、subから"SID_"を除いた素のセッションIDで検証
-		sessionID := strings.TrimPrefix(claims.Subject, "SID_")
+		sessionID := after
 		log.Printf("Session verify: sessionID=%s, path=/internal/session_verify", sessionID)
 		isValidToken, userIDFromVerify = verifyJIT(sessionID, cfg, "/internal/session_verify")
+		if !isValidToken {
+			return nil, nil, false, ""
+		}
+		if !isValidToken {
+			return nil, nil, false, ""
+		}
 		// Auth側から返されたuser_idを優先、なければトークン内のuser_idクレームを使用
 		userID := userIDFromVerify
 		if userID == "" {
@@ -339,6 +347,8 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 				user = u
 			}
 		}
+		// LastLoginを更新
+		go UpdateLastLoginedAt(cfg, sessionID)
 	} else {
 		// アクセストークン: jti(claims.ID)で検証
 		isValidToken, _ = verifyJIT(claims.ID, cfg, "/internal/token_verify")
@@ -467,5 +477,55 @@ func RequirePermissionOrScope(required constants.Permission, requiredScope strin
 		}
 		c.Set("permissions", perms)
 		c.Next()
+	}
+}
+
+func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
+	issuer := strings.TrimRight(cfg.IssuerInternalURL, "/")
+
+	// 1. 送信するデータをMap等で定義
+	payload := map[string]string{
+		"sid": sessionID,
+	}
+
+	// 2. JSONにエンコード
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		// JSON変換エラーのハンドリング
+		log.Printf("UpdateLastLoginedAt: JSON marshaling failed: %v", err)
+		return
+	}
+
+	// LastLoginedAtを叩きに行く
+	url := issuer + "/internal/update_last_logined"
+
+	// 3. bytes.NewBuffer(jsonData) を使って第3引数に渡す
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		// リクエスト作成エラーのハンドリング
+		log.Printf("UpdateLastLoginedAt: request creation failed: %v", err)
+		return
+	}
+
+	// 4. Content-Typeを指定
+	req.Header.Set("Content-Type", "application/json")
+
+	// 5. リクエストを実行
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		// リクエスト送信エラーのハンドリング
+		log.Printf("UpdateLastLoginedAt: HTTP request failed: %v", err)
+		return
+	}
+	// レスポンスボディは必ず閉じる
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	// 必要に応じてステータスコードなどをチェック
+	if resp.StatusCode != http.StatusCreated {
+		log.Printf("UpdateLastLoginedAt: unexpected status code: %d", resp.StatusCode)
+		return
 	}
 }
