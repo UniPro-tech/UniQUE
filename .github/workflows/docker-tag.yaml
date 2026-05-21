@@ -8,6 +8,7 @@ on:
       - "mail/v*"
       - "front/v*"
       - "db/v*"
+  workflow_dispatch:
 
 concurrency:
   group: docker-build-${{ github.ref }}
