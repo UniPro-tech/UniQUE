@@ -15,13 +15,11 @@ export default function AuthLayout(props: { children: React.ReactNode }) {
           <SnackbarProvider>
             <Stack
               direction="column"
-              component="main"
-              justifyContent={"center"}
-              justifyItems={"center"}
-              alignItems={"center"}
               sx={[
                 {
+                  alignItems: "center",
                   justifyContent: "center",
+                  justifyItems: "center",
                   minHeight: "100vh",
                 },
                 (theme) => ({
