@@ -40,16 +40,24 @@ export default function ApproveRegistApplyDialog({
     approveAction,
     null as null | FormStatus,
   );
+
+  const submittingUserIdRef = React.useRef<string | null>(null);
+  const handleSubmit = React.useCallback(() => {
+    if (user) {
+      submittingUserIdRef.current = user.id;
+    }
+  }, [user]);
   React.useEffect(() => {
     if (state) {
       enqueueSnackbar(state.message, { variant: state.status });
       if (state.status === "success") {
-        if (!user) return;
-        deleteRowAction(user.id);
+        const userId = submittingUserIdRef.current;
+        if (!userId) return;
+        deleteRowAction(userId);
         handleClose();
       }
     }
-  }, [handleClose, state, deleteRowAction, user]);
+  }, [handleClose, state, deleteRowAction]);
 
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
@@ -62,7 +70,11 @@ export default function ApproveRegistApplyDialog({
           },
         }}
       >
-        <form action={action} id="approve-regist-apply-data-dialog">
+        <form
+          action={action}
+          onSubmit={handleSubmit}
+          id="approve-regist-apply-data-dialog"
+        >
           <DialogTitle>メンバーの承認</DialogTitle>
           <DialogContent
             sx={{
