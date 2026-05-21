@@ -9,6 +9,7 @@ spec:
   selector:
     matchLabels:
       app: unique-api
+  revisionHistoryLimit: 1
   template:
     metadata:
       labels:
