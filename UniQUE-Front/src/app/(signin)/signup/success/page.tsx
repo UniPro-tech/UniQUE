@@ -13,7 +13,7 @@ export default async function SignUpSuccessPage({
     return (
       <Stack>
         <Typography variant="h4" align="center" gutterBottom>
-          サインアップが完了しました 🎉
+          ✅ メールをご確認ください！
         </Typography>
         <Typography variant="body1" align="center">
           ご登録いただきありがとうございます。ご入力いただいたメールアドレスに確認メールを送信しました。
