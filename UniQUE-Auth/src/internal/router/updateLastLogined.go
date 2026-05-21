@@ -37,12 +37,16 @@ func UpdateLastLogined(c *gin.Context) {
 	q := query.Use(db)
 
 	session, err := q.Session.Where(q.Session.ID.Eq(req.SID), q.Session.DeletedAt.IsNull()).First()
-	if errors.Is(err, gorm.ErrRecordNotFound) || session == nil {
-		c.JSON(404, gin.H{"error": "session not found"})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "session not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "failed to fetch session"})
 		return
 	}
-	if err != nil {
-		c.JSON(500, gin.H{"error": "failed to fetch session"})
+	if session == nil {
+		c.JSON(404, gin.H{"error": "session not found"})
 		return
 	}
 
