@@ -80,19 +80,19 @@ definitions:
       client_secret:
         type: string
       description:
-        type: string
+        $ref: '#/definitions/routes.Nullable-string'
       name:
         type: string
       privacy_policy_url:
-        type: string
+        $ref: '#/definitions/routes.Nullable-string'
       public_client:
         type: boolean
       terms_url:
-        type: string
+        $ref: '#/definitions/routes.Nullable-string'
       user_id:
         type: string
       website_url:
-        type: string
+        $ref: '#/definitions/routes.Nullable-string'
     required:
     - name
     - user_id

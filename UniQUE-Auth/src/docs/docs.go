@@ -1010,12 +1010,12 @@ const docTemplate = `{
                 "ip_address": {
                     "type": "string"
                 },
-                "password": {
-                    "type": "string"
-                },
-                "remember": {
+                "is_remember": {
                     "type": "boolean",
                     "default": false
+                },
+                "password": {
+                    "type": "string"
                 },
                 "type": {
                     "type": "string",
@@ -1309,6 +1309,9 @@ const docTemplate = `{
                 },
                 "ip_address": {
                     "type": "string"
+                },
+                "is_remember": {
+                    "type": "boolean"
                 },
                 "last_login_at": {
                     "type": "string"
