@@ -12,10 +12,10 @@ export async function createAnnouncement(
   data: CreateAnnouncementFormData,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!data.title || !data.title.trim()) {
+    if (!data.title?.trim()) {
       return { success: false, error: "タイトルを入力してください" };
     }
-    if (!data.content || !data.content.trim()) {
+    if (!data.content?.trim()) {
       return { success: false, error: "本文を入力してください" };
     }
 

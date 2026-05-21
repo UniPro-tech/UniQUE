@@ -56,7 +56,13 @@ export default async function Page({
   return (
     <Stack spacing={3}>
       <TemporarySnackProvider snacks={snacks} />
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Stack
+        direction="row"
+        sx={{
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Typography variant="h5">お知らせ詳細</Typography>
         <Box>
           <Link
@@ -86,7 +92,7 @@ export default async function Page({
             "system"}{" "}
           • {new Date(a.createdAt).toLocaleString()}
         </Typography>
-        <Box mt={2} style={{ whiteSpace: "pre-wrap" }}>
+        <Box sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
           <div className="markdown">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {a.content}

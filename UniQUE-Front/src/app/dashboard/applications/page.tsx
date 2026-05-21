@@ -14,9 +14,11 @@ export default async function Page() {
       <Stack>
         <Stack
           direction="row"
-          justifyContent="space-between"
-          alignItems="flex-start"
           spacing={2}
+          sx={{
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
         >
           <Stack>
             <Typography variant="h4" gutterBottom>
