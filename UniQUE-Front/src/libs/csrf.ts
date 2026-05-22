@@ -31,20 +31,26 @@ if (
   const keyPair = nacl.sign.keyPair();
   secretKey = keyPair.secretKey;
   publicKey = keyPair.publicKey;
-  fs.writeFileSync(
-    /*turbopackIgnore: true*/ publicKeyFile,
-    util.encodeBase64(publicKey),
-    {
+  try {
+    const fdPubkey = fs.openSync(
+      /*turbopackIgnore: true*/
+      publicKeyFile,
+      fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR,
+      0o600,
+    );
+    fs.writeFileSync(fdPubkey, util.encodeBase64(publicKey), {
       mode: 0o600,
-    },
-  );
-  fs.writeFileSync(
-    /*turbopackIgnore: true*/ secretKeyFile,
-    util.encodeBase64(secretKey),
-    {
+    });
+    const fdSeckey = fs.openSync(
+      /*turbopackIgnore: true*/
+      secretKeyFile,
+      fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR,
+      0o600,
+    );
+    fs.writeFileSync(fdSeckey, util.encodeBase64(secretKey), {
       mode: 0o600,
-    },
-  );
+    });
+  } catch {}
 }
 
 export const generateCSRFToken = (
