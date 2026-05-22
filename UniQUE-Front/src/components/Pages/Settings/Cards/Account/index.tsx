@@ -8,6 +8,6 @@ export default async function AccountSettingsCard({
   user: UserData;
 }) {
   const sid = user.id;
-  const csrfToken = await generateCSRFToken(sid!);
+  const csrfToken = generateCSRFToken(sid);
   return <AccountSettingsCardClient user={user} csrfToken={csrfToken} />;
 }

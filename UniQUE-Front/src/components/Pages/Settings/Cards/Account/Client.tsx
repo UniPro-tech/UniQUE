@@ -1,5 +1,5 @@
 "use client";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { ErrorOutlineOutlined } from "@mui/icons-material";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import {
   Button,
@@ -63,7 +63,7 @@ export default function AccountSettingsCardClient({
   };
   return (
     <Base
-      sid={user.id!}
+      sid={user.id}
       action={action}
       isPending={isPending}
       csrfToken={csrfToken}
@@ -133,9 +133,15 @@ export default function AccountSettingsCardClient({
               sx={{ alignSelf: "flex-start" }}
             />
           ) : (
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: "center",
+              }}
+            >
               <Chip
-                icon={<ErrorOutlineIcon />}
+                icon={<ErrorOutlineOutlined />}
                 label="未認証"
                 color="warning"
                 size="small"
@@ -158,7 +164,9 @@ export default function AccountSettingsCardClient({
           type="date"
           name="birthdate"
           defaultValue={lastResult.user.profile?.birthdate || ""}
-          InputLabelProps={{ shrink: true }}
+          slotProps={{
+            inputLabel: { shrink: true },
+          }}
           disabled={!!lastResult.user.profile?.birthdate}
         />
         <FormHelperText>一度設定したら変更できません。</FormHelperText>

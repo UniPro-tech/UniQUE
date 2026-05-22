@@ -65,18 +65,25 @@ export default async function DashboardPage() {
       <Typography variant="body1">
         ダッシュボードへようこそ。左のサイドバーからナビゲートしてください。
       </Typography>
-      <Stack mt={4} spacing={2}>
+      <Stack
+        spacing={2}
+        sx={{
+          mt: 4,
+        }}
+      >
         <Typography variant="h5">サービス一覧</Typography>
         <Grid
+          id="other-services"
           container
           columns={12}
-          mt={4}
-          justifyContent={"start"}
-          alignItems={"start"}
-          justifyItems={"start"}
           spacing={2}
-          id="other-services"
-          maxWidth={`${160 * 6 + 16 * 5}px`}
+          sx={{
+            mt: 4,
+            justifyContent: "start",
+            alignItems: "start",
+            justifyItems: "start",
+            maxWidth: `${160 * 6 + 16 * 5}px`,
+          }}
         >
           {OTHER_SERVICES.map((service) => (
             <OtherServicesCard
@@ -89,11 +96,19 @@ export default async function DashboardPage() {
           ))}
         </Grid>
       </Stack>
-      <Stack mt={4} spacing={2} id="announce">
+      <Stack
+        id="announce"
+        spacing={2}
+        sx={{
+          mt: 4,
+        }}
+      >
         <Stack
           direction="row"
-          justifyContent="space-between"
-          alignItems="center"
+          sx={{
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
           <Typography variant="h5">最近のお知らせ</Typography>
           <Link

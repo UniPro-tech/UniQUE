@@ -104,7 +104,7 @@ export default function TOTPSection({
 
   return (
     <Stack spacing={2} sx={{ p: 2 }}>
-      <Stack direction="row" alignItems="center" spacing={2}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
         <Typography variant="h6" component={"h4"}>
           二段階認証（TOTP）
         </Typography>

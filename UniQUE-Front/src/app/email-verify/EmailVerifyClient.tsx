@@ -259,14 +259,14 @@ export default function EmailVerifyClient({
         }}
       >
         {state === "loading" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <CircularProgress />
             <Typography variant="h6">認証中です...</Typography>
           </Stack>
         )}
 
         {state === "discord_required" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <Typography variant="h6">Discord連携が必要です</Typography>
             <Alert severity="info">
               メールアドレスの認証とユーザー登録を完了するには、Discord
@@ -292,7 +292,7 @@ export default function EmailVerifyClient({
         )}
 
         {state === "success" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <CheckCircleIcon sx={{ fontSize: 64, color: "success.main" }} />
             <Typography variant="h6">認証が完了しました!</Typography>
             <Typography sx={{ color: "text.secondary" }}>
@@ -303,7 +303,7 @@ export default function EmailVerifyClient({
         )}
 
         {state === "invalid_code" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <ErrorIcon sx={{ fontSize: 64, color: "error.main" }} />
             <Typography variant="h6">無効な認証コードです</Typography>
             <Typography sx={{ color: "text.secondary" }}>
@@ -318,7 +318,7 @@ export default function EmailVerifyClient({
         )}
 
         {state === "error" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <ErrorIcon sx={{ fontSize: 64, color: "error.main" }} />
             <Typography variant="h6">エラーが発生しました</Typography>
             <Typography sx={{ color: "text.secondary" }}>

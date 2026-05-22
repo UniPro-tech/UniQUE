@@ -87,7 +87,13 @@ export default function Profile({
           )}
         </Box>
 
-        <Stack direction={"row"} justifyContent={"end"} gap={2}>
+        <Stack
+          direction={"row"}
+          sx={{
+            justifyContent: "end",
+            gap: 2,
+          }}
+        >
           {(variant === "self" || variant === "admin") && (
             <Button
               variant="contained"
@@ -115,7 +121,7 @@ export default function Profile({
             <Typography variant="h5" gutterBottom>
               {userProfile?.displayName || user?.customId}
             </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               {user?.status && (
                 <Chip
                   label={
@@ -331,7 +337,11 @@ export default function Profile({
 
       <Box>
         {showTimestamps && user?.createdAt && (
-          <Typography variant="caption" color="text.secondary" display="block">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block" }}
+          >
             アカウント作成日:{" "}
             {new Date(user.createdAt).toLocaleDateString("ja-JP", {
               year: "numeric",
@@ -344,7 +354,11 @@ export default function Profile({
         )}
 
         {showTimestamps && user?.updatedAt && (
-          <Typography variant="caption" color="text.secondary" display="block">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block" }}
+          >
             最終更新日:{" "}
             {new Date(user.updatedAt).toLocaleDateString("ja-JP", {
               year: "numeric",

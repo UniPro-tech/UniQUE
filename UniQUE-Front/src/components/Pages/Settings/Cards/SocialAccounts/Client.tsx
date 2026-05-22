@@ -73,8 +73,19 @@ function SocialAccountsContent({
         ソーシャルアカウントの連携設定を行います。
       </Typography>
 
-      <Stack direction={"row"} alignItems="center" spacing={1}>
-        <Typography variant="h6" textAlign={"left"}>
+      <Stack
+        direction={"row"}
+        spacing={1}
+        sx={{
+          alignItems: "center",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            textAlign: "left",
+          }}
+        >
           Discordアカウント
         </Typography>
         <Divider sx={{ flexGrow: 1 }} />
@@ -121,7 +132,13 @@ function SocialAccountsContent({
                 </Avatar>
 
                 <Stack sx={{ minWidth: 0 }}>
-                  <Typography variant="subtitle1" fontWeight={700} noWrap>
+                  <Typography
+                    variant="subtitle1"
+                    noWrap
+                    sx={{
+                      fontWeight: 700,
+                    }}
+                  >
                     {resolveDisplayName(identity)}
                   </Typography>
 

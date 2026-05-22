@@ -28,8 +28,7 @@ export default async function Page() {
       <Stack spacing={2}>
         <Stack
           direction="row"
-          justifyContent="space-between"
-          alignItems="center"
+          sx={{ justifyContent: "space-between", alignItems: "center" }}
         >
           <Typography variant="h5">ユーザー一覧</Typography>
           <Button

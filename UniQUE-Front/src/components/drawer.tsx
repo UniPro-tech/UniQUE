@@ -1,4 +1,5 @@
 "use client";
+import { randomInt } from "node:crypto";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AppsIcon from "@mui/icons-material/Apps";
 import CampaignIcon from "@mui/icons-material/Campaign";
@@ -228,11 +229,13 @@ export default function MiniDrawer({
           <Stack
             direction="row"
             spacing={2}
-            alignItems="center"
-            justifyContent={"center"}
-            justifyItems={"center"}
-            margin={0}
-            padding={0}
+            sx={{
+              alignItems: "center",
+              justifyContent: "center",
+              justifyItems: "center",
+              margin: 0,
+              padding: 0,
+            }}
           >
             <IconButton
               color="inherit"
@@ -269,45 +272,48 @@ export default function MiniDrawer({
           </IconButton>
         </DrawerHeader>
         <Divider />
-        {NAVIGSTION_LINKS.map((section, index) => (
-          <div key={index}>
-            <List key={index}>
-              {section.map((link) => (
-                <ListItem
-                  key={link.text}
-                  disablePadding
-                  sx={{ display: "block" }}
-                >
-                  <ListItemButton
-                    href={link.href}
-                    sx={{
-                      minHeight: 48,
-                      justifyContent: open ? "initial" : "center",
-                      px: 2.5,
-                    }}
+        {NAVIGSTION_LINKS.map((section, index) => {
+          const key = randomInt(500);
+          return (
+            <div key={`navlink-${key}`}>
+              <List>
+                {section.map((link) => (
+                  <ListItem
+                    key={link.text}
+                    disablePadding
+                    sx={{ display: "block" }}
                   >
-                    <ListItemIcon
+                    <ListItemButton
+                      href={link.href}
                       sx={{
-                        minWidth: 0,
-                        mr: open ? 1 : "auto",
-                        justifyContent: "center",
+                        minHeight: 48,
+                        justifyContent: open ? "initial" : "center",
+                        px: 2.5,
                       }}
                     >
-                      {link.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={link.text}
-                      sx={{ opacity: open ? 1 : 0 }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-            {index < NAVIGSTION_LINKS.length - 1 && (
-              <Divider key={`divider-${index}`} />
-            )}
-          </div>
-        ))}
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 0,
+                          mr: open ? 1 : "auto",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {link.icon}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={link.text}
+                        sx={{ opacity: open ? 1 : 0 }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+              {index < NAVIGSTION_LINKS.length - 1 && (
+                <Divider key={`divider-${key}`} />
+              )}
+            </div>
+          );
+        })}
       </Drawer>
       <Box
         component="main"

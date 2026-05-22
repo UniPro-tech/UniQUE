@@ -25,7 +25,10 @@ export default async function Page() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Stack
+        direction="row"
+        sx={{ justifyContent: "space-between", alignItems: "center" }}
+      >
         <Stack>
           <Typography variant="h5">アナウンス一覧</Typography>
           <Typography variant="body2" color="text.secondary">

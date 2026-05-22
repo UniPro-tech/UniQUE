@@ -11,24 +11,65 @@ const secretKeyFile =
 const publicKeyFile =
   process.env.CSRF_PUBLIC_KEY_PATH ||
   path.join(process.cwd(), "keys", "csrf_public.key");
-let secretKey, publicKey;
+let secretKey: Uint8Array<ArrayBufferLike>,
+  publicKey: Uint8Array<ArrayBufferLike>;
 
-if (fs.existsSync(secretKeyFile) && fs.existsSync(publicKeyFile)) {
-  secretKey = util.decodeBase64(fs.readFileSync(secretKeyFile, "utf8"));
+if (
+  fs.existsSync(/*turbopackIgnore: true*/ secretKeyFile) &&
+  fs.existsSync(/*turbopackIgnore: true*/ publicKeyFile)
+) {
+  secretKey = util.decodeBase64(
+    fs.readFileSync(/*turbopackIgnore: true*/ secretKeyFile, "utf8"),
+  );
   publicKey = secretKey.slice(32); // tweetnaclの秘密鍵は32+32=64バイト
 } else {
-  if (!fs.existsSync(path.dirname(secretKeyFile))) {
-    fs.mkdirSync(path.dirname(secretKeyFile), { recursive: true });
+  if (!fs.existsSync(/*turbopackIgnore: true*/ path.dirname(secretKeyFile))) {
+    fs.mkdirSync(/*turbopackIgnore: true*/ path.dirname(secretKeyFile), {
+      recursive: true,
+    });
   }
   const keyPair = nacl.sign.keyPair();
   secretKey = keyPair.secretKey;
   publicKey = keyPair.publicKey;
-  fs.writeFileSync(publicKeyFile, util.encodeBase64(publicKey), {
-    mode: 0o600,
-  });
-  fs.writeFileSync(secretKeyFile, util.encodeBase64(secretKey), {
-    mode: 0o600,
-  });
+  let fdPubkey: number | undefined, fdSeckey: number | undefined;
+  try {
+    fdPubkey = fs.openSync(
+      /*turbopackIgnore: true*/
+      publicKeyFile,
+      fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR,
+      0o600,
+    );
+    fs.writeFileSync(fdPubkey, util.encodeBase64(publicKey), {
+      mode: 0o600,
+    });
+    fdSeckey = fs.openSync(
+      /*turbopackIgnore: true*/
+      secretKeyFile,
+      fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR,
+      0o600,
+    );
+    fs.writeFileSync(fdSeckey, util.encodeBase64(secretKey), {
+      mode: 0o600,
+    });
+  } catch {
+    // TODO: infoでログを出す
+  } finally {
+    // 開いたFDが残っていれば、確実にクローズする
+    if (fdPubkey !== undefined) {
+      try {
+        fs.closeSync(fdPubkey);
+      } catch {
+        // TODO: infoでログを出す
+      }
+    }
+    if (fdSeckey !== undefined) {
+      try {
+        fs.closeSync(fdSeckey);
+      } catch {
+        // TODO: infoでログを出す
+      }
+    }
+  }
 }
 
 export const generateCSRFToken = (

@@ -115,7 +115,7 @@ export default function PasswordResetClient() {
         }}
       >
         {state === "request" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <Typography variant="h6">パスワードをリセット</Typography>
             <form
               onSubmit={handleRequestPasswordReset}
@@ -150,7 +150,7 @@ export default function PasswordResetClient() {
         )}
 
         {state === "confirm" && code && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <Typography variant="h6">新しいパスワードを設定</Typography>
             <form
               onSubmit={handleConfirmPasswordReset}
@@ -195,7 +195,7 @@ export default function PasswordResetClient() {
         )}
 
         {state === "success" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <CheckCircleIcon sx={{ fontSize: 64, color: "success.main" }} />
             <Typography variant="h6">パスワードをリセットしました！</Typography>
             <Typography color="textSecondary">
@@ -212,7 +212,7 @@ export default function PasswordResetClient() {
         )}
 
         {state === "invalid_code" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <ErrorIcon sx={{ fontSize: 64, color: "error.main" }} />
             <Typography variant="h6">無効な認証コードです</Typography>
             <Typography color="textSecondary">
@@ -227,7 +227,7 @@ export default function PasswordResetClient() {
         )}
 
         {state === "error" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <ErrorIcon sx={{ fontSize: 64, color: "error.main" }} />
             <Typography variant="h6">エラーが発生しました</Typography>
             <Typography color="textSecondary">
@@ -246,7 +246,7 @@ export default function PasswordResetClient() {
         )}
 
         {state === "loading" && (
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
             <CircularProgress />
             <Typography variant="h6">処理中です...</Typography>
           </Stack>

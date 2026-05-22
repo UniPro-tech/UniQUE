@@ -25,7 +25,7 @@ export default async function ConsentSettingsCard({
       const raw = Array.isArray(data) ? data : (data.data ?? []);
       consents = raw.map(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (c: any) => toCamelcase(c) as ConsentDTO,
+        (c: object) => toCamelcase(c) as ConsentDTO,
       );
     }
   } catch {

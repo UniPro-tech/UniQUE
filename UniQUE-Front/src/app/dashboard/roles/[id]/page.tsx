@@ -53,7 +53,7 @@ export default async function Page({
         <Link underline="hover" color="inherit" href="/dashboard/roles">
           ロール管理
         </Link>
-        <Typography sx={{ color: "text.primary" }}>編集</Typography>
+        <Typography color="text.primary">編集</Typography>
       </Breadcrumbs>
 
       <Stack>

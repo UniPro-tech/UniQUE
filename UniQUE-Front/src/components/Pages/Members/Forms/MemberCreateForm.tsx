@@ -195,7 +195,13 @@ export default function MemberCreateForm() {
             <MenuItem value={UserStatus.ESTABLISHED}>established</MenuItem>
           </TextField>
 
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              justifyContent: "flex-end",
+            }}
+          >
             <Button
               variant="outlined"
               startIcon={<CancelIcon />}

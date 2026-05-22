@@ -88,9 +88,19 @@ export default function Content() {
         switch (mode) {
           case AuthorizationPageMode.SignUp:
             return (
-              <Stack direction="row" gap={2}>
+              <Stack
+                direction="row"
+                sx={{
+                  gap: 2,
+                }}
+              >
                 <EmojiPeopleIcon sx={{ color: "text.secondary" }} />
-                <Box display={"block"} width={"100%"}>
+                <Box
+                  sx={{
+                    display: "block",
+                    width: "100%",
+                  }}
+                >
                   <Typography gutterBottom sx={{ fontWeight: "medium" }}>
                     UniProjectへようこそ！
                   </Typography>
@@ -137,9 +147,19 @@ export default function Content() {
             ));
           case AuthorizationPageMode.Migration:
             return (
-              <Stack direction="row" gap={2}>
+              <Stack
+                direction="row"
+                sx={{
+                  gap: 2,
+                }}
+              >
                 <CachedIcon sx={{ color: "text.secondary" }} />
-                <Box display={"block"} width={"100%"}>
+                <Box
+                  sx={{
+                    display: "block",
+                    width: "100%",
+                  }}
+                >
                   <Typography gutterBottom sx={{ fontWeight: "medium" }}>
                     UniProjectアカウント移行手続き
                   </Typography>

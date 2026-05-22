@@ -78,8 +78,12 @@ export default function DiscordLinkAlert() {
       >
         <AlertTitle>Discordアカウントの連携が必要です</AlertTitle>
         UniProjectのコミュニティに参加するため、Discordアカウントを連携してください。
-        <Typography fontWeight={600}>
-          4/1以降に未連携の場合、メンバー登録が抹消される恐れがあります。
+        <Typography
+          sx={{
+            fontWeight: 600,
+          }}
+        >
+          2026/4/1以降に未連携の場合、メンバー登録が抹消される恐れがあります。
         </Typography>
       </Alert>
     </Collapse>

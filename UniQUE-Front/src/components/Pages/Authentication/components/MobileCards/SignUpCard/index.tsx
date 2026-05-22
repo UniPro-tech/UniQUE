@@ -138,7 +138,12 @@ export default function SignUpCard() {
   const router = useRouter();
 
   return (
-    <SignInContainer direction="column" justifyContent="space-between">
+    <SignInContainer
+      direction="column"
+      sx={{
+        justifyContent: "space-between",
+      }}
+    >
       <Card variant="outlined">
         <Box sx={{ display: { xs: "flex", md: "none" } }}>
           <SitemarkIcon />

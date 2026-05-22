@@ -143,7 +143,9 @@ export default function ApplicationEditForm({
     }
 
     try {
-      const payload: Record<string, unknown> = {
+      const payload: Partial<
+        Omit<ApplicationData, "createdAt" | "updatedAt" | "deletedAt">
+      > & { id: string } = {
         id: application.id,
         name: formData.name,
         description: formData.description,
@@ -208,7 +210,7 @@ export default function ApplicationEditForm({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                display="block"
+                sx={{ display: "block" }}
               >
                 アプリケーションID (クライアントID)
               </Typography>
@@ -241,7 +243,9 @@ export default function ApplicationEditForm({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                display="block"
+                sx={{
+                  display: "block",
+                }}
               >
                 所有者
               </Typography>
@@ -466,8 +470,10 @@ export default function ApplicationEditForm({
               <Stack
                 direction="row"
                 spacing={2}
-                justifyContent="flex-end"
-                sx={{ pt: 2 }}
+                sx={{
+                  pt: 2,
+                  justifyContent: "flex-end",
+                }}
               >
                 <Button
                   type="submit"
