@@ -31,8 +31,9 @@ if (
   const keyPair = nacl.sign.keyPair();
   secretKey = keyPair.secretKey;
   publicKey = keyPair.publicKey;
+  let fdPubkey: number | undefined, fdSeckey: number | undefined;
   try {
-    const fdPubkey = fs.openSync(
+    fdPubkey = fs.openSync(
       /*turbopackIgnore: true*/
       publicKeyFile,
       fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR,
@@ -41,7 +42,7 @@ if (
     fs.writeFileSync(fdPubkey, util.encodeBase64(publicKey), {
       mode: 0o600,
     });
-    const fdSeckey = fs.openSync(
+    fdSeckey = fs.openSync(
       /*turbopackIgnore: true*/
       secretKeyFile,
       fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR,
@@ -50,7 +51,25 @@ if (
     fs.writeFileSync(fdSeckey, util.encodeBase64(secretKey), {
       mode: 0o600,
     });
-  } catch {}
+  } catch {
+    // TODO: infoでログを出す
+  } finally {
+    // 開いたFDが残っていれば、確実にクローズする
+    if (fdPubkey !== undefined) {
+      try {
+        fs.closeSync(fdPubkey);
+      } catch {
+        // TODO: infoでログを出す
+      }
+    }
+    if (fdSeckey !== undefined) {
+      try {
+        fs.closeSync(fdSeckey);
+      } catch {
+        // TODO: infoでログを出す
+      }
+    }
+  }
 }
 
 export const generateCSRFToken = (
