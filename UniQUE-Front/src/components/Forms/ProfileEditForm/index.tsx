@@ -169,14 +169,20 @@ export default function ProfileEditForm({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                display="block"
+                sx={{ display: "block" }}
               >
                 誕生日の公開/非公開を選択できます
               </Typography>
             </Box>
           )}
 
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              justifyContent: "flex-end",
+            }}
+          >
             {onCancel && (
               <Button
                 variant="outlined"

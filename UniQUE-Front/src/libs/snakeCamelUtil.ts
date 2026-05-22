@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: このファイル内ではあらゆるオブジェクトに対してのユーティリティ関数を定義しており、型を一概に決めつけることはできない */
 export const toCamelcase = <T>(obj: any): T => {
   if (Array.isArray(obj)) {
     return obj.map((item) => toCamelcase(item)) as unknown as T;

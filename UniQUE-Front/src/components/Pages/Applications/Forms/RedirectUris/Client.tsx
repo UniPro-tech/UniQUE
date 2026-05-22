@@ -68,6 +68,7 @@ export default function RedirectUrisClient({
 
   const rows = uris.map((u) => ({ id: u, uri: u }));
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: onChangeはstateなのでhooksのdependsに追加すべきではない
   const columns = useMemo<GridColDef[]>(() => {
     return [
       {
@@ -103,7 +104,7 @@ export default function RedirectUrisClient({
         },
       },
     ];
-  }, [onDelete]);
+  }, []);
 
   const initialState = useMemo<NonNullable<DataGridProps["initialState"]>>(
     () => ({
@@ -122,7 +123,9 @@ export default function RedirectUrisClient({
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1}
-            alignItems="center"
+            sx={{
+              alignItems: "center",
+            }}
           >
             <TextField
               label="Redirect URI"

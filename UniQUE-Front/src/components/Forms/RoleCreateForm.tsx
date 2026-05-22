@@ -276,7 +276,13 @@ export default function RoleCreateForm({ onCancel }: RoleCreateFormProps) {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              justifyContent: "flex-end",
+            }}
+          >
             <Button
               variant="outlined"
               startIcon={<CancelIcon />}

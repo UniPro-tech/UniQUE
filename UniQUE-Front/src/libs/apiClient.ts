@@ -44,7 +44,9 @@ async function buildHeaders(
   const base: Record<string, string> = { "Content-Type": "application/json" };
   if (headers) {
     if (headers instanceof Headers) {
-      headers.forEach((v, k) => (base[k] = v));
+      headers.forEach((v, k) => {
+        base[k] = v;
+      });
     } else {
       Object.assign(base, headers as Record<string, string>);
     }
@@ -74,7 +76,7 @@ export const apiFetch = async (path: string, init: RequestInit = {}) => {
   return res as ExtendedResponse;
 };
 
-const jsonStringifySafe = (obj: any) =>
+const jsonStringifySafe = (obj: object) =>
   JSON.stringify(obj, (_k, v) => (typeof v === "bigint" ? Number(v) : v));
 
 export const stringJsonParseSafe = (str: string) =>
@@ -92,21 +94,21 @@ export const stringJsonParseSafe = (str: string) =>
 export const apiGet = (path: string, init?: RequestInit) =>
   apiFetch(path, { method: "GET", ...init });
 
-export const apiPost = (path: string, body?: any, init?: RequestInit) =>
+export const apiPost = (path: string, body?: object, init?: RequestInit) =>
   apiFetch(path, {
     method: "POST",
     body: body ? jsonStringifySafe(toSnakecase(body)) : undefined,
     ...init,
   });
 
-export const apiPut = (path: string, body?: any, init?: RequestInit) =>
+export const apiPut = (path: string, body?: object, init?: RequestInit) =>
   apiFetch(path, {
     method: "PUT",
     body: body ? jsonStringifySafe(toSnakecase(body)) : undefined,
     ...init,
   });
 
-export const apiPatch = (path: string, body?: any, init?: RequestInit) =>
+export const apiPatch = (path: string, body?: object, init?: RequestInit) =>
   apiFetch(path, {
     method: "PATCH",
     body: body ? jsonStringifySafe(toSnakecase(body)) : undefined,
@@ -136,19 +138,19 @@ export const createApiClient = (base?: string) => {
   return {
     get: (path: string, init?: RequestInit) =>
       apiFetchWithBase(path, { method: "GET", ...init }),
-    post: (path: string, body?: any, init?: RequestInit) =>
+    post: (path: string, body?: object, init?: RequestInit) =>
       apiFetchWithBase(path, {
         method: "POST",
         body: body ? jsonStringifySafe(toSnakecase(body)) : undefined,
         ...init,
       }),
-    put: (path: string, body?: any, init?: RequestInit) =>
+    put: (path: string, body?: object, init?: RequestInit) =>
       apiFetchWithBase(path, {
         method: "PUT",
         body: body ? jsonStringifySafe(toSnakecase(body)) : undefined,
         ...init,
       }),
-    patch: (path: string, body?: any, init?: RequestInit) =>
+    patch: (path: string, body?: object, init?: RequestInit) =>
       apiFetchWithBase(path, {
         method: "PATCH",
         body: body ? jsonStringifySafe(toSnakecase(body)) : undefined,

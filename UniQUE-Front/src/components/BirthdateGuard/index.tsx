@@ -38,41 +38,44 @@ export default function BirthdateGuard({
   const open = !state.birthdate;
 
   return (
-    <Dialog
-      open={open}
-      onClose={() => undefined}
-      disableEscapeKeyDown
-      PaperProps={{ component: "form", action }}
-    >
+    <Dialog open={open} onClose={() => undefined}>
       <DialogTitle>生年月日の設定が必要です</DialogTitle>
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Typography variant="body2">
-          未成年者保護のため、生年月日の登録をお願いします。
-        </Typography>
-        <input type="hidden" name="csrfToken" value={csrfToken} />
-        <TextField
-          required
-          label="生年月日"
-          type="date"
-          name="birthdate"
-          defaultValue={state.birthdate}
-          InputLabelProps={{ shrink: true }}
-          disabled={isPending}
-        />
-        {state.status && (
-          <Typography
-            variant="body2"
-            color={state.status.status === "error" ? "error" : "success"}
-          >
-            {state.status.message}
+      <form action={action}>
+        <DialogContent
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <Typography variant="body2">
+            未成年者保護のため、生年月日の登録をお願いします。
           </Typography>
-        )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button type="submit" variant="contained" disabled={isPending}>
-          設定する
-        </Button>
-      </DialogActions>
+          <input type="hidden" name="csrfToken" value={csrfToken} />
+          <TextField
+            required
+            label="生年月日"
+            type="date"
+            name="birthdate"
+            defaultValue={state.birthdate}
+            slotProps={{
+              inputLabel: {
+                shrink: true,
+              },
+            }}
+            disabled={isPending}
+          />
+          {state.status && (
+            <Typography
+              variant="body2"
+              color={state.status.status === "error" ? "error" : "success"}
+            >
+              {state.status.message}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button type="submit" variant="contained" disabled={isPending}>
+            設定する
+          </Button>
+        </DialogActions>
+      </form>
     </Dialog>
   );
 }

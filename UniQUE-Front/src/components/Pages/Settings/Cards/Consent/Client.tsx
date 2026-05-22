@@ -188,7 +188,13 @@ export default function ConsentSettingsCardClient({
                         </Typography>
                       )}
                       {scopes.length > 0 && (
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          sx={{
+                            flexWrap: "wrap",
+                          }}
+                        >
                           {scopes.map((s) => (
                             <Chip key={s} label={s} size="small" />
                           ))}

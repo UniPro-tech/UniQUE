@@ -11,24 +11,40 @@ const secretKeyFile =
 const publicKeyFile =
   process.env.CSRF_PUBLIC_KEY_PATH ||
   path.join(process.cwd(), "keys", "csrf_public.key");
-let secretKey, publicKey;
+let secretKey: Uint8Array<ArrayBufferLike>,
+  publicKey: Uint8Array<ArrayBufferLike>;
 
-if (fs.existsSync(secretKeyFile) && fs.existsSync(publicKeyFile)) {
-  secretKey = util.decodeBase64(fs.readFileSync(secretKeyFile, "utf8"));
+if (
+  fs.existsSync(/*turbopackIgnore: true*/ secretKeyFile) &&
+  fs.existsSync(/*turbopackIgnore: true*/ publicKeyFile)
+) {
+  secretKey = util.decodeBase64(
+    fs.readFileSync(/*turbopackIgnore: true*/ secretKeyFile, "utf8"),
+  );
   publicKey = secretKey.slice(32); // tweetnaclの秘密鍵は32+32=64バイト
 } else {
-  if (!fs.existsSync(path.dirname(secretKeyFile))) {
-    fs.mkdirSync(path.dirname(secretKeyFile), { recursive: true });
+  if (!fs.existsSync(/*turbopackIgnore: true*/ path.dirname(secretKeyFile))) {
+    fs.mkdirSync(/*turbopackIgnore: true*/ path.dirname(secretKeyFile), {
+      recursive: true,
+    });
   }
   const keyPair = nacl.sign.keyPair();
   secretKey = keyPair.secretKey;
   publicKey = keyPair.publicKey;
-  fs.writeFileSync(publicKeyFile, util.encodeBase64(publicKey), {
-    mode: 0o600,
-  });
-  fs.writeFileSync(secretKeyFile, util.encodeBase64(secretKey), {
-    mode: 0o600,
-  });
+  fs.writeFileSync(
+    /*turbopackIgnore: true*/ publicKeyFile,
+    util.encodeBase64(publicKey),
+    {
+      mode: 0o600,
+    },
+  );
+  fs.writeFileSync(
+    /*turbopackIgnore: true*/ secretKeyFile,
+    util.encodeBase64(secretKey),
+    {
+      mode: 0o600,
+    },
+  );
 }
 
 export const generateCSRFToken = (

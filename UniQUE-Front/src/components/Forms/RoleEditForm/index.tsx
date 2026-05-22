@@ -218,7 +218,13 @@ export default function RoleEditForm({ role }: RoleEditFormProps) {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              justifyContent: "flex-end",
+            }}
+          >
             <Button
               type="submit"
               variant="contained"

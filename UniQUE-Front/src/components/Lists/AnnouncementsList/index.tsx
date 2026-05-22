@@ -159,7 +159,12 @@ export default function AnnouncementsList({
 
   if (!items || items.length === 0) {
     return (
-      <Box textAlign="center" py={6}>
+      <Box
+        sx={{
+          textAlign: "center",
+          py: 6,
+        }}
+      >
         <Typography variant="h6">お知らせはありません</Typography>
         <Typography variant="body2" color="text.secondary">
           新しいお知らせが追加されるとここに表示されます。
@@ -175,12 +180,14 @@ export default function AnnouncementsList({
   return (
     <>
       <Grid
-        container
-        spacing={2}
-        justifyContent="start"
-        alignItems="start"
         id="announcements-grid"
+        container
         columns={12}
+        spacing={2}
+        sx={{
+          justifyContent: "start",
+          alignItems: "start",
+        }}
       >
         {items.map((a) => {
           const preview =
@@ -208,7 +215,13 @@ export default function AnnouncementsList({
                     </Avatar>
                   }
                   title={
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{
+                        alignItems: "center",
+                      }}
+                    >
                       <Typography variant="h6" component="div">
                         {a.title}
                       </Typography>

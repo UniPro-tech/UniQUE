@@ -78,14 +78,20 @@ export default function PasswordSection({
         }
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={2}>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+        }}
+      >
         <Typography variant="h6" component={"h4"}>
           パスワードの変更
         </Typography>
         <Divider sx={{ flexGrow: 1 }} />
       </Stack>
       <input type="hidden" name="csrfToken" value={csrfToken} />
-      <input type="hidden" name="id" value={user.id!} />
+      <input type="hidden" name="id" value={user.id} />
       <TextField
         label="現在のパスワード"
         name="current_password"

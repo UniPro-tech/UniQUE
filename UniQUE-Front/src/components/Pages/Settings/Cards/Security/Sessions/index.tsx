@@ -58,7 +58,13 @@ export default function SessionsSection({
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" alignItems="center" spacing={2}>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+        }}
+      >
         <Typography variant="h6" component={"h4"}>
           セッション管理
         </Typography>
@@ -94,7 +100,13 @@ export default function SessionsSection({
                   }}
                 >
                   <Box>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{
+                        alignItems: "center",
+                      }}
+                    >
                       <Typography variant="body1">
                         {ua
                           ? ua.browser !== "Unknown" || ua.os !== "Unknown"

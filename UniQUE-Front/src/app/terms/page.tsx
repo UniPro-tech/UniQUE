@@ -10,7 +10,8 @@ export const metadata = {
 };
 
 export default function TOSPage() {
-  const file = fs.readFileSync(path.join("./src/app/terms/terms.md"), "utf8");
+  const filepath = path.join(process.cwd(), "src", "app", "terms", "terms.md");
+  const file = fs.readFileSync(filepath, "utf8");
   return (
     <Stack
       className="markdown"
