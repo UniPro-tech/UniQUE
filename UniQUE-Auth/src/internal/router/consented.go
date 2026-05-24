@@ -1,6 +1,9 @@
 package router
 
 import (
+	"errors"
+	"net/url"
+
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -34,13 +37,18 @@ func ConsentedGet(c *gin.Context) {
 	}
 	q := query.Use(db)
 
+	// エラーチェックを先に行うように順序を修正
 	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(req.AuthorizationID)).First()
-	if authReq == nil || !authReq.IsConsented {
-		c.JSON(400, gin.H{"error": "invalid auth_request_id"})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(400, gin.H{"error": "invalid auth_request_id"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
-	if err != nil {
-		c.JSON(500, gin.H{"error": "internal server error"})
+	if authReq == nil || !authReq.IsConsented {
+		c.JSON(400, gin.H{"error": "invalid auth_request_id"})
 		return
 	}
 
@@ -51,12 +59,24 @@ func ConsentedGet(c *gin.Context) {
 			c.JSON(400, gin.H{"error": "not check consented"})
 			return
 		}
-		// Redirect to client's redirect_uri with authorization code and state
-		redirectURL := authReq.RedirectURI + "?code=" + *authReq.Code
-		if authReq.State != nil && *authReq.State != "" {
-			redirectURL += "&state=" + *authReq.State
+
+		// 文字列結合ではなく、net/url を使用して安全にURLとクエリを構築する
+		parsedURL, err := url.Parse(authReq.RedirectURI)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "invalid redirect_uri format"})
+			return
 		}
-		c.Redirect(301, redirectURL)
+
+		urlQuery := parsedURL.Query()
+		urlQuery.Set("code", *authReq.Code)
+		if authReq.State != nil && *authReq.State != "" {
+			urlQuery.Set("state", *authReq.State)
+		}
+
+		parsedURL.RawQuery = urlQuery.Encode()
+
+		// 構築したURLへリダイレクト
+		c.Redirect(301, parsedURL.String())
 		return
 	default:
 		c.JSON(400, gin.H{"error": "unsupported response_type"})

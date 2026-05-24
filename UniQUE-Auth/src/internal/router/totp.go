@@ -1,6 +1,9 @@
 package router
 
 import (
+	"errors"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -26,70 +29,98 @@ type GenerateTOTPResponse struct {
 // @Success 200 {object} GenerateTOTPResponse "OK"
 // @Param request body GenerateTOTPRequest true "Generate TOTP Request"
 // @Accept json
-// @Router /internal/totp/{user_id} [POST]
+// @Router /internal/totp/{uid} [POST]
 func GenerateTOTP(c *gin.Context) {
-	// Passwordを検証してユーザーを認証する
 	req := GenerateTOTPRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
 	userId := c.Param("uid")
 
-	// dbの取得
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
-	// useridからcustomidを取得する
-	// そのcustomidとpasswordでユーザーを認証する
-	user, err := q.User.Where(q.User.ID.Eq(userId)).First()
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
+	var secret, uri string
 
-	user, err, reason := passwordAuthentication(q, user.CustomID, req.Password)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
+	// トランザクション内で読み込みから更新までを一貫して実行
+	err := q.Transaction(func(tx *query.Query) error {
+		// 行ロック（Clauses(clause.Locking{Strength: "UPDATE"})）を必要に応じて追記しても良いですが、
+		// 通常の分離レベルでも同一トランザクション内でクエリを完結させることで安全性を高めます
+		user, err := tx.User.Where(tx.User.ID.Eq(userId)).First()
+		if err != nil {
+			return err
+		}
 
-	if user == nil {
-		c.JSON(401, gin.H{"error": "invalid credentials", "reason": reason})
-		return
-	}
+		// トランザクションのコンテキスト（tx）を引き継いでパスワード認証を行う
+		authUser, authErr, reason := passwordAuthentication(tx, user.CustomID, req.Password)
+		if authErr != nil {
+			return authErr
+		}
+		if authUser == nil {
+			// 独自の文字列エラーを返すことで、外側で401としてハンドリングする
+			if reason != nil {
+				return errors.New("auth_failed:" + *reason)
+			}
+			return errors.New("auth_failed")
+		}
 
-	if user.IsTotpEnabled {
-		c.JSON(400, gin.H{"error": "TOTP is already enabled"})
-		return
-	}
+		if authUser.IsTotpEnabled {
+			return errors.New("totp_already_enabled")
+		}
 
-	const issuer = "UniQUE"
+		const issuer = "UniQUE"
+		key, err := totp.Generate(totp.GenerateOpts{
+			Issuer:      issuer,
+			AccountName: authUser.CustomID,
+		})
+		if err != nil {
+			return errors.New("failed_to_generate_totp")
+		}
 
-	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      issuer,
-		AccountName: user.CustomID,
+		_, err = tx.User.Where(tx.User.ID.Eq(authUser.ID)).Updates(map[string]any{
+			"totp_secret": key.Secret(),
+			"updated_at":  time.Now().UTC(),
+		})
+		if err != nil {
+			return err
+		}
+
+		secret = key.Secret()
+		uri = key.URL()
+		return nil
 	})
 
-	_, err = q.User.Where(q.User.ID.Eq(user.ID)).Updates(map[string]interface{}{
-		"totp_secret": key.Secret(),
-		"updated_at":  time.Now().UTC(),
-	})
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		if strings.HasPrefix(err.Error(), "auth_failed") {
+			res := gin.H{"error": "invalid credentials"}
+			if parts := strings.Split(err.Error(), ":"); len(parts) > 1 {
+				res["reason"] = parts[1]
+			}
+			c.JSON(http.StatusUnauthorized, res)
+			return
+		}
+		if err.Error() == "totp_already_enabled" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "TOTP is already enabled"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
-	// Not implemented yet
-	c.JSON(200, gin.H{
-		"secret": key.Secret(), // TOTPシークレット
-		"uri":    key.URL(),    // QRコード用URI (otpauth://...)
+	c.JSON(http.StatusOK, GenerateTOTPResponse{
+		Secret: secret,
+		URI:    uri,
 	})
 }
 
@@ -109,47 +140,54 @@ type VerifyTOTPResponse struct {
 // @Success 200 {object} VerifyTOTPResponse "OK"
 // @Param request body VerifyTOTPRequest true "Verify TOTP Request"
 // @Accept json
-// @Router /internal/totp/{user_id}/verify [POST]
+// @Router /internal/totp/{uid}/verify [POST]
 func VerifyTOTP(c *gin.Context) {
-	// TOTPコードを検証する
-	// 検証に成功したら、ユーザーのis_totp_enabledをtrueに更新する
-	// dbの取得
+	req := VerifyTOTPRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
+	}
+
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
-	req := VerifyTOTPRequest{}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
 	userID := c.Param("uid")
+	var valid bool
 
-	user, err := q.User.Where(q.User.ID.Eq(userID)).First()
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	valid := totp.Validate(req.Code, user.TotpSecret)
-
-	if valid {
-		_, err = q.User.Where(q.User.ID.Eq(user.ID)).Updates(map[string]any{
-			"is_totp_enabled": true,
-			"updated_at":      time.Now().UTC(),
-		})
+	err := q.Transaction(func(tx *query.Query) error {
+		user, err := tx.User.Where(tx.User.ID.Eq(userID)).First()
 		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
+			return err
+		}
+
+		valid = totp.Validate(req.Code, user.TotpSecret)
+		if valid {
+			_, err = tx.User.Where(tx.User.ID.Eq(user.ID)).Updates(map[string]any{
+				"is_totp_enabled": true,
+				"updated_at":      time.Now().UTC(),
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
-	c.JSON(200, VerifyTOTPResponse{
+	c.JSON(http.StatusOK, VerifyTOTPResponse{
 		Valid: valid,
 	})
 }
@@ -170,61 +208,78 @@ type DisableTOTPResponse struct {
 // @Success 200 {object} DisableTOTPResponse "OK"
 // @Param request body DisableTOTPRequest true "Disable TOTP Request"
 // @Accept json
-// @Router /internal/totp/{user_id}/disable [POST]
+// @Router /internal/totp/{uid}/disable [POST]
 func DisableTOTP(c *gin.Context) {
-	// Passwordを検証してユーザーを認証する
 	req := DisableTOTPRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
 	userId := c.Param("uid")
 
-	// dbの取得
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
-	// useridからcustomidを取得する
-	// そのcustomidとpasswordでユーザーを認証する
-	user, err := q.User.Where(q.User.ID.Eq(userId)).First()
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
+	err := q.Transaction(func(tx *query.Query) error {
+		user, err := tx.User.Where(tx.User.ID.Eq(userId)).First()
+		if err != nil {
+			return err
+		}
 
-	user, err, reason := passwordAuthentication(q, user.CustomID, req.Password)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
+		authUser, authErr, reason := passwordAuthentication(tx, user.CustomID, req.Password)
+		if authErr != nil {
+			return authErr
+		}
+		if authUser == nil {
+			if reason != nil {
+				return errors.New("auth_failed:" + *reason)
+			}
+			return errors.New("auth_failed")
+		}
 
-	if user == nil {
-		c.JSON(401, gin.H{"error": "invalid credentials", "reason": reason})
-		return
-	}
+		if !authUser.IsTotpEnabled {
+			return errors.New("totp_not_enabled")
+		}
 
-	if !user.IsTotpEnabled {
-		c.JSON(400, gin.H{"error": "TOTP is not enabled"})
-		return
-	}
-
-	_, err = q.User.Where(q.User.ID.Eq(user.ID)).Updates(map[string]interface{}{
-		"totp_secret":     "",
-		"is_totp_enabled": false,
-		"updated_at":      time.Now().UTC(),
+		_, err = tx.User.Where(tx.User.ID.Eq(authUser.ID)).Updates(map[string]any{
+			"totp_secret":     "",
+			"is_totp_enabled": false,
+			"updated_at":      time.Now().UTC(),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
 	})
+
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		if strings.HasPrefix(err.Error(), "auth_failed") {
+			res := gin.H{"error": "invalid credentials"}
+			if parts := strings.Split(err.Error(), ":"); len(parts) > 1 {
+				res["reason"] = parts[1]
+			}
+			c.JSON(http.StatusUnauthorized, res)
+			return
+		}
+		if err.Error() == "totp_not_enabled" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "TOTP is not enabled"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
-	c.JSON(200, DisableTOTPResponse{
+	c.JSON(http.StatusOK, DisableTOTPResponse{
 		Message: "TOTP disabled successfully",
 	})
 }

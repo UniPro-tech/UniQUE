@@ -12,6 +12,8 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid/v2"
+	"gorm.io/gen/field"
+	"gorm.io/gorm"
 )
 
 // RegisterAnnouncementRoutes registers announcement routes
@@ -45,16 +47,13 @@ func listAnnouncements(c *gin.Context) {
 		return
 	}
 	q := query.Use(db)
-	// limit パラメータの読み取り（省略時は100件）
 	limitStr := c.Query("limit")
 	if limitStr == "" {
 		limitStr = "100"
 	}
-	// deletedパラメータの読み取り（省略時はfalse）
 	deletedStr := c.Query("deleted")
-	var (
-		dao = q.Announcement.Order(query.Announcement.IsPinned.Desc(), query.Announcement.CreatedAt.Desc())
-	)
+	var dao = q.Announcement.Order(query.Announcement.IsPinned.Desc(), query.Announcement.CreatedAt.Desc())
+
 	if deletedStr != "" {
 		deleted, errp := strconv.ParseBool(deletedStr)
 		if errp != nil {
@@ -62,7 +61,6 @@ func listAnnouncements(c *gin.Context) {
 			return
 		}
 		if deleted {
-			// deleted=true は ANNOUNCEMENT_UPDATE 権限があるユーザーのみ許可
 			ui, exists := c.Get("user")
 			if !exists {
 				c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
@@ -78,7 +76,6 @@ func listAnnouncements(c *gin.Context) {
 				c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 				return
 			}
-			// 権限あり -> 削除済み含めて返す（フィルタなし）
 		} else {
 			dao = dao.Where(query.Announcement.DeletedAt.IsNull())
 		}
@@ -100,7 +97,7 @@ func listAnnouncements(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// Build map of user IDs to UserDTOs
+
 	userIDs := make([]string, 0, len(anns))
 	for _, a := range anns {
 		if a.CreatedBy != "" {
@@ -138,7 +135,6 @@ func listAnnouncements(c *gin.Context) {
 			if u, ok := userMap[a.CreatedBy]; ok {
 				createdBy = u
 			} else {
-				// fallback: minimal object with ID
 				createdBy = UserDTO{ID: a.CreatedBy}
 			}
 		}
@@ -176,7 +172,6 @@ func getAnnouncement(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
-	// Build CreatedBy UserDTO
 	createdBy := UserDTO{ID: "", CustomID: ""}
 	if a.CreatedBy != "" {
 		if u, err := q.User.Where(query.User.ID.Eq(a.CreatedBy)).First(); err == nil {
@@ -222,7 +217,6 @@ func createAnnouncement(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	// 作成者
 	userObj, _ := c.Get("user")
 	createdByID := ""
 	if um, ok := userObj.(*model.User); ok && um != nil {
@@ -239,34 +233,46 @@ func createAnnouncement(c *gin.Context) {
 	if input.IsPinned != nil {
 		ann.IsPinned = *input.IsPinned
 	}
-	q := query.Use(db)
-	if err := q.Announcement.Create(ann); err != nil {
+
+	var dto AnnouncementDTO
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		if err := q.Announcement.Create(ann); err != nil {
+			return err
+		}
+
+		createdByObj := UserDTO{ID: "", CustomID: ""}
+		if ann.CreatedBy != "" {
+			if u, err := q.User.Where(query.User.ID.Eq(ann.CreatedBy)).First(); err == nil {
+				createdByObj = UserDTO{ID: u.ID, CustomID: u.CustomID}
+				if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
+					createdByObj.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
+				}
+			} else {
+				createdByObj = UserDTO{ID: ann.CreatedBy}
+			}
+		}
+
+		dto = AnnouncementDTO{
+			ID:        ann.ID,
+			Title:     ann.Title,
+			Content:   ann.Content,
+			CreatedBy: createdByObj,
+			IsPinned:  ann.IsPinned,
+			CreatedAt: ann.CreatedAt,
+			UpdatedAt: ann.UpdatedAt,
+			DeletedAt: utils.DeletedAtPtr(ann.DeletedAt),
+		}
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// build CreatedBy object
-	createdByObj := UserDTO{ID: "", CustomID: ""}
-	if ann.CreatedBy != "" {
-		if u, err := q.User.Where(query.User.ID.Eq(ann.CreatedBy)).First(); err == nil {
-			createdByObj = UserDTO{ID: u.ID, CustomID: u.CustomID}
-			if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
-				createdByObj.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
-			}
-		} else {
-			createdByObj = UserDTO{ID: ann.CreatedBy}
-		}
-	}
 
-	dto := AnnouncementDTO{
-		ID:        ann.ID,
-		Title:     ann.Title,
-		Content:   ann.Content,
-		CreatedBy: createdByObj,
-		IsPinned:  ann.IsPinned,
-		CreatedAt: ann.CreatedAt,
-		UpdatedAt: ann.UpdatedAt,
-		DeletedAt: utils.DeletedAtPtr(ann.DeletedAt),
-	}
 	c.JSON(http.StatusCreated, dto)
 }
 
@@ -291,53 +297,79 @@ func updateAnnouncement(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updates := map[string]interface{}{}
+
+	// 1. モデル構造体で更新用データを準備
+	updates := model.Announcement{
+		UpdatedAt: time.Now().UTC(),
+	}
+	selectColumns := []field.Expr{query.Announcement.UpdatedAt}
+
 	if input.Title != nil {
-		updates["title"] = *input.Title
+		updates.Title = *input.Title
+		selectColumns = append(selectColumns, query.Announcement.Title)
 	}
 	if input.Content != nil {
-		updates["content"] = *input.Content
+		updates.Content = *input.Content
+		selectColumns = append(selectColumns, query.Announcement.Content)
 	}
 	if input.IsPinned != nil {
-		updates["is_pinned"] = *input.IsPinned
+		updates.IsPinned = *input.IsPinned
+		selectColumns = append(selectColumns, query.Announcement.IsPinned)
 	}
-	updates["updated_at"] = time.Now().UTC()
 
-	q := query.Use(db)
-	if len(updates) > 0 {
-		if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Updates(updates); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+	var dto AnnouncementDTO
+	var isNotFound bool
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// 2. Selectでカラムを絞り込んでモデル更新を実行
+		if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).
+			Select(selectColumns...).
+			Updates(&updates); err != nil {
+			return err
 		}
-	}
-	a, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).First()
+
+		a, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).First()
+		if err != nil {
+			isNotFound = true
+			return err
+		}
+
+		createdBy := UserDTO{ID: "", CustomID: ""}
+		if a.CreatedBy != "" {
+			if u, err := q.User.Where(query.User.ID.Eq(a.CreatedBy)).First(); err == nil {
+				createdBy = UserDTO{ID: u.ID, CustomID: u.CustomID}
+				if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
+					createdBy.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
+				}
+			} else {
+				createdBy = UserDTO{ID: a.CreatedBy}
+			}
+		}
+
+		dto = AnnouncementDTO{
+			ID:        a.ID,
+			Title:     a.Title,
+			Content:   a.Content,
+			CreatedBy: createdBy,
+			IsPinned:  a.IsPinned,
+			CreatedAt: a.CreatedAt,
+			UpdatedAt: a.UpdatedAt,
+			DeletedAt: utils.DeletedAtPtr(a.DeletedAt),
+		}
+		return nil
+	})
+
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
-	// Build CreatedBy object
-	createdBy := UserDTO{ID: "", CustomID: ""}
-	if a.CreatedBy != "" {
-		if u, err := q.User.Where(query.User.ID.Eq(a.CreatedBy)).First(); err == nil {
-			createdBy = UserDTO{ID: u.ID, CustomID: u.CustomID}
-			if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
-				createdBy.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
-			}
-		} else {
-			createdBy = UserDTO{ID: a.CreatedBy}
-		}
-	}
 
-	dto := AnnouncementDTO{
-		ID:        a.ID,
-		Title:     a.Title,
-		Content:   a.Content,
-		CreatedBy: createdBy,
-		IsPinned:  a.IsPinned,
-		CreatedAt: a.CreatedAt,
-		UpdatedAt: a.UpdatedAt,
-		DeletedAt: utils.DeletedAtPtr(a.DeletedAt),
-	}
 	c.JSON(http.StatusOK, dto)
 }
 
@@ -362,53 +394,79 @@ func patchAnnouncement(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updates := map[string]any{}
+
+	// 1. モデル構造体で更新用データを準備
+	updates := model.Announcement{
+		UpdatedAt: time.Now().UTC(),
+	}
+	selectColumns := []field.Expr{query.Announcement.UpdatedAt}
+
 	if input.Title != nil {
-		updates["title"] = *input.Title
+		updates.Title = *input.Title
+		selectColumns = append(selectColumns, query.Announcement.Title)
 	}
 	if input.Content != nil {
-		updates["content"] = *input.Content
+		updates.Content = *input.Content
+		selectColumns = append(selectColumns, query.Announcement.Content)
 	}
 	if input.IsPinned != nil {
-		updates["is_pinned"] = *input.IsPinned
+		updates.IsPinned = *input.IsPinned
+		selectColumns = append(selectColumns, query.Announcement.IsPinned)
 	}
-	updates["updated_at"] = time.Now().UTC()
 
-	q := query.Use(db)
-	if len(updates) > 0 {
-		if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Updates(updates); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+	var dto AnnouncementDTO
+	var isNotFound bool
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// 2. Selectでカラムを絞り込んでモデル更新を実行
+		if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).
+			Select(selectColumns...).
+			Updates(&updates); err != nil {
+			return err
 		}
-	}
-	a, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).First()
+
+		a, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).First()
+		if err != nil {
+			isNotFound = true
+			return err
+		}
+
+		createdBy := UserDTO{ID: "", CustomID: ""}
+		if a.CreatedBy != "" {
+			if u, err := q.User.Where(query.User.ID.Eq(a.CreatedBy)).First(); err == nil {
+				createdBy = UserDTO{ID: u.ID, CustomID: u.CustomID}
+				if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
+					createdBy.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
+				}
+			} else {
+				createdBy = UserDTO{ID: a.CreatedBy}
+			}
+		}
+
+		dto = AnnouncementDTO{
+			ID:        a.ID,
+			Title:     a.Title,
+			Content:   a.Content,
+			CreatedBy: createdBy,
+			IsPinned:  a.IsPinned,
+			CreatedAt: a.CreatedAt,
+			UpdatedAt: a.UpdatedAt,
+			DeletedAt: utils.DeletedAtPtr(a.DeletedAt),
+		}
+		return nil
+	})
+
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
-	// Build CreatedBy object
-	createdBy := UserDTO{ID: "", CustomID: ""}
-	if a.CreatedBy != "" {
-		if u, err := q.User.Where(query.User.ID.Eq(a.CreatedBy)).First(); err == nil {
-			createdBy = UserDTO{ID: u.ID, CustomID: u.CustomID}
-			if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
-				createdBy.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
-			}
-		} else {
-			createdBy = UserDTO{ID: a.CreatedBy}
-		}
-	}
 
-	dto := AnnouncementDTO{
-		ID:        a.ID,
-		Title:     a.Title,
-		Content:   a.Content,
-		CreatedBy: createdBy,
-		IsPinned:  a.IsPinned,
-		CreatedAt: a.CreatedAt,
-		UpdatedAt: a.UpdatedAt,
-		DeletedAt: utils.DeletedAtPtr(a.DeletedAt),
-	}
 	c.JSON(http.StatusOK, dto)
 }
 
@@ -426,11 +484,20 @@ func deleteAnnouncement(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	q := query.Use(db)
-	if _, err := q.Announcement.Delete(&model.Announcement{ID: id}); err != nil {
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		if _, err := q.Announcement.Delete(&model.Announcement{ID: id}); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.Status(http.StatusNoContent)
 }
 
@@ -450,46 +517,74 @@ func pinAnnouncement(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	// toggle pin or set true if absent
 	var input struct {
 		Pin bool `json:"pin"`
 	}
 	_ = c.ShouldBindJSON(&input)
-	q := query.Use(db)
-	updates := map[string]any{}
-	updates["is_pinned"] = input.Pin
-	updates["updated_at"] = time.Now().UTC()
-	if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Updates(updates); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+
+	// 1. モデル構造体でピン留め用データを準備
+	updates := model.Announcement{
+		IsPinned:  input.Pin,
+		UpdatedAt: time.Now().UTC(),
 	}
-	a, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).First()
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-		return
-	}
-	// Build CreatedBy object
-	createdBy := UserDTO{ID: "", CustomID: ""}
-	if a.CreatedBy != "" {
-		if u, err := q.User.Where(query.User.ID.Eq(a.CreatedBy)).First(); err == nil {
-			createdBy = UserDTO{ID: u.ID, CustomID: u.CustomID}
-			if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
-				createdBy.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
-			}
-		} else {
-			createdBy = UserDTO{ID: a.CreatedBy}
-		}
+	// 明示的にIsPinnedとUpdatedAtを更新対象にする
+	selectColumns := []field.Expr{
+		query.Announcement.IsPinned,
+		query.Announcement.UpdatedAt,
 	}
 
-	dto := AnnouncementDTO{
-		ID:        a.ID,
-		Title:     a.Title,
-		Content:   a.Content,
-		CreatedBy: createdBy,
-		IsPinned:  a.IsPinned,
-		CreatedAt: a.CreatedAt,
-		UpdatedAt: a.UpdatedAt,
-		DeletedAt: utils.DeletedAtPtr(a.DeletedAt),
+	var dto AnnouncementDTO
+	var isNotFound bool
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// 2. 指定したモデルのフィールドのみを対象にUpdatesを実行
+		if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).
+			Select(selectColumns...).
+			Updates(&updates); err != nil {
+			return err
+		}
+
+		a, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).First()
+		if err != nil {
+			isNotFound = true
+			return err
+		}
+
+		createdBy := UserDTO{ID: "", CustomID: ""}
+		if a.CreatedBy != "" {
+			if u, err := q.User.Where(query.User.ID.Eq(a.CreatedBy)).First(); err == nil {
+				createdBy = UserDTO{ID: u.ID, CustomID: u.CustomID}
+				if p, err := q.Profile.Where(query.Profile.UserID.Eq(u.ID)).First(); err == nil {
+					createdBy.Profile = &ProfileDTO{UserID: p.UserID, DisplayName: p.DisplayName, JoinedAt: formatDate(p.JoinedAt)}
+				}
+			} else {
+				createdBy = UserDTO{ID: a.CreatedBy}
+			}
+		}
+
+		dto = AnnouncementDTO{
+			ID:        a.ID,
+			Title:     a.Title,
+			Content:   a.Content,
+			CreatedBy: createdBy,
+			IsPinned:  a.IsPinned,
+			CreatedAt: a.CreatedAt,
+			UpdatedAt: a.UpdatedAt,
+			DeletedAt: utils.DeletedAtPtr(a.DeletedAt),
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
 	}
+
 	c.JSON(http.StatusOK, dto)
 }

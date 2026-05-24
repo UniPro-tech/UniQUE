@@ -25,6 +25,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/oklog/ulid/v2"
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 )
 
@@ -276,6 +277,7 @@ func createUser(c *gin.Context) {
 		status = input.Status
 	}
 
+	now := time.Now().UTC()
 	user := model.User{
 		ID:                ulid.Make().String(),
 		CustomID:          input.CustomID,
@@ -284,76 +286,97 @@ func createUser(c *gin.Context) {
 		ExternalEmail:     input.ExternalEmail,
 		Status:            status,
 		AffiliationPeriod: stringToPtr(input.AffiliationPeriod),
-		CreatedAt:         time.Now().UTC(),
-		UpdatedAt:         time.Now().UTC(),
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
-	q := query.Use(db)
-	if err := q.User.Create(&user); err != nil {
-		// MySQLの重複エラーをチェック
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			// エラーメッセージから重複したキーを判定
-			errMsg := mysqlErr.Message
-			if strings.Contains(errMsg, "custom_id") {
-				c.JSON(http.StatusConflict, gin.H{"error": "username already exists", "code": "R0006"})
-				return
-			} else if strings.Contains(errMsg, "email") {
-				c.JSON(http.StatusConflict, gin.H{"error": "email already exists", "code": "R0007"})
-				return
-			}
-			// その他の重複エラー
-			c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "code": "R0002"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	// 新規作成ユーザーに対して is_default=true のロールを付与
-	if defaultRoles, derr := q.Role.Where(query.Role.IsDefault.Is(true)).Find(); derr == nil {
-		for _, dr := range defaultRoles {
-			ur := &model.UserRole{UserID: user.ID, RoleID: dr.ID}
-			if err := q.UserRole.Create(ur); err != nil {
-				// ロール付与失敗は致命的ではないのでログに残す
-				log.Printf("failed to assign default role %s to user %s: %v", dr.ID, user.ID, err)
-			}
-		}
-	} else {
-		log.Printf("failed to fetch default roles: %v", derr)
-	}
-	err = sendRegistrationEmailVerification(user.ID, user.ExternalEmail, "", q, &config)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+
+	var isConflict bool
+	var isCustomIDConflict bool
+	var isEmailConflict bool
 	var profileDTO *ProfileDTO
-	if input.Profile != nil {
-		p := &model.Profile{
-			UserID:      user.ID,
-			DisplayName: input.Profile.DisplayName,
-			CreatedAt:   time.Now().UTC(),
-			UpdatedAt:   time.Now().UTC(),
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		if err := q.User.Create(&user); err != nil {
+			if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+				isConflict = true
+				if strings.Contains(mysqlErr.Message, "custom_id") {
+					isCustomIDConflict = true
+				} else if strings.Contains(mysqlErr.Message, "email") {
+					isEmailConflict = true
+				}
+			}
+			return err
 		}
-		if input.Profile.Bio != "" {
-			p.Bio = &input.Profile.Bio
+
+		// 新規作成ユーザーに対して is_default=true のロールを付与
+		if defaultRoles, derr := q.Role.Where(query.Role.IsDefault.Is(true)).Find(); derr == nil {
+			for _, dr := range defaultRoles {
+				ur := &model.UserRole{
+					UserID:    user.ID,
+					RoleID:    dr.ID,
+					CreatedAt: now,
+					UpdatedAt: now,
+				}
+				if err := q.UserRole.Create(ur); err != nil {
+					log.Printf("failed to assign default role %s to user %s: %v", dr.ID, user.ID, err)
+				}
+			}
+		} else {
+			log.Printf("failed to fetch default roles: %v", derr)
 		}
-		if input.Profile.WebsiteURL != "" {
-			p.WebsiteURL = &input.Profile.WebsiteURL
+
+		err = sendRegistrationEmailVerification(user.ID, user.ExternalEmail, "", q, &config)
+		if err != nil {
+			return err
 		}
-		if err := q.Profile.Create(p); err != nil {
+
+		if input.Profile != nil {
+			p := &model.Profile{
+				UserID:      user.ID,
+				DisplayName: input.Profile.DisplayName,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			}
+			if input.Profile.Bio != "" {
+				p.Bio = &input.Profile.Bio
+			}
+			if input.Profile.WebsiteURL != "" {
+				p.WebsiteURL = &input.Profile.WebsiteURL
+			}
+			if err := q.Profile.Create(p); err != nil {
+				return err
+			}
+			profileDTO = &ProfileDTO{
+				UserID:           p.UserID,
+				DisplayName:      p.DisplayName,
+				Bio:              ptrToString(p.Bio),
+				WebsiteURL:       ptrToString(p.WebsiteURL),
+				TwitterHandle:    ptrToString(p.TwitterHandle),
+				Birthdate:        formatDate(p.Birthdate),
+				BirthdateVisible: &p.BirthdateVisible,
+				JoinedAt:         formatDate(p.JoinedAt),
+				IsAdult:          isAdult(p.Birthdate),
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isConflict {
+			if isCustomIDConflict {
+				c.JSON(http.StatusConflict, gin.H{"error": "username already exists", "code": "R0006"})
+			} else if isEmailConflict {
+				c.JSON(http.StatusConflict, gin.H{"error": "email already exists", "code": "R0007"})
+			} else {
+				c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "code": "R0002"})
+			}
+		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
 		}
-		profileDTO = &ProfileDTO{
-			UserID:           p.UserID,
-			DisplayName:      p.DisplayName,
-			Bio:              ptrToString(p.Bio),
-			WebsiteURL:       ptrToString(p.WebsiteURL),
-			TwitterHandle:    ptrToString(p.TwitterHandle),
-			Birthdate:        formatDate(p.Birthdate),
-			BirthdateVisible: &p.BirthdateVisible,
-			JoinedAt:         formatDate(p.JoinedAt),
-			IsAdult:          isAdult(p.Birthdate),
-		}
+		return
 	}
+
 	dbResp := UserDTO{
 		ID:                user.ID,
 		CustomID:          user.CustomID,
@@ -520,182 +543,203 @@ func updateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
 		return
 	}
-	// apply updates to user
-	updates := map[string]interface{}{}
+
+	// トランザクションの外側で、あらかじめパースエラーが発生し得る処理を検証・実施
+	var birthdatePtr *time.Time
+	if input.Profile != nil && input.Profile.Birthdate.Set {
+		if input.Profile.Birthdate.Value != nil && *input.Profile.Birthdate.Value != "" {
+			t, err := time.Parse("2006-01-02", *input.Profile.Birthdate.Value)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid birthdate format, expected YYYY-MM-DD"})
+				return
+			}
+			birthdatePtr = &t
+		}
+	}
+
+	var joinedAtPtr *time.Time
+	if input.Profile != nil && input.Profile.JoinedAt.Set {
+		if input.Profile.JoinedAt.Value != nil && *input.Profile.JoinedAt.Value != "" {
+			t, err := parseDateFlexible(*input.Profile.JoinedAt.Value)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid joined_at format"})
+				return
+			}
+			joinedAtPtr = &t
+		}
+	}
+
+	now := time.Now().UTC()
+
+	// ユーザー更新用モデルの構築（構造体 + Select方式）
+	updatesUser := model.User{
+		UpdatedAt: now,
+	}
+	selectUserColumns := []field.Expr{query.User.UpdatedAt}
+
 	if input.Email != nil && *input.Email != user.Email {
-		// メールアドレスの変更は管理者のみ可能
 		permissions, exists := c.Get("permissions")
 		if !exists {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "permissions not found"})
 			return
 		}
-
 		perms, ok := permissions.(constants.Permission)
 		if !ok || !perms.HasPermission(constants.USER_UPDATE) {
 			c.JSON(http.StatusNotImplemented, gin.H{"error": "email change not implemented"})
 			return
 		}
-
-		// 管理者ならメールアドレスを更新
-		updates["email"] = *input.Email
+		updatesUser.Email = *input.Email
+		selectUserColumns = append(selectUserColumns, query.User.Email)
 	}
+
 	if input.ExternalEmail != nil && *input.ExternalEmail != user.ExternalEmail {
-		// 既存の未使用コードを削除
-		_, _ = q.EmailVerificationCode.Where(
-			query.EmailVerificationCode.UserID.Eq(id),
-			query.EmailVerificationCode.RequestType.Eq("email_change"),
-		).Delete()
-		// external_emailは更新せず、認証コードのnew_emailに保存
-		if err := sendEmailChangeVerification(id, *input.ExternalEmail, "", q, config.LoadConfig()); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		updates["email_verified"] = false
+		updatesUser.EmailVerified = false
+		selectUserColumns = append(selectUserColumns, query.User.EmailVerified)
 	}
 	if input.AffiliationPeriod != nil {
-		updates["affiliation_period"] = *input.AffiliationPeriod
+		updatesUser.AffiliationPeriod = input.AffiliationPeriod // pointer copy
+		selectUserColumns = append(selectUserColumns, query.User.AffiliationPeriod)
 	}
 	if input.Status != nil {
-		updates["status"] = *input.Status
+		updatesUser.Status = *input.Status
+		selectUserColumns = append(selectUserColumns, query.User.Status)
 	}
-	updates["updated_at"] = time.Now().UTC()
-	if len(updates) > 0 {
-		if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(updates); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+
+	// プロフィール更新用モデルの構築（構造体 + Select方式）
+	updatesProfile := model.Profile{
+		UpdatedAt: now,
 	}
+	selectProfileColumns := []field.Expr{query.Profile.UpdatedAt}
+
 	if input.Profile != nil {
-		profileUpdates := map[string]interface{}{}
 		if input.Profile.DisplayName.Set {
-			if input.Profile.DisplayName.Value == nil {
-				profileUpdates["display_name"] = nil
+			if input.Profile.DisplayName.Value != nil {
+				updatesProfile.DisplayName = *input.Profile.DisplayName.Value
 			} else {
-				profileUpdates["display_name"] = *input.Profile.DisplayName.Value
+				updatesProfile.DisplayName = ""
 			}
+			selectProfileColumns = append(selectProfileColumns, query.Profile.DisplayName)
 		}
 		if input.Profile.Bio.Set {
-			if input.Profile.Bio.Value == nil {
-				profileUpdates["bio"] = nil
-			} else {
-				profileUpdates["bio"] = *input.Profile.Bio.Value
-			}
+			updatesProfile.Bio = input.Profile.Bio.Value
+			selectProfileColumns = append(selectProfileColumns, query.Profile.Bio)
 		}
 		if input.Profile.WebsiteURL.Set {
-			if input.Profile.WebsiteURL.Value == nil {
-				profileUpdates["website_url"] = nil
-			} else {
-				profileUpdates["website_url"] = *input.Profile.WebsiteURL.Value
-			}
+			updatesProfile.WebsiteURL = input.Profile.WebsiteURL.Value
+			selectProfileColumns = append(selectProfileColumns, query.Profile.WebsiteURL)
 		}
 		if input.Profile.TwitterHandle.Set {
-			if input.Profile.TwitterHandle.Value == nil {
-				profileUpdates["twitter_handle"] = nil
-			} else {
-				profileUpdates["twitter_handle"] = *input.Profile.TwitterHandle.Value
-			}
+			updatesProfile.TwitterHandle = input.Profile.TwitterHandle.Value
+			selectProfileColumns = append(selectProfileColumns, query.Profile.TwitterHandle)
 		}
 		if input.Profile.BirthdateVisible.Set {
-			if input.Profile.BirthdateVisible.Value == nil {
-				profileUpdates["birthdate_visible"] = false
+			if input.Profile.BirthdateVisible.Value != nil {
+				updatesProfile.BirthdateVisible = *input.Profile.BirthdateVisible.Value
 			} else {
-				profileUpdates["birthdate_visible"] = *input.Profile.BirthdateVisible.Value
+				updatesProfile.BirthdateVisible = false
 			}
+			selectProfileColumns = append(selectProfileColumns, query.Profile.BirthdateVisible)
 		}
 		if input.Profile.Birthdate.Set {
-			if input.Profile.Birthdate.Value == nil || *input.Profile.Birthdate.Value == "" {
-				profileUpdates["birthdate"] = nil
-			} else {
-				t, err := time.Parse("2006-01-02", *input.Profile.Birthdate.Value)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid birthdate format, expected YYYY-MM-DD"})
-					return
-				}
-				profileUpdates["birthdate"] = t
-			}
+			updatesProfile.Birthdate = birthdatePtr
+			selectProfileColumns = append(selectProfileColumns, query.Profile.Birthdate)
 		}
 		if input.Profile.JoinedAt.Set {
-			if input.Profile.JoinedAt.Value == nil || *input.Profile.JoinedAt.Value == "" {
-				profileUpdates["joined_at"] = nil
-			} else {
-				joinedAt, err := parseDateFlexible(*input.Profile.JoinedAt.Value)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid joined_at format"})
-					return
-				}
-				profileUpdates["joined_at"] = joinedAt
-			}
-		}
-		existing, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).First()
-		if err != nil || existing == nil {
-			if err == gorm.ErrRecordNotFound || existing == nil {
-				// 新規作成: 必須フィールドだけセット
-				newProfile := &model.Profile{
-					UserID: user.ID,
-				}
-				if v, ok := profileUpdates["display_name"]; ok {
-					if v != nil {
-						newProfile.DisplayName = v.(string)
-					}
-				}
-				if v, ok := profileUpdates["bio"]; ok {
-					if v == nil {
-						newProfile.Bio = nil
-					} else {
-						bioStr := v.(string)
-						newProfile.Bio = &bioStr
-					}
-				}
-				if v, ok := profileUpdates["website_url"]; ok {
-					if v == nil {
-						newProfile.WebsiteURL = nil
-					} else {
-						urlStr := v.(string)
-						newProfile.WebsiteURL = &urlStr
-					}
-				}
-				if v, ok := profileUpdates["twitter_handle"]; ok {
-					if v == nil {
-						newProfile.TwitterHandle = nil
-					} else {
-						twitterStr := v.(string)
-						newProfile.TwitterHandle = &twitterStr
-					}
-				}
-				if v, ok := profileUpdates["birthdate_visible"]; ok {
-					newProfile.BirthdateVisible = v.(bool)
-				}
-				if v, ok := profileUpdates["birthdate"]; ok {
-					if v != nil {
-						bdTime := v.(time.Time)
-						newProfile.Birthdate = &bdTime
-					}
-				}
-				now := time.Now()
-				newProfile.JoinedAt = &now
-				if err := q.Profile.Create(newProfile); err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-					return
-				}
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		} else if len(profileUpdates) > 0 {
-			profileUpdates["updated_at"] = time.Now().UTC()
-			if _, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).Updates(profileUpdates); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
+			updatesProfile.JoinedAt = joinedAtPtr
+			selectProfileColumns = append(selectProfileColumns, query.Profile.JoinedAt)
 		}
 	}
-	// rebuild response dto
-	updated, err := q.User.Where(query.User.ID.Eq(id)).First()
+
+	var updated *model.User
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		if input.ExternalEmail != nil && *input.ExternalEmail != user.ExternalEmail {
+			// 既存の未使用コードを削除
+			_, err := q.EmailVerificationCode.Where(
+				query.EmailVerificationCode.UserID.Eq(id),
+				query.EmailVerificationCode.RequestType.Eq("email_change"),
+			).Delete()
+			if err != nil {
+				return err
+			}
+			// 認証コードの生成と送信
+			if err := sendEmailChangeVerification(id, *input.ExternalEmail, "", q, config.LoadConfig()); err != nil {
+				return err
+			}
+		}
+
+		// Userの更新
+		if len(selectUserColumns) > 1 {
+			if _, err := q.User.Where(query.User.ID.Eq(id)).Select(selectUserColumns...).Updates(&updatesUser); err != nil {
+				return err
+			}
+		}
+
+		// Profileの処理
+		if input.Profile != nil {
+			existing, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).First()
+			if err != nil && err != gorm.ErrRecordNotFound {
+				return err
+			}
+
+			if err == gorm.ErrRecordNotFound || existing == nil {
+				// 新規作成
+				newProfile := &model.Profile{
+					UserID:    user.ID,
+					CreatedAt: now,
+					UpdatedAt: now,
+				}
+				if input.Profile.DisplayName.Set && input.Profile.DisplayName.Value != nil {
+					newProfile.DisplayName = *input.Profile.DisplayName.Value
+				}
+				if input.Profile.Bio.Set {
+					newProfile.Bio = input.Profile.Bio.Value
+				}
+				if input.Profile.WebsiteURL.Set {
+					newProfile.WebsiteURL = input.Profile.WebsiteURL.Value
+				}
+				if input.Profile.TwitterHandle.Set {
+					newProfile.TwitterHandle = input.Profile.TwitterHandle.Value
+				}
+				if input.Profile.BirthdateVisible.Set && input.Profile.BirthdateVisible.Value != nil {
+					newProfile.BirthdateVisible = *input.Profile.BirthdateVisible.Value
+				}
+				if input.Profile.Birthdate.Set {
+					newProfile.Birthdate = birthdatePtr
+				}
+				if input.Profile.JoinedAt.Set {
+					newProfile.JoinedAt = joinedAtPtr
+				} else {
+					newProfile.JoinedAt = &now
+				}
+
+				if err := q.Profile.Create(newProfile); err != nil {
+					return err
+				}
+			} else {
+				// 構造体とSelect指定による安全な更新（NullフィールドのNULL更新もサポート）
+				if len(selectProfileColumns) > 1 {
+					if _, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).Select(selectProfileColumns...).Updates(&updatesProfile); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		// 最新データの再取得
+		var errFirst error
+		updated, errFirst = q.User.Where(query.User.ID.Eq(id)).First()
+		return errFirst
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	// レスポンスDTOのビルド
 	dto := UserDTO{
 		ID:                updated.ID,
 		CustomID:          updated.CustomID,
@@ -737,7 +781,6 @@ func updateUser(c *gin.Context) {
 // @Router /users/{id} [patch]
 func patchUser(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -757,177 +800,198 @@ func patchUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	// カスタムIDの検証
-	if body.CustomID.Set {
-		if body.CustomID.Value != nil {
-			if !utils.IsValidCustomID(*body.CustomID.Value) {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
-				return
-			}
-			// custom_idを更新
-			if _, err := q.User.Where(query.User.ID.Eq(id)).Update(query.User.CustomID, *body.CustomID.Value); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		}
-	}
-	if body.Email.Set {
-		// メールアドレスの変更は管理者のみ可能
-		permissions, exists := c.Get("permissions")
-		if !exists {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "permissions not found"})
-			return
-		}
 
-		perms, ok := permissions.(constants.Permission)
-		if !ok || !perms.HasPermission(constants.USER_UPDATE) {
-			c.JSON(http.StatusNotImplemented, gin.H{"error": "email change not implemented"})
-			return
-		}
+	// トランザクション処理の開始
+	err = q.Transaction(func(tx *query.Query) error {
+		now := time.Now().UTC()
 
-		// 管理者ならメールアドレスを更新（nullならNULLに、値ありなら更新）
-		if body.Email.Value == nil {
-			if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]interface{}{"email": nil}); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		} else if *body.Email.Value != user.Email {
-			if _, err := q.User.Where(query.User.ID.Eq(id)).Update(query.User.Email, *body.Email.Value); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		}
-	}
-
-	if body.ExternalEmail.Set {
-		// 既存の未使用コードを削除
-		_, err = q.EmailVerificationCode.Where(
-			query.EmailVerificationCode.UserID.Eq(id),
-			query.EmailVerificationCode.RequestType.Eq("email_change"),
-		).Delete()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		if body.ExternalEmail.Value == nil {
-			// 明示的に null を送られた -> external_email を NULL に
-			_, err = q.User.Where(query.User.ID.Eq(id)).Updates(map[string]interface{}{"external_email": nil, "email_verified": false})
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		} else if *body.ExternalEmail.Value != user.ExternalEmail {
-			// external_emailは直接更新せず、認証コードのnew_emailに保存
-			if err := sendEmailChangeVerification(id, *body.ExternalEmail.Value, "", q, config.LoadConfig()); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			_, err = q.User.Where(query.User.ID.Eq(id)).Update(query.User.EmailVerified, false)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		}
-	}
-
-	if body.AffiliationPeriod.Set {
-		if body.AffiliationPeriod.Value == nil {
-			if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]interface{}{"affiliation_period": nil}); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		} else {
-			if _, err := q.User.Where(query.User.ID.Eq(id)).Update(query.User.AffiliationPeriod, *body.AffiliationPeriod.Value); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		}
-	}
-
-	if body.Status.Set {
-		if body.Status.Value == nil {
-			if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]interface{}{"status": nil}); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		} else {
-			if _, err := q.User.Where(query.User.ID.Eq(id)).Update(query.User.Status, *body.Status.Value); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		}
-	}
-
-	// TODO: custom_id
-
-	// プロフィールの更新
-	if body.Profile != nil {
-		profileUpdates := map[string]interface{}{}
-		if body.Profile.DisplayName.Set {
-			if body.Profile.DisplayName.Value == nil {
-				profileUpdates["display_name"] = nil
-			} else {
-				profileUpdates["display_name"] = *body.Profile.DisplayName.Value
-			}
-		}
-		if body.Profile.Bio.Set {
-			if body.Profile.Bio.Value == nil {
-				profileUpdates["bio"] = nil
-			} else {
-				profileUpdates["bio"] = *body.Profile.Bio.Value
-			}
-		}
-		if body.Profile.WebsiteURL.Set {
-			if body.Profile.WebsiteURL.Value == nil {
-				profileUpdates["website_url"] = nil
-			} else {
-				profileUpdates["website_url"] = *body.Profile.WebsiteURL.Value
-			}
-		}
-		if body.Profile.TwitterHandle.Set {
-			if body.Profile.TwitterHandle.Value == nil {
-				profileUpdates["twitter_handle"] = nil
-			} else {
-				profileUpdates["twitter_handle"] = *body.Profile.TwitterHandle.Value
-			}
-		}
-		if body.Profile.BirthdateVisible.Set {
-			if body.Profile.BirthdateVisible.Value == nil {
-				profileUpdates["birthdate_visible"] = false
-			} else {
-				profileUpdates["birthdate_visible"] = *body.Profile.BirthdateVisible.Value
-			}
-		}
-		if body.Profile.Birthdate.Set {
-			if body.Profile.Birthdate.Value == nil || *body.Profile.Birthdate.Value == "" {
-				profileUpdates["birthdate"] = nil
-			} else {
-				t, err := time.Parse("2006-01-02", *body.Profile.Birthdate.Value)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid birthdate format, expected YYYY-MM-DD"})
-					return
+		// カスタムIDの検証
+		if body.CustomID.Set {
+			if body.CustomID.Value != nil {
+				if !utils.IsValidCustomID(*body.CustomID.Value) {
+					return fmt.Errorf("invalid_custom_id_format")
 				}
-				profileUpdates["birthdate"] = t
-			}
-		}
-		if body.Profile.JoinedAt.Set {
-			if body.Profile.JoinedAt.Value == nil || *body.Profile.JoinedAt.Value == "" {
-				profileUpdates["joined_at"] = nil
-			} else {
-				joinedAt, err := parseDateFlexible(*body.Profile.JoinedAt.Value)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid joined_at format"})
-					return
+				// custom_idを更新
+				if _, err := tx.User.Where(tx.User.ID.Eq(id)).Updates(&model.User{
+					CustomID:  *body.CustomID.Value,
+					UpdatedAt: now,
+				}); err != nil {
+					return err
 				}
-				profileUpdates["joined_at"] = joinedAt
 			}
 		}
-		existing, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).First()
-		if err != nil || existing == nil {
+
+		if body.Email.Set {
+			// メールアドレスの変更は管理者のみ可能
+			permissions, exists := c.Get("permissions")
+			if !exists {
+				return fmt.Errorf("permissions_not_found")
+			}
+
+			perms, ok := permissions.(constants.Permission)
+			if !ok || !perms.HasPermission(constants.USER_UPDATE) {
+				return fmt.Errorf("email_change_not_implemented")
+			}
+
+			// 管理者ならメールアドレスを更新（nullならNULLに、値ありなら更新）
+			if body.Email.Value == nil {
+				if _, err := tx.User.Where(tx.User.ID.Eq(id)).Updates(map[string]interface{}{
+					"email":      nil,
+					"updated_at": now,
+				}); err != nil {
+					return err
+				}
+			} else if *body.Email.Value != user.Email {
+				if _, err := tx.User.Where(tx.User.ID.Eq(id)).Updates(&model.User{
+					Email:     *body.Email.Value,
+					UpdatedAt: now,
+				}); err != nil {
+					return err
+				}
+			}
+		}
+
+		if body.ExternalEmail.Set {
+			// 既存の未使用コードを削除
+			_, err = tx.EmailVerificationCode.Where(
+				tx.EmailVerificationCode.UserID.Eq(id),
+				tx.EmailVerificationCode.RequestType.Eq("email_change"),
+			).Delete()
+			if err != nil {
+				return err
+			}
+			if body.ExternalEmail.Value == nil {
+				// 明示的に null を送られた -> external_email を NULL に
+				// ★ if を追加して修正
+				if _, err = tx.User.Where(tx.User.ID.Eq(id)).Updates(map[string]interface{}{
+					"external_email": nil,
+					"email_verified": false,
+					"updated_at":     now,
+				}); err != nil {
+					return err
+				}
+			} else if *body.ExternalEmail.Value != user.ExternalEmail {
+				// external_emailは直接更新せず、認証コードのnew_emailに保存
+				if err := sendEmailChangeVerification(id, *body.ExternalEmail.Value, "", tx, config.LoadConfig()); err != nil {
+					return err
+				}
+				// ★ if を追加して修正
+				if _, err = tx.User.Where(tx.User.ID.Eq(id)).Updates(map[string]interface{}{
+					"email_verified": false,
+					"updated_at":     now,
+				}); err != nil {
+					return err
+				}
+			}
+		}
+
+		if body.AffiliationPeriod.Set {
+			if body.AffiliationPeriod.Value == nil {
+				if _, err := tx.User.Where(tx.User.ID.Eq(id)).Updates(map[string]interface{}{
+					"affiliation_period": nil,
+					"updated_at":         now,
+				}); err != nil {
+					return err
+				}
+			} else {
+				if _, err := tx.User.Where(tx.User.ID.Eq(id)).Updates(&model.User{
+					AffiliationPeriod: body.AffiliationPeriod.Value,
+					UpdatedAt:         now,
+				}); err != nil {
+					return err
+				}
+			}
+		}
+
+		if body.Status.Set {
+			if body.Status.Value == nil {
+				if _, err := tx.User.Where(tx.User.ID.Eq(id)).Updates(map[string]interface{}{
+					"status":     nil,
+					"updated_at": now,
+				}); err != nil {
+					return err
+				}
+			} else {
+				if _, err := tx.User.Where(tx.User.ID.Eq(id)).Updates(&model.User{
+					Status:    *body.Status.Value,
+					UpdatedAt: now,
+				}); err != nil {
+					return err
+				}
+			}
+		}
+
+		// プロフィールの更新
+		if body.Profile != nil {
+			profileUpdates := map[string]interface{}{}
+			if body.Profile.DisplayName.Set {
+				if body.Profile.DisplayName.Value == nil {
+					profileUpdates["display_name"] = nil
+				} else {
+					profileUpdates["display_name"] = *body.Profile.DisplayName.Value
+				}
+			}
+			if body.Profile.Bio.Set {
+				if body.Profile.Bio.Value == nil {
+					profileUpdates["bio"] = nil
+				} else {
+					profileUpdates["bio"] = *body.Profile.Bio.Value
+				}
+			}
+			if body.Profile.WebsiteURL.Set {
+				if body.Profile.WebsiteURL.Value == nil {
+					profileUpdates["website_url"] = nil
+				} else {
+					profileUpdates["website_url"] = *body.Profile.WebsiteURL.Value
+				}
+			}
+			if body.Profile.TwitterHandle.Set {
+				if body.Profile.TwitterHandle.Value == nil {
+					profileUpdates["twitter_handle"] = nil
+				} else {
+					profileUpdates["twitter_handle"] = *body.Profile.TwitterHandle.Value
+				}
+			}
+			if body.Profile.BirthdateVisible.Set {
+				if body.Profile.BirthdateVisible.Value == nil {
+					profileUpdates["birthdate_visible"] = false
+				} else {
+					profileUpdates["birthdate_visible"] = *body.Profile.BirthdateVisible.Value
+				}
+			}
+			if body.Profile.Birthdate.Set {
+				if body.Profile.Birthdate.Value == nil || *body.Profile.Birthdate.Value == "" {
+					profileUpdates["birthdate"] = nil
+				} else {
+					t, err := time.Parse("2006-01-02", *body.Profile.Birthdate.Value)
+					if err != nil {
+						return fmt.Errorf("invalid_birthdate_format")
+					}
+					profileUpdates["birthdate"] = t
+				}
+			}
+			if body.Profile.JoinedAt.Set {
+				if body.Profile.JoinedAt.Value == nil || *body.Profile.JoinedAt.Value == "" {
+					profileUpdates["joined_at"] = nil
+				} else {
+					joinedAt, err := parseDateFlexible(*body.Profile.JoinedAt.Value)
+					if err != nil {
+						return fmt.Errorf("invalid_joined_at_format")
+					}
+					profileUpdates["joined_at"] = joinedAt
+				}
+			}
+			existing, err := tx.Profile.Where(tx.Profile.UserID.Eq(user.ID)).First()
+			if err != nil && err != gorm.ErrRecordNotFound {
+				return err
+			}
+
 			if err == gorm.ErrRecordNotFound || existing == nil {
 				// 新規作成: 必須フィールドだけセット
 				newProfile := &model.Profile{
-					UserID: user.ID,
+					UserID:    user.ID,
+					CreatedAt: now,
+					UpdatedAt: now,
 				}
 				if v, ok := profileUpdates["display_name"]; ok {
 					if v != nil {
@@ -967,23 +1031,45 @@ func patchUser(c *gin.Context) {
 						newProfile.Birthdate = &bdTime
 					}
 				}
-				now := time.Now()
-				newProfile.JoinedAt = &now
-				if err := q.Profile.Create(newProfile); err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-					return
+				if v, ok := profileUpdates["joined_at"]; ok {
+					if v != nil {
+						jaTime := v.(time.Time)
+						newProfile.JoinedAt = &jaTime
+					}
+				} else {
+					newProfile.JoinedAt = &now
 				}
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-		} else if len(profileUpdates) > 0 {
-			profileUpdates["updated_at"] = time.Now().UTC()
-			if _, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).Updates(profileUpdates); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
+				if err := tx.Profile.Create(newProfile); err != nil {
+					return err
+				}
+			} else if len(profileUpdates) > 0 {
+				profileUpdates["updated_at"] = now
+				if _, err := tx.Profile.Where(tx.Profile.UserID.Eq(user.ID)).Updates(profileUpdates); err != nil {
+					return err
+				}
 			}
 		}
+
+		return nil
+	})
+
+	// トランザクション内のエラーハンドリング
+	if err != nil {
+		switch err.Error() {
+		case "invalid_custom_id_format":
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid custom_id format"})
+		case "permissions_not_found":
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "permissions not found"})
+		case "email_change_not_implemented":
+			c.JSON(http.StatusNotImplemented, gin.H{"error": "email change not implemented"})
+		case "invalid_birthdate_format":
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid birthdate format, expected YYYY-MM-DD"})
+		case "invalid_joined_at_format":
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid joined_at format"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
 	}
 
 	// rebuild response dto
@@ -1022,9 +1108,15 @@ func patchUser(c *gin.Context) {
 	c.JSON(http.StatusOK, dto)
 }
 
+// deleteUser godoc
+// @Summary Delete user
+// @Description Hard delete user data
+// @Tags users
+// @Param id path string true "User ID"
+// @Success 204
+// @Router /users/{id} [delete]
 func deleteUser(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1051,7 +1143,6 @@ func deleteUser(c *gin.Context) {
 // @Router /users/{id}/apps [get]
 func listAppsForUser(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1096,7 +1187,6 @@ func listAppsForUser(c *gin.Context) {
 // @Router /users/{id}/roles [post]
 func addRoleForUser(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1111,18 +1201,15 @@ func addRoleForUser(c *gin.Context) {
 		return
 	}
 	q := query.Use(db)
-	// ensure user exists
 	if _, err := q.User.Where(query.User.ID.Eq(id)).First(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
-	// ensure role exists
 	role, err := q.Role.Where(query.Role.ID.Eq(input.RoleID)).First()
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
 		return
 	}
-	// check existing assignment
 	if _, err := q.UserRole.Where(query.UserRole.UserID.Eq(id), query.UserRole.RoleID.Eq(input.RoleID)).First(); err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "role already assigned"})
 		return
@@ -1130,11 +1217,13 @@ func addRoleForUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	now := time.Now().UTC()
 	ur := &model.UserRole{
 		UserID:    id,
 		RoleID:    input.RoleID,
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	if err := q.UserRole.Create(ur); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -1161,7 +1250,6 @@ func addRoleForUser(c *gin.Context) {
 // @Router /users/{id}/roles/{roleId} [delete]
 func removeRoleForUser(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1172,7 +1260,6 @@ func removeRoleForUser(c *gin.Context) {
 	id := c.Param("id")
 	roleId := c.Param("roleId")
 	q := query.Use(db)
-	// ensure assignment exists
 	if _, err := q.UserRole.Where(query.UserRole.UserID.Eq(id), query.UserRole.RoleID.Eq(roleId)).First(); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "assignment not found"})
@@ -1198,7 +1285,6 @@ func removeRoleForUser(c *gin.Context) {
 // @Router /users/{id}/roles [get]
 func listRolesForUser(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1249,7 +1335,6 @@ func listRolesForUser(c *gin.Context) {
 // @Router /users/{id}/permissions [get]
 func getUserPermissions(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1259,7 +1344,6 @@ func getUserPermissions(c *gin.Context) {
 	}
 	id := c.Param("id")
 
-	// ユーザーが存在するか確認
 	q := query.Use(db)
 	_, err := q.User.Where(q.User.ID.Eq(id)).First()
 	if err != nil {
@@ -1271,14 +1355,12 @@ func getUserPermissions(c *gin.Context) {
 		return
 	}
 
-	// 権限を取得
 	permissions, err := middleware.GetUserPermissions(id, db)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 権限のテキスト表現を取得
 	permissionsText := constants.GetPermissionsText(int64(permissions))
 
 	c.JSON(http.StatusOK, PermissionsResponse{
@@ -1297,7 +1379,6 @@ func getUserPermissions(c *gin.Context) {
 // @Router /users/{id}/external_identities [get]
 func listExternalIdentities(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1319,7 +1400,6 @@ func listExternalIdentities(c *gin.Context) {
 	}
 	var out []ExternalIdentityDTO
 	for _, e := range eis {
-		// トークンの有効期限が切れていたらリフレッシュ
 		refreshed, _ := utils.RefreshExternalToken(e, q, &cfg)
 
 		dto := ExternalIdentityDTO{
@@ -1331,14 +1411,12 @@ func listExternalIdentities(c *gin.Context) {
 			UpdatedAt:      refreshed.UpdatedAt,
 		}
 
-		// ID Token をデコードして claims を取得
 		if refreshed.IDToken != nil {
 			if claims, err := utils.DecodeIDTokenClaims(*refreshed.IDToken); err == nil {
 				dto.IDTokenClaims = claims
 			}
 		}
 
-		// プロバイダの userinfo API を叩いて共通フィールド＋生データを取得
 		if info, err := utils.FetchProviderUserInfo(refreshed); err == nil && info != nil {
 			dto.Username = info.Username
 			dto.DisplayName = info.DisplayName
@@ -1364,7 +1442,6 @@ func listExternalIdentities(c *gin.Context) {
 // @Router /users/{id}/external_identities [post]
 func addExternalIdentity(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1379,11 +1456,12 @@ func addExternalIdentity(c *gin.Context) {
 		return
 	}
 	q := query.Use(db)
-	// ensure user exists
 	if _, err := q.User.Where(query.User.ID.Eq(id)).First(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
+
+	now := time.Now().UTC()
 	ei := &model.ExternalIdentity{
 		ID:             ulid.Make().String(),
 		UserID:         id,
@@ -1392,9 +1470,8 @@ func addExternalIdentity(c *gin.Context) {
 		IDToken:        stringToPtr(input.IDToken),
 		AccessToken:    input.AccessToken,
 		RefreshToken:   input.RefreshToken,
-		TokenExpiresAt: input.TokenExpiresAt,
-		CreatedAt:      time.Now().UTC(),
-		UpdatedAt:      time.Now().UTC(),
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 	if input.TokenExpiresAt != nil {
 		ei.TokenExpiresAt = timeToTimePtr(*input.TokenExpiresAt)
@@ -1404,14 +1481,12 @@ func addExternalIdentity(c *gin.Context) {
 		return
 	}
 
-	// If provider is discord, try to add user to guild and assign member role (role only if user is active)
 	if input.Provider == "discord" {
 		config := c.MustGet("config").(config.Config)
 		if err := discordutil.AddToGuild(input.ExternalUserID, db, &config); err != nil {
 			log.Printf("failed to add user to discord guild: %v", err)
 		}
 
-		// assign member role only when user status is active
 		if user, uerr := q.User.Where(query.User.ID.Eq(id)).First(); uerr == nil {
 			if user.Status == "active" {
 				memberRoleId := config.DiscordConfig.Guild.MemberRoleID
@@ -1431,14 +1506,12 @@ func addExternalIdentity(c *gin.Context) {
 		UpdatedAt:      ei.UpdatedAt,
 	}
 
-	// ID Token をデコードして claims を取得
 	if ei.IDToken != nil {
 		if claims, err := utils.DecodeIDTokenClaims(*ei.IDToken); err == nil {
 			resp.IDTokenClaims = claims
 		}
 	}
 
-	// プロバイダの userinfo API を叩いて共通フィールド＋生データを取得
 	if info, err := utils.FetchProviderUserInfo(ei); err == nil && info != nil {
 		resp.Username = info.Username
 		resp.DisplayName = info.DisplayName
@@ -1460,7 +1533,6 @@ func addExternalIdentity(c *gin.Context) {
 // @Router /users/{id}/external_identities/{eid} [delete]
 func removeExternalIdentity(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1471,7 +1543,6 @@ func removeExternalIdentity(c *gin.Context) {
 	id := c.Param("id")
 	eid := c.Param("eid")
 	q := query.Use(db)
-	// ensure exists and belongs to user
 	if _, err := q.ExternalIdentity.Where(query.ExternalIdentity.ID.Eq(eid), query.ExternalIdentity.UserID.Eq(id)).First(); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -1498,7 +1569,6 @@ func removeExternalIdentity(c *gin.Context) {
 // @Router /internal/users/email_verify/discord_link [post]
 func linkDiscordByEmailCode(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1527,12 +1597,10 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request_type"})
 		return
 	}
-	// ensure user exists
 	if _, err := q.User.Where(query.User.ID.Eq(evc.UserID)).First(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
-	// already linked for this user
 	if _, err := q.ExternalIdentity.Where(
 		query.ExternalIdentity.UserID.Eq(evc.UserID),
 		query.ExternalIdentity.Provider.Eq("discord"),
@@ -1543,7 +1611,6 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// prevent linking the same Discord account to another user
 	if existing, err := q.ExternalIdentity.Where(
 		query.ExternalIdentity.Provider.Eq("discord"),
 		query.ExternalIdentity.ExternalUserID.Eq(input.ExternalUserID),
@@ -1559,6 +1626,7 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		return
 	}
 
+	now := time.Now().UTC()
 	ei := &model.ExternalIdentity{
 		ID:             ulid.Make().String(),
 		UserID:         evc.UserID,
@@ -1566,8 +1634,8 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		ExternalUserID: input.ExternalUserID,
 		AccessToken:    input.AccessToken,
 		RefreshToken:   input.RefreshToken,
-		CreatedAt:      time.Now().UTC(),
-		UpdatedAt:      time.Now().UTC(),
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 	if input.TokenExpiresAt != nil {
 		ei.TokenExpiresAt = timeToTimePtr(*input.TokenExpiresAt)
@@ -1605,7 +1673,6 @@ func linkDiscordByEmailCode(c *gin.Context) {
 // @Router /internal/users/email_verify [post]
 func emailCodeCheck(c *gin.Context) {
 	if isOAuth := IsOAuth(c); isOAuth {
-		// 403
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
 	}
@@ -1631,14 +1698,12 @@ func emailCodeCheck(c *gin.Context) {
 		return
 	}
 
-	// Get user to determine verification type
 	user, err := q.User.Where(query.User.ID.Eq(evc.UserID)).First()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "user_not_found"})
 		return
 	}
 
-	// Determine verification type based on request_type and user status
 	var verificationType string
 	switch evc.RequestType {
 	case "registration":
@@ -1658,7 +1723,6 @@ func emailCodeCheck(c *gin.Context) {
 		return
 	}
 
-	// Check Discord account linkage for signup type
 	if verificationType == "signup" {
 		_, err := q.ExternalIdentity.Where(
 			query.ExternalIdentity.UserID.Eq(evc.UserID),
@@ -1674,30 +1738,41 @@ func emailCodeCheck(c *gin.Context) {
 		}
 	}
 
-	// mark email as verified
-	switch evc.RequestType {
-	case "registration":
-		_, err = q.User.Where(query.User.ID.Eq(evc.UserID)).Updates(map[string]interface{}{
-			"email_verified": true,
-			"updated_at":     time.Now().UTC(),
-		})
-		// Discord連携が終わっているかどうかを判定
-		externalCount, _ := q.ExternalIdentity.Where(
-			query.ExternalIdentity.UserID.Eq(evc.UserID),
-			query.ExternalIdentity.Provider.Eq("discord"),
-		).Count()
-		// Discord連携が終わっていればコードを削除、終わっていなければ残す（再度Discord連携後にこのコードで検証できるようにするため）
-		if externalCount > 0 {
-			_, _ = q.EmailVerificationCode.Delete(&model.EmailVerificationCode{ID: evc.ID})
+	// トランザクション処理の適用（ユーザー更新とコード削除のアトミック性担保）
+	err = q.Transaction(func(tx *query.Query) error {
+		now := time.Now().UTC()
+		switch evc.RequestType {
+		case "registration":
+			if _, err = tx.User.Where(tx.User.ID.Eq(evc.UserID)).Updates(map[string]interface{}{
+				"email_verified": true,
+				"updated_at":     now,
+			}); err != nil {
+				return err
+			}
+			externalCount, _ := tx.ExternalIdentity.Where(
+				tx.ExternalIdentity.UserID.Eq(evc.UserID),
+				tx.ExternalIdentity.Provider.Eq("discord"),
+			).Count()
+			if externalCount > 0 {
+				if _, err = tx.EmailVerificationCode.Where(tx.EmailVerificationCode.ID.Eq(evc.ID)).Delete(); err != nil {
+					return err
+				}
+			}
+		case "email_change":
+			if _, err = tx.User.Where(tx.User.ID.Eq(evc.UserID)).Updates(map[string]interface{}{
+				"external_email": evc.NewEmail,
+				"email_verified": true,
+				"updated_at":     now,
+			}); err != nil {
+				return err
+			}
+			if _, err = tx.EmailVerificationCode.Where(tx.EmailVerificationCode.ID.Eq(evc.ID)).Delete(); err != nil {
+				return err
+			}
 		}
-	case "email_change":
-		_, err = q.User.Where(query.User.ID.Eq(evc.UserID)).Updates(map[string]interface{}{
-			"external_email": evc.NewEmail,
-			"email_verified": true,
-			"updated_at":     time.Now().UTC(),
-		})
-		_, _ = q.EmailVerificationCode.Delete(&model.EmailVerificationCode{ID: evc.ID})
-	}
+		return nil
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -1762,34 +1837,58 @@ func approveUserRegist(c *gin.Context) {
 		}
 	}
 
-	updates := map[string]any{"status": "active"}
-	updateProfiles := map[string]any{}
-
-	updates["email"] = dto.Email
-	updates["affiliation_period"] = dto.AffiliationPeriod
 	// timeに変換（YYYY-MM-DD をフロントが送るのでそれを受け入れる）
 	joinedAt, err := parseDateFlexible(dto.JoinedAt)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_joined_at_format"})
 		return
 	}
-	updateProfiles["joined_at"] = joinedAt
 
-	updateProfiles["updated_at"] = time.Now().UTC()
-	updates["updated_at"] = time.Now().UTC()
+	// トランザクション処理の開始
+	err = q.Transaction(func(tx *query.Query) error {
+		now := time.Now().UTC()
 
-	_, err = q.User.Where(query.User.ID.Eq(user_id)).Updates(updates)
+		// ユーザー情報の更新（GORMモデルを使用）
+		userUpdate := &model.User{
+			Status: "active",
+			Email:  dto.Email,
+			AffiliationPeriod: func() *string {
+				period := dto.AffiliationPeriod
+				return &period
+			}(),
+			UpdatedAt: now,
+		}
+		// ゼロ値や空文字の更新漏れを防ぐため Select で明示的に指定
+		if _, err := tx.User.Where(tx.User.ID.Eq(user_id)).Select(
+			tx.User.Status,
+			tx.User.Email,
+			tx.User.AffiliationPeriod,
+			tx.User.UpdatedAt,
+		).Updates(userUpdate); err != nil {
+			return err
+		}
+
+		// プロフィール情報の更新（GORMモデルを使用）
+		profileUpdate := &model.Profile{
+			JoinedAt:  &joinedAt,
+			UpdatedAt: now,
+		}
+		if _, err := tx.Profile.Where(tx.Profile.UserID.Eq(user_id)).Select(
+			tx.Profile.JoinedAt,
+			tx.Profile.UpdatedAt,
+		).Updates(profileUpdate); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	_, err = q.Profile.Where(query.Profile.UserID.Eq(user_id)).Updates(updateProfiles)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 
-	// Discord連携: ロール付与とウェルカムメッセージ送信（失敗しても承認自体は成功とする）
+	// Discord連携: ロール付与とウェルカムメッセージ送信（DBコミット後に実行）
 	if externalIdentity, e := q.ExternalIdentity.Where(
 		query.ExternalIdentity.UserID.Eq(user_id),
 		query.ExternalIdentity.Provider.Eq("discord"),
@@ -1847,8 +1946,16 @@ func rejectUserRegist(c *gin.Context) {
 	}
 	user_id := c.Param("id")
 	q := query.Use(db)
-	// Perform physical delete using Unscoped()
-	if _, err := q.User.Unscoped().Delete(&model.User{ID: user_id}); err != nil {
+
+	// 物理削除をトランザクション化
+	err := q.Transaction(func(tx *query.Query) error {
+		if _, err := tx.User.Unscoped().Delete(&model.User{ID: user_id}); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -1910,22 +2017,36 @@ func resendEmailVerification(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no external email set in existing request"})
 		return
 	}
-	// 既存の未使用コードを削除
-	_, _ = q.EmailVerificationCode.Where(
-		query.EmailVerificationCode.UserID.Eq(id),
-		query.EmailVerificationCode.RequestType.Eq(requestType),
-	).Delete()
+
 	// プロフィールから名前を取得
 	name := ""
 	if p, err := q.Profile.Where(query.Profile.UserID.Eq(id)).First(); err == nil {
 		name = p.DisplayName
 	}
 	cfg := config.LoadConfig()
-	if requestType == "email_change" {
-		err = sendEmailChangeVerification(id, *externalEmail, name, q, cfg)
-	} else {
-		err = sendRegistrationEmailVerification(id, user.ExternalEmail, name, q, cfg)
-	}
+
+	// 既存コードの削除と新しいコードの生成を同一トランザクションで行う
+	err = q.Transaction(func(tx *query.Query) error {
+		// 既存の未使用コードを削除（モデルを明示指定）
+		if _, err := tx.EmailVerificationCode.Where(
+			tx.EmailVerificationCode.UserID.Eq(id),
+			tx.EmailVerificationCode.RequestType.Eq(requestType),
+		).Delete(&model.EmailVerificationCode{}); err != nil {
+			return err
+		}
+
+		if requestType == "email_change" {
+			if err = sendEmailChangeVerification(id, *externalEmail, name, tx, cfg); err != nil {
+				return err
+			}
+		} else {
+			if err = sendRegistrationEmailVerification(id, user.ExternalEmail, name, tx, cfg); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send verification email: " + err.Error()})
 		return
@@ -2039,7 +2160,23 @@ func changePassword(c *gin.Context) {
 		return
 	}
 
-	if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]any{"password_hash": respData.PasswordHash, "updated_at": time.Now().UTC()}); err != nil {
+	// パスワードハッシュの更新をトランザクション化（GORMモデルを使用）
+	err = q.Transaction(func(tx *query.Query) error {
+		now := time.Now().UTC()
+		userUpdate := &model.User{
+			PasswordHash: respData.PasswordHash,
+			UpdatedAt:    now,
+		}
+		if _, err := tx.User.Where(tx.User.ID.Eq(id)).Select(
+			tx.User.PasswordHash,
+			tx.User.UpdatedAt,
+		).Updates(userUpdate); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
 		return
 	}
@@ -2054,11 +2191,13 @@ func sendRegistrationEmailVerification(user_id, email, name string, q *query.Que
 	_, _ = rand.Read(b)
 	code := fmt.Sprintf("%06X", b)
 
+	now := time.Now().UTC()
 	err := q.EmailVerificationCode.Create(&model.EmailVerificationCode{
 		Code:        code,
 		RequestType: "registration",
 		UserID:      user_id,
-		ExpiresAt:   time.Now().Add(10 * time.Minute),
+		ExpiresAt:   now.Add(10 * time.Minute),
+		CreatedAt:   now,
 	})
 	if err != nil {
 		return err
@@ -2103,13 +2242,14 @@ func sendEmailChangeVerification(user_id, email, name string, q *query.Query, co
 	_, _ = rand.Read(b)
 	code := fmt.Sprintf("%06X", b)
 
+	now := time.Now().UTC()
 	err := q.EmailVerificationCode.Create(&model.EmailVerificationCode{
 		Code:        code,
 		RequestType: "email_change",
 		UserID:      user_id,
-		ExpiresAt:   time.Now().Add(10 * time.Minute),
+		ExpiresAt:   now.Add(10 * time.Minute),
 		NewEmail:    stringToPtr(email),
-		CreatedAt:   time.Now().UTC(),
+		CreatedAt:   now,
 	})
 	if err != nil {
 		return err
@@ -2151,7 +2291,7 @@ func isAdult(birthdate *time.Time) *bool {
 	if birthdate == nil {
 		return nil
 	}
-	now := time.Now()
+	now := time.Now().UTC() // タイムゾーンを一貫させるためUTCに統一
 	age := now.Year() - birthdate.Year()
 	if now.Month() < birthdate.Month() || (now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
 		age--

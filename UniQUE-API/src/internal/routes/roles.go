@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/oklog/ulid/v2"
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 )
 
@@ -55,43 +57,60 @@ func assignRoleToAll(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	q := query.Use(db)
-	// ensure role exists
-	if _, err := q.Role.Where(query.Role.ID.Eq(id)).First(); err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
-			return
+	safeLogID := strings.ReplaceAll(id, "\n", "")
+	safeLogID = strings.ReplaceAll(safeLogID, "\r", "")
+
+	var isNotFound bool
+	var assigned int
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		// ensure role exists
+		if _, err := q.Role.Where(query.Role.ID.Eq(id)).First(); err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
+			}
+			return err
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		users, err := q.User.Where(query.User.Status.In("active", "established")).Find()
+		if err != nil {
+			return err
+		}
+
+		now := time.Now().UTC()
+		for _, usr := range users {
+			// skip if already assigned
+			if _, ferr := q.UserRole.Where(query.UserRole.UserID.Eq(usr.ID), query.UserRole.RoleID.Eq(id)).First(); ferr == nil {
+				continue
+			} else if ferr != gorm.ErrRecordNotFound {
+				log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, safeLogID, ferr)
+				continue
+			}
+			ur := &model.UserRole{
+				UserID:    usr.ID,
+				RoleID:    id,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}
+			if cerr := q.UserRole.Create(ur); cerr != nil {
+				log.Printf("failed to assign role %s to user %s: %v", safeLogID, usr.ID, cerr)
+				continue
+			}
+			assigned++
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
-	users, err := q.User.Where(query.User.Status.In("active", "established")).Find()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	assigned := 0
-	for _, usr := range users {
-		// skip if already assigned
-		if _, ferr := q.UserRole.Where(query.UserRole.UserID.Eq(usr.ID), query.UserRole.RoleID.Eq(id)).First(); ferr == nil {
-			continue
-		} else if ferr != gorm.ErrRecordNotFound {
-			log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, id, ferr)
-			continue
-		}
-		ur := &model.UserRole{
-			UserID:    usr.ID,
-			RoleID:    id,
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
-		}
-		if cerr := q.UserRole.Create(ur); cerr != nil {
-			log.Printf("failed to assign role %s to user %s: %v", id, usr.ID, cerr)
-			continue
-		}
-		assigned++
-	}
 	c.JSON(http.StatusOK, gin.H{"assigned": assigned})
 }
 
@@ -250,6 +269,8 @@ func createRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	now := time.Now().UTC()
 	role := model.Role{
 		ID:                ulid.Make().String(),
 		CustomID:          input.CustomID,
@@ -257,52 +278,71 @@ func createRole(c *gin.Context) {
 		Description:       stringToPtr(input.Description),
 		PermissionBitmask: input.PermissionBitmask,
 		IsDefault:         false,
-		CreatedAt:         time.Now().UTC(),
-		UpdatedAt:         time.Now().UTC(),
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 	if input.IsDefault != nil {
 		role.IsDefault = *input.IsDefault
 	}
-	q := query.Use(db)
-	if err := q.Role.Create(&role); err != nil {
-		// MySQLの重複エラーをチェック
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			// エラーメッセージから重複したキーを判定
-			errMsg := mysqlErr.Message
-			if strings.Contains(errMsg, "custom_id") || strings.Contains(errMsg, "name") {
-				c.JSON(http.StatusConflict, gin.H{"error": "role already exists", "code": "R0002"})
-				return
+
+	var isConflict bool
+	var isSpecificConflict bool
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		if err := q.Role.Create(&role); err != nil {
+			if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+				isConflict = true
+				if strings.Contains(mysqlErr.Message, "custom_id") || strings.Contains(mysqlErr.Message, "name") {
+					isSpecificConflict = true
+				}
 			}
-			// その他の重複エラー
-			c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "code": "R0002"})
-			return
+			return err
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		// If requested, assign the newly created role to all existing users with status active or established
+		if input.AssignToExisting != nil && *input.AssignToExisting {
+			users, uerr := q.User.Where(query.User.Status.In("active", "established")).Find()
+			if uerr != nil {
+				// Log and continue (トランザクション自体は失敗させない)
+				log.Printf("failed to fetch users for assign_to_existing: %v", uerr)
+			} else {
+				for _, usr := range users {
+					// skip if already assigned
+					if _, ferr := q.UserRole.Where(query.UserRole.UserID.Eq(usr.ID), query.UserRole.RoleID.Eq(role.ID)).First(); ferr == nil {
+						continue
+					} else if ferr != gorm.ErrRecordNotFound {
+						log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, role.ID, ferr)
+						continue
+					}
+					ur := &model.UserRole{
+						UserID:    usr.ID,
+						RoleID:    role.ID,
+						CreatedAt: now,
+						UpdatedAt: now,
+					}
+					if cerr := q.UserRole.Create(ur); cerr != nil {
+						log.Printf("failed to assign role %s to user %s: %v", role.ID, usr.ID, cerr)
+					}
+				}
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isConflict {
+			if isSpecificConflict {
+				c.JSON(http.StatusConflict, gin.H{"error": "role already exists", "code": "R0002"})
+			} else {
+				c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "code": "R0002"})
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
-	// If requested, assign the newly created role to all existing users with status active or established
-	if input.AssignToExisting != nil && *input.AssignToExisting {
-		users, uerr := q.User.Where(query.User.Status.In("active", "established")).Find()
-		if uerr != nil {
-			// Log and continue
-			log.Printf("failed to fetch users for assign_to_existing: %v", uerr)
-		} else {
-			for _, usr := range users {
-				// skip if already assigned
-				if _, ferr := q.UserRole.Where(query.UserRole.UserID.Eq(usr.ID), query.UserRole.RoleID.Eq(role.ID)).First(); ferr == nil {
-					continue
-				} else if ferr != gorm.ErrRecordNotFound {
-					log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, role.ID, ferr)
-					continue
-				}
-				ur := &model.UserRole{UserID: usr.ID, RoleID: role.ID}
-				if cerr := q.UserRole.Create(ur); cerr != nil {
-					log.Printf("failed to assign role %s to user %s: %v", role.ID, usr.ID, cerr)
-				}
-			}
-		}
-	}
 	resp := RoleDTO{
 		ID:                role.ID,
 		CustomID:          role.CustomID,
@@ -382,33 +422,72 @@ func updateRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updates := map[string]interface{}{}
+
+	updates := model.Role{
+		UpdatedAt: time.Now().UTC(),
+	}
+	selectColumns := []field.Expr{query.Role.UpdatedAt}
+
 	if input.Name != nil {
-		updates["name"] = *input.Name
+		updates.Name = *input.Name
+		selectColumns = append(selectColumns, query.Role.Name)
 	}
 	if input.Description != nil {
-		updates["description"] = *input.Description
+		updates.Description = input.Description // input.Description is *string
+		selectColumns = append(selectColumns, query.Role.Description)
 	}
 	if input.PermissionBitmask != nil {
-		updates["permission_bitmask"] = *input.PermissionBitmask
+		updates.PermissionBitmask = *input.PermissionBitmask
+		selectColumns = append(selectColumns, query.Role.PermissionBitmask)
 	}
 	if input.IsDefault != nil {
-		updates["is_default"] = *input.IsDefault
+		updates.IsDefault = *input.IsDefault
+		selectColumns = append(selectColumns, query.Role.IsDefault)
 	}
-	updates["updated_at"] = time.Now().UTC()
-	q := query.Use(db)
-	if len(updates) > 0 {
-		if _, err := q.Role.Where(query.Role.ID.Eq(id)).Updates(updates); err != nil {
-			// MySQLの重複エラーをチェック
-			if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-				c.JSON(http.StatusConflict, gin.H{"error": "role name already exists", "code": "R0002"})
-				return
+
+	var isNotFound bool
+	var isConflict bool
+	var updated *model.Role
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		// 存在確認
+		if _, err := q.Role.Where(query.Role.ID.Eq(id)).First(); err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			return err
 		}
+		if len(selectColumns) > 1 {
+			if _, err := q.Role.Where(query.Role.ID.Eq(id)).
+				Select(selectColumns...).
+				Updates(&updates); err != nil {
+				if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+					isConflict = true
+				}
+				return err
+			}
+		}
+
+		var errFirst error
+		updated, errFirst = q.Role.Where(query.Role.ID.Eq(id)).First()
+		if errFirst != nil {
+			return errFirst
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else if isConflict {
+			c.JSON(http.StatusConflict, gin.H{"error": "role name already exists", "code": "R0002"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
 	}
-	updated, _ := q.Role.Where(query.Role.ID.Eq(id)).First()
+
 	resp := RoleDTO{
 		ID:                updated.ID,
 		CustomID:          updated.CustomID,
@@ -449,34 +528,71 @@ func patchRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := query.Use(db)
-	role, err := q.Role.Where(query.Role.ID.Eq(id)).First()
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-		return
+
+	updates := model.Role{
+		UpdatedAt: time.Now().UTC(),
 	}
+	selectColumns := []field.Expr{query.Role.UpdatedAt}
+
 	if input.Name != nil {
-		role.Name = *input.Name
+		updates.Name = *input.Name
+		selectColumns = append(selectColumns, query.Role.Name)
 	}
 	if input.Description != nil {
-		role.Description = stringToPtr(*input.Description)
+		updates.Description = input.Description // pointer copy
+		selectColumns = append(selectColumns, query.Role.Description)
 	}
 	if input.PermissionBitmask != nil {
-		role.PermissionBitmask = *input.PermissionBitmask
+		updates.PermissionBitmask = *input.PermissionBitmask
+		selectColumns = append(selectColumns, query.Role.PermissionBitmask)
 	}
 	if input.IsDefault != nil {
-		role.IsDefault = *input.IsDefault
+		updates.IsDefault = *input.IsDefault
+		selectColumns = append(selectColumns, query.Role.IsDefault)
 	}
-	role.UpdatedAt = time.Now().UTC()
-	if err := q.Role.Save(role); err != nil {
-		// MySQLの重複エラーをチェック
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			c.JSON(http.StatusConflict, gin.H{"error": "role name already exists", "code": "R0002"})
-			return
+
+	var isNotFound bool
+	var isConflict bool
+	var role *model.Role
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// 存在確認を兼ねる
+		_, err := q.Role.Where(query.Role.ID.Eq(id)).First()
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
+			}
+			return err
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		if len(selectColumns) > 1 {
+			if _, err := q.Role.Where(query.Role.ID.Eq(id)).
+				Select(selectColumns...).
+				Updates(&updates); err != nil {
+				if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+					isConflict = true
+				}
+				return err
+			}
+		}
+
+		role, err = q.Role.Where(query.Role.ID.Eq(id)).First()
+		return err
+	})
+
+	if err != nil {
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else if isConflict {
+			c.JSON(http.StatusConflict, gin.H{"error": "role name already exists", "code": "R0002"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
+
 	resp := RoleDTO{
 		ID:                role.ID,
 		CustomID:          role.CustomID,
@@ -509,8 +625,16 @@ func deleteRole(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	q := query.Use(db)
-	if _, err := q.Role.Delete(&model.Role{ID: id}); err != nil {
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		if _, err := q.Role.Delete(&model.Role{ID: id}); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -539,36 +663,56 @@ func addUserToRole(c *gin.Context) {
 	}
 	roleID := c.Param("id")
 	userID := c.Param("user_id")
-	q := query.Use(db)
-	// Check if role exists
-	if _, err := q.Role.Where(query.Role.ID.Eq(roleID)).First(); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
+
+	var isRoleNotFound bool
+	var isUserNotFound bool
+	var isConflict bool
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// Check if role exists
+		if _, err := q.Role.Where(query.Role.ID.Eq(roleID)).First(); err != nil {
+			isRoleNotFound = true
+			return err
+		}
+		// Check if user exists
+		if _, err := q.User.Where(query.User.ID.Eq(userID)).First(); err != nil {
+			isUserNotFound = true
+			return err
+		}
+		// Check if already assigned
+		if _, err := q.UserRole.Where(query.UserRole.UserID.Eq(userID), query.UserRole.RoleID.Eq(roleID)).First(); err == nil {
+			isConflict = true
+			return errors.New("conflict")
+		} else if err != gorm.ErrRecordNotFound {
+			return err
+		}
+
+		now := time.Now().UTC()
+		// Assign role to user
+		ur := &model.UserRole{
+			UserID:    userID,
+			RoleID:    roleID,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		return q.UserRole.Create(ur)
+	})
+
+	if err != nil {
+		if isRoleNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
+		} else if isUserNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		} else if isConflict {
+			c.JSON(http.StatusConflict, gin.H{"error": "user already has this role"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
-	// Check if user exists
-	if _, err := q.User.Where(query.User.ID.Eq(userID)).First(); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		return
-	}
-	// Check if already assigned
-	if _, err := q.UserRole.Where(query.UserRole.UserID.Eq(userID), query.UserRole.RoleID.Eq(roleID)).First(); err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "user already has this role"})
-		return
-	} else if err != gorm.ErrRecordNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	// Assign role to user
-	ur := &model.UserRole{
-		UserID:    userID,
-		RoleID:    roleID,
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
-	}
-	if err := q.UserRole.Create(ur); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+
 	c.Status(http.StatusNoContent)
 }
 
@@ -592,11 +736,17 @@ func removeUserFromRole(c *gin.Context) {
 	}
 	roleID := c.Param("id")
 	userID := c.Param("user_id")
-	q := query.Use(db)
-	_, err := q.UserRole.Where(query.UserRole.UserID.Eq(userID), query.UserRole.RoleID.Eq(roleID)).Delete(&model.UserRole{})
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		_, err := q.UserRole.Where(query.UserRole.UserID.Eq(userID), query.UserRole.RoleID.Eq(roleID)).Delete(&model.UserRole{})
+		return err
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.Status(http.StatusNoContent)
 }

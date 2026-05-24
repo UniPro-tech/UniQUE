@@ -117,32 +117,27 @@ func AuthorizationGet(c *gin.Context) {
 		return
 	}
 
-	// save the request parameters in the session or database as needed
-	err = q.AuthorizationRequest.Create(&model.AuthorizationRequest{
-		ApplicationID:       req.ClientID,
-		RedirectURI:         req.RedirectURI,
-		ResponseType:        req.ResponseType,
-		Scope:               req.Scope,
-		State:               req.State,
-		Nonce:               req.Nonce,
-		Prompt:              derefPrompt(req.Prompt),
-		CodeChallenge:       req.CodeChallenge,
-		CodeChallengeMethod: req.CodeChallengeMethod,
-		ExpiresAt:           time.Now().Add(20 * time.Minute),
-		CreatedAt:           time.Now().UTC(),
+	var authReq *model.AuthorizationRequest
+	// save the request parameters in the database transactionally
+	err = q.Transaction(func(tx *query.Query) error {
+		now := time.Now().UTC()
+		authReq = &model.AuthorizationRequest{
+			ApplicationID:       req.ClientID,
+			RedirectURI:         req.RedirectURI,
+			ResponseType:        req.ResponseType,
+			Scope:               req.Scope,
+			State:               req.State,
+			Nonce:               req.Nonce,
+			Prompt:              derefPrompt(req.Prompt),
+			CodeChallenge:       req.CodeChallenge,
+			CodeChallengeMethod: req.CodeChallengeMethod,
+			ExpiresAt:           now.Add(20 * time.Minute),
+			CreatedAt:           now,
+		}
+		return tx.AuthorizationRequest.Create(authReq)
 	})
 
-	if err != nil {
-		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=internal_server_error")
-		return
-	}
-
-	createdAuthorizationRequest, err := q.AuthorizationRequest.Where(
-		q.AuthorizationRequest.ApplicationID.Eq(req.ClientID),
-		q.AuthorizationRequest.RedirectURI.Eq(req.RedirectURI),
-	).Order(q.AuthorizationRequest.CreatedAt.Desc()).First()
-
-	if err != nil || createdAuthorizationRequest == nil {
+	if err != nil || authReq == nil || authReq.ID == "" {
 		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=internal_server_error")
 		return
 	}
@@ -150,7 +145,7 @@ func AuthorizationGet(c *gin.Context) {
 	// Redirect to frontend authorization page with original query parameters
 	// preserve original params so frontend can render without extra API calls
 	v := url.Values{}
-	v.Set("auth_request_id", createdAuthorizationRequest.ID)
+	v.Set("auth_request_id", authReq.ID) // Create によって自動セットされた ID をそのまま利用
 	c.Redirect(302, strings.TrimRight(contextConfig.FrontendURL, "/")+"/authorization?"+v.Encode())
 }
 
@@ -196,15 +191,7 @@ func AuthorizationPost(c *gin.Context) {
 	// sessionJWTからsidを取得し、session, useridを検証
 	sessionID, userID, err := util.ValidateSessionJWT(sessionJWT, c)
 	cfg := c.MustGet("config").(*config.Config)
-	if sessionID == "" {
-		c.Redirect(302, cfg.FrontendURL+"/signin?error=unauthorized")
-		return
-	}
-	if err != nil {
-		c.Redirect(302, cfg.FrontendURL+"/signin?error=unauthorized")
-		return
-	}
-	if userID == "" {
+	if sessionID == "" || err != nil || userID == "" {
 		c.Redirect(302, cfg.FrontendURL+"/signin?error=unauthorized")
 		return
 	}
@@ -229,14 +216,16 @@ func AuthorizationPost(c *gin.Context) {
 	}
 
 	var newConsentId string
+	var authCode string
+	now := time.Now().UTC()
 
-	// 既存のコンセントがあるかをトランザクション内でロック付きに確認し、
-	// 無ければ作成、あればスコープをマージして更新する（競合耐性あり）
-	if err := db.Transaction(func(tx *gorm.DB) error {
+	// コンセントの作成・更新と認可コードの生成・保存をすべて単一トランザクション内で行う
+	if err := db.Transaction(func(txDB *gorm.DB) error {
+		tx := query.Use(txDB)
 		var consent model.Consent
 
 		// 行ロックで取得を試みる
-		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error
+		err := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error
 		if err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
@@ -247,14 +236,13 @@ func AuthorizationPost(c *gin.Context) {
 				UserID:        userID,
 				ApplicationID: authReq.ApplicationID,
 				Scope:         authReq.Scope,
-				CreatedAt:     time.Now().UTC(),
-				UpdatedAt:     time.Now().UTC(),
+				CreatedAt:     now,
+				UpdatedAt:     now,
 			}
-			if err := tx.Create(newConsent).Error; err != nil {
+			if err := tx.Consent.Create(newConsent); err != nil {
 				// 競合で一意制約に引っかかった可能性があるため、再度ロック付きで取得して更新する
-				// これで他の並行処理が作成したレコードを取り込み、スコープをマージする
-				if err2 := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error; err2 != nil {
-					return err
+				if err2 := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error; err2 != nil {
+					return err2
 				}
 				// マージ
 				merged := map[string]bool{}
@@ -268,53 +256,74 @@ func AuthorizationPost(c *gin.Context) {
 				for s := range merged {
 					mergedScopes = append(mergedScopes, s)
 				}
-				consent.Scope = strings.Join(mergedScopes, " ")
-				if err := tx.Save(&consent).Error; err != nil {
-					return err
+
+				consentUpdate := &model.Consent{
+					Scope:     strings.Join(mergedScopes, " "),
+					UpdatedAt: now,
+				}
+				if _, err3 := tx.Consent.Where(tx.Consent.ID.Eq(consent.ID)).Select(tx.Consent.Scope, tx.Consent.UpdatedAt).Updates(consentUpdate); err3 != nil {
+					return err3
 				}
 				newConsentId = consent.ID
-				return nil
+			} else {
+				newConsentId = newConsent.ID
 			}
-			newConsentId = newConsent.ID
-			return nil
+		} else {
+			// 既存レコードが見つかった -> スコープをマージして保存
+			merged := map[string]bool{}
+			for _, s := range splitAndTrim(consent.Scope) {
+				merged[s] = true
+			}
+			for _, s := range splitAndTrim(authReq.Scope) {
+				merged[s] = true
+			}
+			var mergedScopes []string
+			for s := range merged {
+				mergedScopes = append(mergedScopes, s)
+			}
+
+			consentUpdate := &model.Consent{
+				Scope:     strings.Join(mergedScopes, " "),
+				UpdatedAt: now,
+			}
+			if _, err3 := tx.Consent.Where(tx.Consent.ID.Eq(consent.ID)).Select(tx.Consent.Scope, tx.Consent.UpdatedAt).Updates(consentUpdate); err3 != nil {
+				return err3
+			}
+			newConsentId = consent.ID
 		}
 
-		// 既存レコードが見つかった -> スコープをマージして保存
-		merged := map[string]bool{}
-		for _, s := range splitAndTrim(consent.Scope) {
-			merged[s] = true
+		// 認可コードの生成
+		e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
+		authCode = ulid.MustNew(ulid.Timestamp(now), e).String()
+
+		// 認可リクエストの更新 (セッションIDおよび認可状態の保存)
+		authReqUpdate := &model.AuthorizationRequest{
+			Code:        &authCode,
+			IsConsented: true,
 		}
-		for _, s := range splitAndTrim(authReq.Scope) {
-			merged[s] = true
+
+		// Select() を用いて明示的に対象カラムのみを Update する
+		if sessionID != "" {
+			authReqUpdate.SessionID = &sessionID
+			if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(authReq.ID)).Select(
+				tx.AuthorizationRequest.Code,
+				tx.AuthorizationRequest.IsConsented,
+				tx.AuthorizationRequest.SessionID,
+			).Updates(authReqUpdate); err != nil {
+				return err
+			}
+		} else {
+			if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(authReq.ID)).Select(
+				tx.AuthorizationRequest.Code,
+				tx.AuthorizationRequest.IsConsented,
+			).Updates(authReqUpdate); err != nil {
+				return err
+			}
 		}
-		var mergedScopes []string
-		for s := range merged {
-			mergedScopes = append(mergedScopes, s)
-		}
-		consent.Scope = strings.Join(mergedScopes, " ")
-		if err := tx.Save(&consent).Error; err != nil {
-			return err
-		}
-		newConsentId = consent.ID
+
 		return nil
 	}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create or update consent"})
-		return
-	}
-
-	// generate authorization code
-	t := time.Now()
-	e := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-	code := ulid.MustNew(ulid.Timestamp(t), e).String()
-
-	// update authorization request: set code, session and consented flag on the model and save
-	authReq.Code = &code
-	authReq.IsConsented = true
-	if sessionID != "" {
-		authReq.SessionID = &sessionID
-	}
-	if err := q.AuthorizationRequest.Save(authReq); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update auth request"})
 		return
 	}
 
@@ -349,14 +358,6 @@ func splitAndTrim(s string) []string {
 		result = append(result, s[start:])
 	}
 	return result
-}
-
-// derefPtr safely dereferences a string pointer, returning an empty string if nil.
-func derefPtr(s *string) string {
-	if s != nil {
-		return *s
-	}
-	return ""
 }
 
 // getUserPermissions aggregates a user's permissions from their roles
@@ -459,16 +460,7 @@ func InternalConsentedPost(c *gin.Context) {
 		sessionJWT = strings.TrimPrefix(authorizationHeader, "Bearer ")
 	}
 	sessionID, userID, err := util.ValidateSessionJWT(sessionJWT, c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
-		return
-	}
-	if sessionID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
-		return
-	}
-
-	if userID == "" {
+	if err != nil || sessionID == "" || userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
 	}
@@ -492,24 +484,41 @@ func InternalConsentedPost(c *gin.Context) {
 		}
 	}
 
-	authReq.SessionID = &sessionID
+	// DBの更新処理をすべて1つのトランザクションにまとめる
+	err = q.Transaction(func(tx *query.Query) error {
+		authReqUpdate := &model.AuthorizationRequest{
+			SessionID:   &sessionID,
+			IsConsented: true,
+		}
 
-	authReq.IsConsented = true
-	if err := q.AuthorizationRequest.Save(authReq); err != nil {
+		if authReq.ResponseType == "code" {
+			now := time.Now().UTC()
+			e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
+			code := ulid.MustNew(ulid.Timestamp(now), e).String()
+			authReqUpdate.Code = &code
+
+			if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(authReq.ID)).Select(
+				tx.AuthorizationRequest.SessionID,
+				tx.AuthorizationRequest.IsConsented,
+				tx.AuthorizationRequest.Code,
+			).Updates(authReqUpdate); err != nil {
+				return err
+			}
+		} else {
+			if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(authReq.ID)).Select(
+				tx.AuthorizationRequest.SessionID,
+				tx.AuthorizationRequest.IsConsented,
+			).Updates(authReqUpdate); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update auth request"})
 		return
-	}
-
-	if authReq.ResponseType == "code" {
-		// generate authorization code
-		t := time.Now()
-		e := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-		code := ulid.MustNew(ulid.Timestamp(t), e).String()
-		authReq.Code = &code
-		if err := q.AuthorizationRequest.Save(authReq); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update auth request with code"})
-			return
-		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "authorization request marked as consented"})
