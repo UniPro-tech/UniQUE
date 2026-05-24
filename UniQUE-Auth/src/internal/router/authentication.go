@@ -148,7 +148,7 @@ func AuthenticationPost(c *gin.Context) {
 			UserAgent:   req.UserAgent,
 			IsRemember:  req.IsRemember,
 			ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
-			LastLoginAt: time.Now(),
+			LastLoginAt: time.Now().UTC(),
 			CreatedAt:   time.Now().UTC(),
 			UpdatedAt:   time.Now().UTC(),
 		})
