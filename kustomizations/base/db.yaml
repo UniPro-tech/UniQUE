@@ -23,9 +23,6 @@ spec:
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
-          env:
-            - name: TZ
-              value: Asia/Tokyo
           envFrom:
             - secretRef:
                 name: mysql-secret

@@ -23,8 +23,6 @@ spec:
           env:
             - name: ENV
               value: "production"
-            - name: TZ
-              value: Asia/Tokyo
           envFrom:
             - secretRef:
                 name: unique-auth-secrets

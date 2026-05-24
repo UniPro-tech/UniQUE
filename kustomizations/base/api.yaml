@@ -24,8 +24,6 @@ spec:
             - secretRef:
                 name: unique-api-secrets
           env:
-            - name: TZ
-              value: Asia/Tokyo
             - name: GIN_MODE
               value: "debug"
           livenessProbe:
