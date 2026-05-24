@@ -57,6 +57,8 @@ func assignRoleToAll(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
+	safeLogID := strings.ReplaceAll(id, "\n", "")
+	safeLogID = strings.ReplaceAll(safeLogID, "\r", "")
 
 	var isNotFound bool
 	var assigned int
@@ -82,7 +84,7 @@ func assignRoleToAll(c *gin.Context) {
 			if _, ferr := q.UserRole.Where(query.UserRole.UserID.Eq(usr.ID), query.UserRole.RoleID.Eq(id)).First(); ferr == nil {
 				continue
 			} else if ferr != gorm.ErrRecordNotFound {
-				log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, id, ferr)
+				log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, safeLogID, ferr)
 				continue
 			}
 			ur := &model.UserRole{
@@ -92,7 +94,7 @@ func assignRoleToAll(c *gin.Context) {
 				UpdatedAt: now,
 			}
 			if cerr := q.UserRole.Create(ur); cerr != nil {
-				log.Printf("failed to assign role %s to user %s: %v", id, usr.ID, cerr)
+				log.Printf("failed to assign role %s to user %s: %v", safeLogID, usr.ID, cerr)
 				continue
 			}
 			assigned++
