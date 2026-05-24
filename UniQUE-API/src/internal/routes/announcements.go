@@ -456,7 +456,10 @@ func pinAnnouncement(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&input)
 	q := query.Use(db)
-	if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Update(query.Announcement.IsPinned, input.Pin); err != nil {
+	updates := map[string]any{}
+	updates["is_pinned"] = input.Pin
+	updates["updated_at"] = time.Now().UTC()
+	if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Updates(updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
