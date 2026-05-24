@@ -11,12 +11,10 @@ import TOTPSection from "./TOTP";
 
 export default function SecuritySettingsCardClient({
   user,
-  csrfToken,
   currentSessionId,
   sessions,
 }: {
   user: UserData;
-  csrfToken: string;
   currentSessionId: string;
   sessions: SessionData[];
 }) {
@@ -39,20 +37,17 @@ export default function SecuritySettingsCardClient({
         </Stack>
         <PasswordSection
           user={user}
-          csrfToken={csrfToken}
           handleClickOpen={handleClickOpen}
         />
-        <TOTPSection user={user} csrfToken={csrfToken} />
+        <TOTPSection user={user} />
         <SessionsSection
           currentSessionId={currentSessionId}
           sessions={sessions}
-          csrfToken={csrfToken}
         />
       </Card>
       <ForgotPassword
         open={open}
         handleClose={handleClose}
-        csrfToken={csrfToken}
       />
     </SnackbarProvider>
   );

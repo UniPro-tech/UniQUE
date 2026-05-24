@@ -3,7 +3,6 @@
 import { Session } from "@/classes/Session";
 import { AuthorizationErrors } from "@/errors/AuthorizationErrors";
 import { FormRequestErrors } from "@/errors/FormRequestErrors";
-import { VerifyCSRFToken } from "@/libs/csrf";
 import type { FormStatus } from "../../Base";
 
 export const updateSettings = async (
@@ -11,11 +10,6 @@ export const updateSettings = async (
   formData: FormData,
 ) => {
   try {
-    // フォームデータから必要な情報を取得して処理を行う
-    const csrfToken = formData.get("csrfToken") as string;
-    const isVerified = await VerifyCSRFToken(csrfToken);
-    if (!isVerified) throw FormRequestErrors.CSRFTokenMismatch;
-
     const currentPassword = formData.get("current_password") as string;
     const newPassword = formData.get("new_password") as string;
     const confirmNewPassword = formData.get("confirm_new_password") as string;

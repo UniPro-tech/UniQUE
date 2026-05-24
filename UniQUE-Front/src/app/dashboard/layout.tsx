@@ -2,7 +2,6 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { Session } from "@/classes/Session";
 import BirthdateGuard from "@/components/BirthdateGuard";
 import Drawer from "@/components/drawer";
-import { generateCSRFToken } from "@/libs/csrf";
 
 export default async function RootLayout({
   children,
@@ -16,7 +15,6 @@ export default async function RootLayout({
     : undefined;
   const birthdate = user?.profile.birthdate ? user.profile.birthdate : null;
   const mustSetBirthdate = Boolean(!birthdate);
-  const csrfToken = user ? generateCSRFToken(user.id) : "";
   return (
     <html lang="ja">
       <body className={`antialiased`}>
@@ -27,7 +25,6 @@ export default async function RootLayout({
         </AppRouterCacheProvider>
         <BirthdateGuard
           mustSetBirthdate={mustSetBirthdate}
-          csrfToken={csrfToken}
           initialBirthdate={birthdate || ""}
         />
       </body>
