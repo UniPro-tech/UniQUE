@@ -75,29 +75,37 @@ func AuthenticationPost(c *gin.Context) {
 			return
 		}
 
-		err = q.Session.Create(&model.Session{
-			UserID:      user.ID,
-			IPAddress:   req.IPAddress,
-			UserAgent:   req.UserAgent,
-			IsRemember:  req.IsRemember,
-			ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
-			LastLoginAt: time.Now().UTC(),
-			CreatedAt:   time.Now().UTC(),
-			UpdatedAt:   time.Now().UTC(),
+		var session *model.Session
+		// トランザクション処理の開始
+		err = q.Transaction(func(tx *query.Query) error {
+			now := time.Now().UTC()
+			session = &model.Session{
+				UserID:      user.ID,
+				IPAddress:   req.IPAddress,
+				UserAgent:   req.UserAgent,
+				IsRemember:  req.IsRemember,
+				ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
+				LastLoginAt: now,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			}
+			// セッションの作成（GORMモデルを使用）
+			if err := tx.Session.Create(session); err != nil {
+				return err
+			}
+			return nil
 		})
+
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		session, err := q.Session.Where(q.Session.UserID.Eq(user.ID)).Order(q.Session.CreatedAt.Desc()).First()
-		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
-		if session == nil {
+
+		if session == nil || session.ID == "" {
 			c.JSON(500, gin.H{"error": "Failed to create session"})
 			return
 		}
+
 		// Return session ID as a token
 		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
@@ -142,29 +150,37 @@ func AuthenticationPost(c *gin.Context) {
 			return
 		}
 
-		err = q.Session.Create(&model.Session{
-			UserID:      user.ID,
-			IPAddress:   req.IPAddress,
-			UserAgent:   req.UserAgent,
-			IsRemember:  req.IsRemember,
-			ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
-			LastLoginAt: time.Now().UTC(),
-			CreatedAt:   time.Now().UTC(),
-			UpdatedAt:   time.Now().UTC(),
+		var session *model.Session
+		// トランザクション処理の開始
+		err = q.Transaction(func(tx *query.Query) error {
+			now := time.Now().UTC()
+			session = &model.Session{
+				UserID:      user.ID,
+				IPAddress:   req.IPAddress,
+				UserAgent:   req.UserAgent,
+				IsRemember:  req.IsRemember,
+				ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
+				LastLoginAt: now,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			}
+			// セッションの作成（GORMモデルを使用）
+			if err := tx.Session.Create(session); err != nil {
+				return err
+			}
+			return nil
 		})
+
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		session, err := q.Session.Where(q.Session.UserID.Eq(user.ID)).Order(q.Session.CreatedAt.Desc()).First()
-		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
-		if session == nil {
+
+		if session == nil || session.ID == "" {
 			c.JSON(500, gin.H{"error": "Failed to create session"})
 			return
 		}
+
 		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
@@ -229,10 +245,11 @@ func passwordAuthentication(q *query.Query, username, password string) (resuser 
 
 // CalculateSessionExpiry calculates the session expiry time based on the remember flag.
 func CalculateSessionExpiry(remember bool) (expiryTime time.Time) {
+	now := time.Now().UTC()
 	if remember {
-		return time.Now().Add(30 * 24 * time.Hour) // 30 days
+		return now.Add(30 * 24 * time.Hour) // 30 days
 	}
-	return time.Now().Add(7 * 24 * time.Hour) // 7 days
+	return now.Add(7 * 24 * time.Hour) // 7 days
 }
 
 func totpAuthentication(q *query.Query, username string, code string) (*model.User, error) {

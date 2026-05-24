@@ -14,6 +14,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid/v2"
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 )
 
@@ -158,18 +159,20 @@ func createApplication(c *gin.Context) {
 		}
 	}
 	// 文字数を200文字に制限
-	if len(*input.WebsiteURL.Value) > 200 {
+	if input.WebsiteURL.Value != nil && len(*input.WebsiteURL.Value) > 200 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "website_url must be 200 characters or less"})
 		return
 	}
-	if len(*input.PrivacyPolicyURL.Value) > 200 {
+	if input.PrivacyPolicyURL.Value != nil && len(*input.PrivacyPolicyURL.Value) > 200 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "privacy_policy_url must be 200 characters or less"})
 		return
 	}
-	if len(*input.TermsURL.Value) > 200 {
+	if input.TermsURL.Value != nil && len(*input.TermsURL.Value) > 200 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "terms_url must be 200 characters or less"})
 		return
 	}
+
+	now := time.Now().UTC()
 	app := model.Application{
 		ID:               ulid.Make().String(),
 		Name:             input.Name,
@@ -180,20 +183,30 @@ func createApplication(c *gin.Context) {
 		ClientSecret:     input.ClientSecret,
 		PublicClient:     input.PublicClient,
 		UserID:           input.UserID,
-		CreatedAt:        time.Now().UTC(),
-		UpdatedAt:        time.Now().UTC(),
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
-	q := query.Use(db)
+
 	// If a user is present in the context (session), use it as the owner.
 	if ui, exists := c.Get("user"); exists {
 		if su, ok := ui.(*model.User); ok && su != nil {
 			app.UserID = su.ID
 		}
 	}
-	if err := q.Application.Create(&app); err != nil {
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		if err := q.Application.Create(&app); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	resp := ApplicationDTO{
 		ID:               app.ID,
 		Name:             app.Name,
@@ -272,114 +285,140 @@ func updateApplication(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	q := query.Use(db)
-
-	// fetch application to check ownership
-	appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	// auth user required for owner check
-	ui, exists := c.Get("user")
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-	authUser, ok := ui.(*model.User)
-	if !ok || authUser == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Could not retrieve user information"})
-		return
-	}
-
-	// allow if user has APP_UPDATE permission or is owner
-	perms, _ := middleware.GetUserPermissions(authUser.ID, db)
-	if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You do not have permission to perform this operation"})
-		return
-	}
 
 	var input UpdateApplicationRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updates := map[string]any{}
+
+	// 更新用モデルとSelectするフィールドの準備
+	updates := model.Application{
+		UpdatedAt: time.Now().UTC(),
+	}
+	selectColumns := []field.Expr{query.Application.UpdatedAt}
+
 	if input.Name.Set {
-		if input.Name.Value == nil {
-			updates["name"] = nil
+		if input.Name.Value != nil {
+			updates.Name = *input.Name.Value
 		} else {
-			updates["name"] = *input.Name.Value
+			updates.Name = ""
 		}
+		selectColumns = append(selectColumns, query.Application.Name)
 	}
 	if input.Description.Set {
-		if input.Description.Value == nil {
-			updates["description"] = nil
-		} else {
-			updates["description"] = *input.Description.Value
-		}
+		updates.Description = input.Description.Value
+		selectColumns = append(selectColumns, query.Application.Description)
 	}
 	if input.WebsiteURL.Set {
-		if input.WebsiteURL.Value == nil {
-			updates["website_url"] = nil
-		} else {
-			updates["website_url"] = *input.WebsiteURL.Value
-		}
+		updates.WebsiteURL = input.WebsiteURL.Value
+		selectColumns = append(selectColumns, query.Application.WebsiteURL)
 	}
 	if input.TermsURL.Set {
-		if input.TermsURL.Value == nil {
-			updates["terms_url"] = nil
-		} else {
-			updates["terms_url"] = *input.TermsURL.Value
-		}
+		updates.TermsURL = input.TermsURL.Value
+		selectColumns = append(selectColumns, query.Application.TermsURL)
 	}
 	if input.PrivacyPolicyURL.Set {
-		if input.PrivacyPolicyURL.Value == nil {
-			updates["privacy_policy_url"] = nil
-		} else {
-			updates["privacy_policy_url"] = *input.PrivacyPolicyURL.Value
-		}
+		updates.PrivacyPolicyURL = input.PrivacyPolicyURL.Value
+		selectColumns = append(selectColumns, query.Application.PrivacyPolicyURL)
 	}
 	if input.ClientSecret.Set {
-		if input.ClientSecret.Value == nil {
-			updates["client_secret"] = nil
+		if input.ClientSecret.Value != nil {
+			updates.ClientSecret = *input.ClientSecret.Value
 		} else {
-			updates["client_secret"] = *input.ClientSecret.Value
+			updates.ClientSecret = ""
 		}
+		selectColumns = append(selectColumns, query.Application.ClientSecret)
 	}
 	if input.PublicClient.Set {
-		if input.PublicClient.Value == nil {
-			updates["public_client"] = nil
+		if input.PublicClient.Value != nil {
+			updates.PublicClient = *input.PublicClient.Value
 		} else {
-			updates["public_client"] = *input.PublicClient.Value
+			updates.PublicClient = false
 		}
+		selectColumns = append(selectColumns, query.Application.PublicClient)
 	}
-	updates["updated_at"] = time.Now().UTC()
 
-	if len(updates) > 0 {
-		if _, err := q.Application.Where(query.Application.ID.Eq(id)).Updates(updates); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+	var resp ApplicationDTO
+	var isNotFound, isUnauthorized, isForbidden bool
+	var errMsg string
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// fetch application to check ownership
+		appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
+			}
+			return err
 		}
+
+		// auth user required for owner check
+		ui, exists := c.Get("user")
+		if !exists {
+			isUnauthorized = true
+			errMsg = "Unauthorized"
+			return errors.New(errMsg)
+		}
+		authUser, ok := ui.(*model.User)
+		if !ok || authUser == nil {
+			isUnauthorized = true
+			errMsg = "Could not retrieve user information"
+			return errors.New(errMsg)
+		}
+
+		// allow if user has APP_UPDATE permission or is owner
+		perms, _ := middleware.GetUserPermissions(authUser.ID, tx)
+		if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
+			isForbidden = true
+			errMsg = "You do not have permission to perform this operation"
+			return errors.New(errMsg)
+		}
+
+		if len(selectColumns) > 1 { // UpdatedAt以外に変更がある場合
+			if _, err := q.Application.Where(query.Application.ID.Eq(id)).
+				Select(selectColumns...).
+				Updates(&updates); err != nil {
+				return err
+			}
+		}
+
+		updated, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+		if err != nil {
+			return err
+		}
+
+		resp = ApplicationDTO{
+			ID:               updated.ID,
+			Name:             updated.Name,
+			Description:      ptrToString(updated.Description),
+			WebsiteURL:       ptrToString(updated.WebsiteURL),
+			TermsURL:         ptrToString(updated.TermsURL),
+			PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
+			UserID:           updated.UserID,
+			PublicClient:     updated.PublicClient,
+			CreatedAt:        updated.CreatedAt,
+			UpdatedAt:        updated.UpdatedAt,
+			DeletedAt:        utils.DeletedAtPtr(updated.DeletedAt),
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else if isUnauthorized {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": errMsg})
+		} else if isForbidden {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": errMsg})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
 	}
-	updated, _ := q.Application.Where(query.Application.ID.Eq(id)).First()
-	resp := ApplicationDTO{
-		ID:               updated.ID,
-		Name:             updated.Name,
-		Description:      ptrToString(updated.Description),
-		WebsiteURL:       ptrToString(updated.WebsiteURL),
-		TermsURL:         ptrToString(updated.TermsURL),
-		PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
-		UserID:           updated.UserID,
-		PublicClient:     updated.PublicClient,
-		CreatedAt:        updated.CreatedAt,
-		UpdatedAt:        updated.UpdatedAt,
-		DeletedAt:        utils.DeletedAtPtr(updated.DeletedAt),
-	}
+
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -404,120 +443,138 @@ func patchApplication(c *gin.Context) {
 	}
 	id := c.Param("id")
 
-	q := query.Use(db)
-
-	// fetch application to check ownership
-	appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// auth user required for owner check
-	ui, exists := c.Get("user")
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
-		return
-	}
-	authUser, ok := ui.(*model.User)
-	if !ok || authUser == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "ユーザー情報が取得できませんでした"})
-		return
-	}
-
-	// allow if user has APP_UPDATE permission or is owner
-	perms, _ := middleware.GetUserPermissions(authUser.ID, db)
-	if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "この操作を実行する権限がありません"})
-		return
-	}
-
 	var body PatchApplicationRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updates := map[string]interface{}{}
+
+	updates := model.Application{
+		UpdatedAt: time.Now().UTC(),
+	}
+	selectColumns := []field.Expr{query.Application.UpdatedAt}
+
 	if body.Name.Set {
-		if body.Name.Value == nil {
-			updates["name"] = nil
+		if body.Name.Value != nil {
+			updates.Name = *body.Name.Value
 		} else {
-			updates["name"] = *body.Name.Value
+			updates.Name = ""
 		}
+		selectColumns = append(selectColumns, query.Application.Name)
 	}
 	if body.Description.Set {
-		if body.Description.Value == nil {
-			updates["description"] = nil
-		} else {
-			updates["description"] = *body.Description.Value
-		}
+		updates.Description = body.Description.Value
+		selectColumns = append(selectColumns, query.Application.Description)
 	}
 	if body.WebsiteURL.Set {
-		if body.WebsiteURL.Value == nil {
-			updates["website_url"] = nil
-		} else {
-			updates["website_url"] = *body.WebsiteURL.Value
-		}
+		updates.WebsiteURL = body.WebsiteURL.Value
+		selectColumns = append(selectColumns, query.Application.WebsiteURL)
 	}
 	if body.TermsURL.Set {
-		if body.TermsURL.Value == nil {
-			updates["terms_url"] = nil
-		} else {
-			updates["terms_url"] = *body.TermsURL.Value
-		}
+		updates.TermsURL = body.TermsURL.Value
+		selectColumns = append(selectColumns, query.Application.TermsURL)
 	}
 	if body.PrivacyPolicyURL.Set {
-		if body.PrivacyPolicyURL.Value == nil {
-			updates["privacy_policy_url"] = nil
-		} else {
-			updates["privacy_policy_url"] = *body.PrivacyPolicyURL.Value
-		}
+		updates.PrivacyPolicyURL = body.PrivacyPolicyURL.Value
+		selectColumns = append(selectColumns, query.Application.PrivacyPolicyURL)
 	}
 	if body.ClientSecret.Set {
-		if body.ClientSecret.Value == nil {
-			updates["client_secret"] = nil
+		if body.ClientSecret.Value != nil {
+			updates.ClientSecret = *body.ClientSecret.Value
 		} else {
-			updates["client_secret"] = *body.ClientSecret.Value
+			updates.ClientSecret = ""
 		}
+		selectColumns = append(selectColumns, query.Application.ClientSecret)
 	}
 	if body.PublicClient.Set {
-		if body.PublicClient.Value == nil {
-			updates["public_client"] = nil
+		if body.PublicClient.Value != nil {
+			updates.PublicClient = *body.PublicClient.Value
 		} else {
-			updates["public_client"] = *body.PublicClient.Value
+			updates.PublicClient = false
 		}
+		selectColumns = append(selectColumns, query.Application.PublicClient)
 	}
 
-	updates["updated_at"] = time.Now().UTC()
+	var resp ApplicationDTO
+	var isNotFound, isUnauthorized, isForbidden bool
+	var errMsg string
 
-	if len(updates) > 0 {
-		if _, err := q.Application.Where(query.Application.ID.Eq(id)).Updates(updates); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// fetch application to check ownership
+		appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
+			}
+			return err
 		}
-	}
-	updated, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+
+		// auth user required for owner check
+		ui, exists := c.Get("user")
+		if !exists {
+			isUnauthorized = true
+			errMsg = "認証が必要です"
+			return errors.New(errMsg)
+		}
+		authUser, ok := ui.(*model.User)
+		if !ok || authUser == nil {
+			isUnauthorized = true
+			errMsg = "ユーザー情報が取得できませんでした"
+			return errors.New(errMsg)
+		}
+
+		// allow if user has APP_UPDATE permission or is owner
+		perms, _ := middleware.GetUserPermissions(authUser.ID, tx)
+		if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
+			isForbidden = true
+			errMsg = "この操作を実行する権限がありません"
+			return errors.New(errMsg)
+		}
+
+		if len(selectColumns) > 1 { // UpdatedAt以外に変更がある場合
+			if _, err := q.Application.Where(query.Application.ID.Eq(id)).
+				Select(selectColumns...).
+				Updates(&updates); err != nil {
+				return err
+			}
+		}
+
+		updated, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+		if err != nil {
+			return err
+		}
+
+		resp = ApplicationDTO{
+			ID:               updated.ID,
+			Name:             updated.Name,
+			Description:      ptrToString(updated.Description),
+			WebsiteURL:       ptrToString(updated.WebsiteURL),
+			TermsURL:         ptrToString(updated.TermsURL),
+			PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
+			UserID:           updated.UserID,
+			PublicClient:     updated.PublicClient,
+			CreatedAt:        updated.CreatedAt,
+			UpdatedAt:        updated.UpdatedAt,
+			DeletedAt:        utils.DeletedAtPtr(updated.DeletedAt),
+		}
+		return nil
+	})
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else if isUnauthorized {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": errMsg})
+		} else if isForbidden {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": errMsg})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
-	resp := ApplicationDTO{
-		ID:               updated.ID,
-		Name:             updated.Name,
-		Description:      ptrToString(updated.Description),
-		WebsiteURL:       ptrToString(updated.WebsiteURL),
-		TermsURL:         ptrToString(updated.TermsURL),
-		PrivacyPolicyURL: ptrToString(updated.PrivacyPolicyURL),
-		UserID:           updated.UserID,
-		PublicClient:     updated.PublicClient,
-		CreatedAt:        updated.CreatedAt,
-		UpdatedAt:        updated.UpdatedAt,
-		DeletedAt:        utils.DeletedAtPtr(updated.DeletedAt),
-	}
+
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -532,42 +589,63 @@ func deleteApplication(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	q := query.Use(db)
 
-	// fetch application to check ownership
-	appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
+	var isNotFound, isUnauthorized, isForbidden bool
+	var errMsg string
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+
+		// fetch application to check ownership
+		appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
+			}
+			return err
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		// auth user required for owner check
+		ui, exists := c.Get("user")
+		if !exists {
+			isUnauthorized = true
+			errMsg = "認証が必要です"
+			return errors.New(errMsg)
+		}
+		authUser, ok := ui.(*model.User)
+		if !ok || authUser == nil {
+			isUnauthorized = true
+			errMsg = "ユーザー情報が取得できませんでした"
+			return errors.New(errMsg)
+		}
+
+		// allow if user has APP_DELETE permission or is owner
+		perms, _ := middleware.GetUserPermissions(authUser.ID, tx)
+		if !perms.HasPermission(constants.APP_DELETE) && appModel.UserID != authUser.ID {
+			isForbidden = true
+			errMsg = "この操作を実行する権限がありません"
+			return errors.New(errMsg)
+		}
+
+		if _, err := q.Application.Where(query.Application.ID.Eq(id)).Delete(); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else if isUnauthorized {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": errMsg})
+		} else if isForbidden {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": errMsg})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
-	// auth user required for owner check
-	ui, exists := c.Get("user")
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
-		return
-	}
-	authUser, ok := ui.(*model.User)
-	if !ok || authUser == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "ユーザー情報が取得できませんでした"})
-		return
-	}
-
-	// allow if user has APP_DELETE permission or is owner
-	perms, _ := middleware.GetUserPermissions(authUser.ID, db)
-	if !perms.HasPermission(constants.APP_DELETE) && appModel.UserID != authUser.ID {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "この操作を実行する権限がありません"})
-		return
-	}
-
-	if _, err := q.Application.Delete(&model.Application{ID: id}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 	c.Status(http.StatusNoContent)
 }
 
@@ -637,30 +715,48 @@ func createRedirectURIForApplication(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "uri required"})
 		return
 	}
-	q := query.Use(db)
-	// 重複チェック: 同じURIが既に登録されている場合は409返す
-	if existing, err := q.RedirectURI.Where(q.RedirectURI.ApplicationID.Eq(id), q.RedirectURI.URI.Eq(body.URI), q.RedirectURI.DeletedAt.IsNull()).First(); err == nil && existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "redirect uri already exists"})
+
+	var isConflict bool
+	var response RedirectURIDTO
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		// 重複チェック
+		existing, err := q.RedirectURI.Where(q.RedirectURI.ApplicationID.Eq(id), q.RedirectURI.URI.Eq(body.URI), q.RedirectURI.DeletedAt.IsNull()).First()
+		if err == nil && existing != nil {
+			isConflict = true
+			return errors.New("redirect uri already exists")
+		} else if err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+
+		now := time.Now().UTC()
+		r := &model.RedirectURI{
+			ApplicationID: id,
+			URI:           body.URI,
+			CreatedAt:     now,
+			UpdatedAt:     now,
+		}
+		if err := q.RedirectURI.Create(r); err != nil {
+			return err
+		}
+		response = RedirectURIDTO{
+			URI:       r.URI,
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
+		}
+		return nil
+	})
+
+	if err != nil {
+		if isConflict {
+			c.JSON(http.StatusConflict, gin.H{"error": "redirect uri already exists"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
-	} else if err != nil && err != gorm.ErrRecordNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
 	}
-	r := &model.RedirectURI{
-		ApplicationID: id,
-		URI:           body.URI,
-		CreatedAt:     time.Now().UTC(),
-		UpdatedAt:     time.Now().UTC(),
-	}
-	if err := q.RedirectURI.Create(r); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	response := RedirectURIDTO{
-		URI:       r.URI,
-		CreatedAt: r.CreatedAt,
-		UpdatedAt: r.UpdatedAt,
-	}
+
 	c.JSON(http.StatusCreated, response)
 }
 
@@ -693,20 +789,38 @@ func deleteRedirectURIForApplication(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "application id required"})
 		return
 	}
-	q := query.Use(db)
-	r, err := q.RedirectURI.Where(q.RedirectURI.ApplicationID.Eq(id), q.RedirectURI.URI.Eq(uri), q.RedirectURI.DeletedAt.IsNull()).First()
+
+	var isNotFound bool
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		q := query.Use(tx)
+		r, err := q.RedirectURI.Where(q.RedirectURI.ApplicationID.Eq(id), q.RedirectURI.URI.Eq(uri), q.RedirectURI.DeletedAt.IsNull()).First()
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
+			}
+			return err
+		}
+		if r == nil {
+			isNotFound = true
+			return errors.New("redirect uri not found")
+		}
+
+		if _, err := q.RedirectURI.Where(q.RedirectURI.ApplicationID.Eq(r.ApplicationID), q.RedirectURI.URI.Eq(r.URI), q.RedirectURI.DeletedAt.IsNull()).Delete(); err != nil {
+			return err
+		}
+		return nil
+	})
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "redirect uri not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
-	if r == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "redirect uri not found"})
-		return
-	}
-	if _, err := q.RedirectURI.Where(q.RedirectURI.ApplicationID.Eq(r.ApplicationID), q.RedirectURI.URI.Eq(r.URI), q.RedirectURI.DeletedAt.IsNull()).Delete(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }
 
