@@ -29,4 +29,4 @@ jobs:
         with:
           version: latest
       - name: Run Biome
-        run: biome ci ./UniQUE-Front
+        run: biome ci ./UniQUE-Front --config-path='../.config/biome.json'
