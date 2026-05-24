@@ -1,15 +1,33 @@
 "scope/front":
-  - UniQUE-Front/**/*
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - UniQUE-Front/**/*
 "scope/api":
-  - UniQUE-API/**/*
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - UniQUE-API/**/*
 "scope/auth":
-  - UniQUE-Auth/**/*
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - UniQUE-Auth/**/*
 "scope/mail":
-  - UniQUE-MailServer/**/*
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - UniQUE-MailServer/**/*
 "scope/infra":
-  - kustomizations/**/*
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - kustomizations/**/*
 "scope/dev":
-  - .github/**/*
-  - .vscode/**/*
-  - docker-compose.yml
-  - renovate.json
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - .github/**/*
+              - .vscode/**/*
+              - docker-compose.yml
+              - renovate.json
