@@ -445,11 +445,19 @@ func updateRole(c *gin.Context) {
 		selectColumns = append(selectColumns, query.Role.IsDefault)
 	}
 
+	var isNotFound bool
 	var isConflict bool
 	var updated *model.Role
 
 	err := db.Transaction(func(tx *gorm.DB) error {
 		q := query.Use(tx)
+		// 存在確認
+		if _, err := q.Role.Where(query.Role.ID.Eq(id)).First(); err != nil {
+			if err == gorm.ErrRecordNotFound {
+				isNotFound = true
+			}
+			return err
+		}
 		if len(selectColumns) > 1 {
 			if _, err := q.Role.Where(query.Role.ID.Eq(id)).
 				Select(selectColumns...).
@@ -470,7 +478,9 @@ func updateRole(c *gin.Context) {
 	})
 
 	if err != nil {
-		if isConflict {
+		if isNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else if isConflict {
 			c.JSON(http.StatusConflict, gin.H{"error": "role name already exists", "code": "R0002"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
