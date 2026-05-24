@@ -1,5 +1,4 @@
 "use client";
-import { randomInt } from "node:crypto";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AppsIcon from "@mui/icons-material/Apps";
 import CampaignIcon from "@mui/icons-material/Campaign";
@@ -273,7 +272,7 @@ export default function MiniDrawer({
         </DrawerHeader>
         <Divider />
         {NAVIGSTION_LINKS.map((section, index) => {
-          const key = randomInt(500);
+          const key = Math.random();
           return (
             <div key={`navlink-${key}`}>
               <List>
