@@ -6,6 +6,7 @@ on:
       - "!*.md"
       - "!.vscode/**"
       - "!.github/**"
+      - ".github/workflows/biome.yaml"
     tags-ignore:
       - "api/v*"
       - "auth/v*"
@@ -29,4 +30,4 @@ jobs:
         with:
           version: latest
       - name: Run Biome
-        run: biome ci ./UniQUE-Front --config-path='../.config/biome.json'
+        run: biome ci ./UniQUE-Front --config-path='./.config/biome.json'
