@@ -129,6 +129,7 @@ func AuthorizationGet(c *gin.Context) {
 		CodeChallenge:       req.CodeChallenge,
 		CodeChallengeMethod: req.CodeChallengeMethod,
 		ExpiresAt:           time.Now().Add(20 * time.Minute),
+		CreatedAt:           time.Now().UTC(),
 	})
 
 	if err != nil {
@@ -246,6 +247,8 @@ func AuthorizationPost(c *gin.Context) {
 				UserID:        userID,
 				ApplicationID: authReq.ApplicationID,
 				Scope:         authReq.Scope,
+				CreatedAt:     time.Now().UTC(),
+				UpdatedAt:     time.Now().UTC(),
 			}
 			if err := tx.Create(newConsent).Error; err != nil {
 				// 競合で一意制約に引っかかった可能性があるため、再度ロック付きで取得して更新する

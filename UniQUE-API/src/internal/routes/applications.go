@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/constants"
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
@@ -179,6 +180,8 @@ func createApplication(c *gin.Context) {
 		ClientSecret:     input.ClientSecret,
 		PublicClient:     input.PublicClient,
 		UserID:           input.UserID,
+		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
 	}
 	q := query.Use(db)
 	// If a user is present in the context (session), use it as the owner.
@@ -269,12 +272,43 @@ func updateApplication(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
+	q := query.Use(db)
+
+	// fetch application to check ownership
+	appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// auth user required for owner check
+	ui, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	authUser, ok := ui.(*model.User)
+	if !ok || authUser == nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Could not retrieve user information"})
+		return
+	}
+
+	// allow if user has APP_UPDATE permission or is owner
+	perms, _ := middleware.GetUserPermissions(authUser.ID, db)
+	if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You do not have permission to perform this operation"})
+		return
+	}
+
 	var input UpdateApplicationRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updates := map[string]interface{}{}
+	updates := map[string]any{}
 	if input.Name.Set {
 		if input.Name.Value == nil {
 			updates["name"] = nil
@@ -324,37 +358,7 @@ func updateApplication(c *gin.Context) {
 			updates["public_client"] = *input.PublicClient.Value
 		}
 	}
-	q := query.Use(db)
-
-	// fetch application to check ownership
-	appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// auth user required for owner check
-	ui, exists := c.Get("user")
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-	authUser, ok := ui.(*model.User)
-	if !ok || authUser == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Could not retrieve user information"})
-		return
-	}
-
-	// allow if user has APP_UPDATE permission or is owner
-	perms, _ := middleware.GetUserPermissions(authUser.ID, db)
-	if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You do not have permission to perform this operation"})
-		return
-	}
+	updates["updated_at"] = time.Now().UTC()
 
 	if len(updates) > 0 {
 		if _, err := q.Application.Where(query.Application.ID.Eq(id)).Updates(updates); err != nil {
@@ -399,6 +403,39 @@ func patchApplication(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
+
+	q := query.Use(db)
+
+	// fetch application to check ownership
+	appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// auth user required for owner check
+	ui, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+		return
+	}
+	authUser, ok := ui.(*model.User)
+	if !ok || authUser == nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "ユーザー情報が取得できませんでした"})
+		return
+	}
+
+	// allow if user has APP_UPDATE permission or is owner
+	perms, _ := middleware.GetUserPermissions(authUser.ID, db)
+	if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "この操作を実行する権限がありません"})
+		return
+	}
+
 	var body PatchApplicationRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -455,37 +492,7 @@ func patchApplication(c *gin.Context) {
 		}
 	}
 
-	q := query.Use(db)
-
-	// fetch application to check ownership
-	appModel, err := q.Application.Where(query.Application.ID.Eq(id)).First()
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// auth user required for owner check
-	ui, exists := c.Get("user")
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
-		return
-	}
-	authUser, ok := ui.(*model.User)
-	if !ok || authUser == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "ユーザー情報が取得できませんでした"})
-		return
-	}
-
-	// allow if user has APP_UPDATE permission or is owner
-	perms, _ := middleware.GetUserPermissions(authUser.ID, db)
-	if !perms.HasPermission(constants.APP_UPDATE) && appModel.UserID != authUser.ID {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "この操作を実行する権限がありません"})
-		return
-	}
+	updates["updated_at"] = time.Now().UTC()
 
 	if len(updates) > 0 {
 		if _, err := q.Application.Where(query.Application.ID.Eq(id)).Updates(updates); err != nil {
@@ -639,7 +646,12 @@ func createRedirectURIForApplication(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	r := &model.RedirectURI{ApplicationID: id, URI: body.URI}
+	r := &model.RedirectURI{
+		ApplicationID: id,
+		URI:           body.URI,
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
+	}
 	if err := q.RedirectURI.Create(r); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -80,7 +80,12 @@ func assignRoleToAll(c *gin.Context) {
 			log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, id, ferr)
 			continue
 		}
-		ur := &model.UserRole{UserID: usr.ID, RoleID: id}
+		ur := &model.UserRole{
+			UserID:    usr.ID,
+			RoleID:    id,
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
 		if cerr := q.UserRole.Create(ur); cerr != nil {
 			log.Printf("failed to assign role %s to user %s: %v", id, usr.ID, cerr)
 			continue
@@ -252,6 +257,8 @@ func createRole(c *gin.Context) {
 		Description:       stringToPtr(input.Description),
 		PermissionBitmask: input.PermissionBitmask,
 		IsDefault:         false,
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
 	}
 	if input.IsDefault != nil {
 		role.IsDefault = *input.IsDefault
@@ -388,6 +395,7 @@ func updateRole(c *gin.Context) {
 	if input.IsDefault != nil {
 		updates["is_default"] = *input.IsDefault
 	}
+	updates["updated_at"] = time.Now().UTC()
 	q := query.Use(db)
 	if len(updates) > 0 {
 		if _, err := q.Role.Where(query.Role.ID.Eq(id)).Updates(updates); err != nil {
@@ -459,6 +467,7 @@ func patchRole(c *gin.Context) {
 	if input.IsDefault != nil {
 		role.IsDefault = *input.IsDefault
 	}
+	role.UpdatedAt = time.Now().UTC()
 	if err := q.Role.Save(role); err != nil {
 		// MySQLの重複エラーをチェック
 		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
@@ -550,7 +559,12 @@ func addUserToRole(c *gin.Context) {
 		return
 	}
 	// Assign role to user
-	ur := &model.UserRole{UserID: userID, RoleID: roleID}
+	ur := &model.UserRole{
+		UserID:    userID,
+		RoleID:    roleID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
 	if err := q.UserRole.Create(ur); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

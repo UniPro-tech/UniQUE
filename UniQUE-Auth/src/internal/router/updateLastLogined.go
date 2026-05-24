@@ -50,7 +50,8 @@ func UpdateLastLogined(c *gin.Context) {
 		return
 	}
 
-	session.LastLoginAt = time.Now()
+	session.LastLoginAt = time.Now().UTC()
+	session.UpdatedAt = time.Now().UTC()
 
 	// CreatedAt 基準の当初期間を使うことで、更新を重ねても remember/非 remember の区分が保たれる
 	isRemember := session.IsRemember

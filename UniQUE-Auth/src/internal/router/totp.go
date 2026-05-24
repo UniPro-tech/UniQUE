@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
 	"github.com/pquerna/otp/totp"
@@ -77,6 +79,7 @@ func GenerateTOTP(c *gin.Context) {
 
 	_, err = q.User.Where(q.User.ID.Eq(user.ID)).Updates(map[string]interface{}{
 		"totp_secret": key.Secret(),
+		"updated_at":  time.Now().UTC(),
 	})
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
@@ -136,8 +139,9 @@ func VerifyTOTP(c *gin.Context) {
 	valid := totp.Validate(req.Code, user.TotpSecret)
 
 	if valid {
-		_, err = q.User.Where(q.User.ID.Eq(user.ID)).Updates(map[string]interface{}{
+		_, err = q.User.Where(q.User.ID.Eq(user.ID)).Updates(map[string]any{
 			"is_totp_enabled": true,
+			"updated_at":      time.Now().UTC(),
 		})
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
@@ -213,6 +217,7 @@ func DisableTOTP(c *gin.Context) {
 	_, err = q.User.Where(q.User.ID.Eq(user.ID)).Updates(map[string]interface{}{
 		"totp_secret":     "",
 		"is_totp_enabled": false,
+		"updated_at":      time.Now().UTC(),
 	})
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

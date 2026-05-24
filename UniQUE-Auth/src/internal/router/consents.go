@@ -117,6 +117,8 @@ func ConsentCreate(c *gin.Context) {
 		UserID:        req.UserID,
 		ApplicationID: req.ApplicationID,
 		Scope:         req.Scope,
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
 	}
 	if err := q.Consent.Create(newConsent); err != nil {
 		c.JSON(500, gin.H{"error": "internal server error"})

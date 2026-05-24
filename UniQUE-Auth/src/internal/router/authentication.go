@@ -81,7 +81,9 @@ func AuthenticationPost(c *gin.Context) {
 			UserAgent:   req.UserAgent,
 			IsRemember:  req.IsRemember,
 			ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
-			LastLoginAt: time.Now(),
+			LastLoginAt: time.Now().UTC(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
 		})
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
@@ -147,6 +149,8 @@ func AuthenticationPost(c *gin.Context) {
 			IsRemember:  req.IsRemember,
 			ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
 			LastLoginAt: time.Now(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
 		})
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
