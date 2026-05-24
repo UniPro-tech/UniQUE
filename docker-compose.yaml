@@ -19,7 +19,7 @@ services:
       MYSQL_PASSWORD: NewPass123
     volumes:
       - db-data:/var/lib/mysql
-      - ./UniQUE-DB/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./dev/my.cnf:/etc/mysql/conf.d/my.cnf:ro
     ports:
       - "3306:3306"
     healthcheck:

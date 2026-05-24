@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-conf
+data:
+  my.conf: |
+    [mysqld]
+    default-time-zone = 'UTC'

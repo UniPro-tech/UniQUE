@@ -23,6 +23,9 @@ spec:
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
+            - name: mysql-conf
+              mountPath: /etc/mysql/conf.d
+              readOnly: true
           envFrom:
             - secretRef:
                 name: mysql-secret
@@ -37,6 +40,12 @@ spec:
         - name: mysql-storage
           persistentVolumeClaim:
             claimName: mysql-pvc
+        - name: myconf
+          configMap:
+            name: mysql-conf
+            items:
+              - key: my.conf
+                path: my.cnf
 ---
 apiVersion: v1
 kind: Service

@@ -12,4 +12,5 @@ resources:
   - ./imageUpdater.yaml
   - ./mail.yaml
   - ./hpa.yaml
+  - ./mysql-conf.yaml
   # - ./internal-policy.yaml
