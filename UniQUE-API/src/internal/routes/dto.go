@@ -45,11 +45,11 @@ type UserDTO struct {
 }
 
 type UserApproveDTO struct {
-	Email               string  `json:"email" binding:"required,email"`
-	AffiliationPeriod   *string `json:"affiliation_period"`
-	JoinedAt            string  `json:"joined_at"`
-	SakuraEmailPassword string  `json:"sakura_email_password"`
-	Force               *bool   `json:"force,omitempty"`
+	Email               string `json:"email" binding:"required,email"`
+	AffiliationPeriod   string `json:"affiliation_period"`
+	JoinedAt            string `json:"joined_at"`
+	SakuraEmailPassword string `json:"sakura_email_password"`
+	Force               *bool  `json:"force,omitempty"`
 }
 
 type UserPasswordChangeDTO struct {

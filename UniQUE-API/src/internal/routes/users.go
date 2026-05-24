@@ -1850,10 +1850,13 @@ func approveUserRegist(c *gin.Context) {
 
 		// ユーザー情報の更新（GORMモデルを使用）
 		userUpdate := &model.User{
-			Status:            "active",
-			Email:             dto.Email,
-			AffiliationPeriod: dto.AffiliationPeriod,
-			UpdatedAt:         now,
+			Status: "active",
+			Email:  dto.Email,
+			AffiliationPeriod: func() *string {
+				period := dto.AffiliationPeriod
+				return &period
+			}(),
+			UpdatedAt: now,
 		}
 		// ゼロ値や空文字の更新漏れを防ぐため Select で明示的に指定
 		if _, err := tx.User.Where(tx.User.ID.Eq(user_id)).Select(
