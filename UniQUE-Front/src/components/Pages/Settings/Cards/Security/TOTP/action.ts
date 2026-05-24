@@ -1,14 +1,9 @@
 "use server";
 
 import { Session } from "@/classes/Session";
-import { VerifyCSRFToken } from "@/libs/csrf";
 
 export const generateTOTP = async (_prevState: null, formData: FormData) => {
   try {
-    const csrfToken = formData.get("csrfToken") as string;
-    const isVerified = VerifyCSRFToken(csrfToken);
-    if (!isVerified) throw new Error("CSRF token mismatch");
-
     const password = formData.get("password") as string;
 
     const session = await Session.getCurrent();
@@ -27,10 +22,6 @@ export const generateTOTP = async (_prevState: null, formData: FormData) => {
 
 export const verifyTOTP = async (_prevState: null, formData: FormData) => {
   try {
-    const csrfToken = formData.get("csrfToken") as string;
-    const isVerified = VerifyCSRFToken(csrfToken);
-    if (!isVerified) throw new Error("CSRF token mismatch");
-
     const code = formData.get("code") as string;
 
     const session = await Session.getCurrent();
@@ -50,10 +41,6 @@ export const verifyTOTP = async (_prevState: null, formData: FormData) => {
 
 export const disableTOTP = async (_prevState: null, formData: FormData) => {
   try {
-    const csrfToken = formData.get("csrfToken") as string;
-    const isVerified = VerifyCSRFToken(csrfToken);
-    if (!isVerified) throw new Error("CSRF token mismatch");
-
     const password = formData.get("password") as string;
 
     const session = await Session.getCurrent();

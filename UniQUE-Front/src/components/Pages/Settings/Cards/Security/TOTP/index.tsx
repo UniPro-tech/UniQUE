@@ -17,13 +17,7 @@ import { useActionState, useEffect, useState } from "react";
 import type { UserData } from "@/classes/types/User";
 import { disableTOTP, generateTOTP, verifyTOTP } from "./action";
 
-export default function TOTPSection({
-  user,
-  csrfToken,
-}: {
-  user: UserData;
-  csrfToken: string;
-}) {
+export default function TOTPSection({ user }: { user: UserData }) {
   const isEnabled = user.isTotpEnabled === true;
 
   const [genResult, genAction] = useActionState(
@@ -136,7 +130,6 @@ export default function TOTPSection({
             <DialogTitle>二段階認証のセットアップ</DialogTitle>
             <DialogContent>
               <Box component="form" action={genAction} id="totp-gen-form">
-                <input type="hidden" name="csrfToken" value={csrfToken} />
                 <input type="hidden" name="user_id" value={user.id} />
                 <TextField
                   autoFocus
@@ -184,7 +177,6 @@ export default function TOTPSection({
                 action={disableAction}
                 id="totp-disable-form"
               >
-                <input type="hidden" name="csrfToken" value={csrfToken} />
                 <TextField
                   autoFocus
                   margin="dense"
@@ -228,7 +220,6 @@ export default function TOTPSection({
           </Box>
 
           <Box component="form" action={verifyAction}>
-            <input type="hidden" name="csrfToken" value={csrfToken} />
             <TextField
               label="認証コード"
               name="code"

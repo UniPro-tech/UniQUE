@@ -10,13 +10,11 @@ export default function Base({
   sid,
   action,
   children,
-  csrfToken,
 }: {
   sid: string;
   action: (formData: FormData) => void | Promise<void>;
   isPending: boolean;
   children: React.ReactNode;
-  csrfToken: string;
 }) {
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
@@ -26,7 +24,6 @@ export default function Base({
         action={action}
         sx={{ display: "flex", p: 2, flexDirection: "column", gap: 2 }}
       >
-        <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="sid" value={sid} />
         {children}
       </Card>

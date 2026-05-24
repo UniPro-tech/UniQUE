@@ -13,13 +13,11 @@ import { submitForgotPassword } from "./action";
 interface ForgotPasswordProps {
   open: boolean;
   handleClose: () => void;
-  csrfToken: string;
 }
 
 export default function ForgotPassword({
   open,
   handleClose,
-  csrfToken,
 }: ForgotPasswordProps) {
   const [email, setEmail] = React.useState("");
   const { enqueueSnackbar } = useSnackbar();
@@ -54,7 +52,6 @@ export default function ForgotPassword({
           <DialogContentText>
             アカウントに登録されている外部メールアドレスを入力してください。パスワードをリセットするためのリンクをお送りします。
           </DialogContentText>
-          <input type="hidden" name="csrfToken" value={csrfToken} />
           <OutlinedInput
             autoFocus
             required

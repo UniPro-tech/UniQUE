@@ -16,11 +16,9 @@ import { updateSettings } from "./action";
 
 export default function PasswordSection({
   user,
-  csrfToken,
   handleClickOpen,
 }: {
   user: UserData;
-  csrfToken: string;
   handleClickOpen: () => void;
 }) {
   const [lastResult, action] = useActionState(
@@ -90,7 +88,6 @@ export default function PasswordSection({
         </Typography>
         <Divider sx={{ flexGrow: 1 }} />
       </Stack>
-      <input type="hidden" name="csrfToken" value={csrfToken} />
       <input type="hidden" name="id" value={user.id} />
       <TextField
         label="現在のパスワード"

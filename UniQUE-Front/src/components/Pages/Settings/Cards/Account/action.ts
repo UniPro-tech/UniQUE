@@ -3,7 +3,6 @@
 import { Session } from "@/classes/Session";
 import type { UserData } from "@/classes/types/User";
 import { User } from "@/classes/User";
-import { VerifyCSRFToken } from "@/libs/csrf";
 import type { FormStatus } from "../Base";
 
 export const resendEmailVerificationAction = async (
@@ -26,9 +25,6 @@ export const updateAccountSettings = async (
   formData: FormData,
 ) => {
   try {
-    const csrfToken = formData.get("csrfToken") as string;
-    const isVerified = VerifyCSRFToken(csrfToken);
-    if (!isVerified) throw new Error("CSRF token verification failed");
     const displayName = formData.get("display_name") as string;
     const externalEmail = formData.get("external_email") as string;
     const birthdate = formData.get("birthdate") as string;

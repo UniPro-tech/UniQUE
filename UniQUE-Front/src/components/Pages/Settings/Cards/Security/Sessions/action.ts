@@ -1,9 +1,7 @@
 "use server";
 
 import { Session, type SessionData } from "@/classes/Session";
-import { FormRequestErrors } from "@/errors/FormRequestErrors";
 import { FrontendErrors } from "@/errors/FrontendErrors";
-import { VerifyCSRFToken } from "@/libs/csrf";
 import type { FormStatus } from "../../Base";
 
 export const logoutSession = async (
@@ -11,10 +9,6 @@ export const logoutSession = async (
   formData: FormData,
 ): Promise<{ sessions: SessionData[]; status: FormStatus }> => {
   try {
-    const csrfToken = formData.get("csrfToken") as string;
-    const isVerified = VerifyCSRFToken(csrfToken);
-    if (!isVerified) throw FormRequestErrors.CSRFTokenMismatch;
-
     const sessionId = formData.get("sessionId") as string;
     if (!sessionId) {
       throw FrontendErrors.InvalidInput;

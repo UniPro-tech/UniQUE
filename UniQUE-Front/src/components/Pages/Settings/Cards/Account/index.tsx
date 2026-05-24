@@ -1,5 +1,4 @@
 import type { UserData } from "@/classes/types/User";
-import { generateCSRFToken } from "@/libs/csrf";
 import AccountSettingsCardClient from "./Client";
 
 export default async function AccountSettingsCard({
@@ -7,7 +6,5 @@ export default async function AccountSettingsCard({
 }: {
   user: UserData;
 }) {
-  const sid = user.id;
-  const csrfToken = generateCSRFToken(sid);
-  return <AccountSettingsCardClient user={user} csrfToken={csrfToken} />;
+  return <AccountSettingsCardClient user={user} />;
 }

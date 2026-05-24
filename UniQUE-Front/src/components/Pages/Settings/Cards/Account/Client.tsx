@@ -19,10 +19,8 @@ import { resendEmailVerificationAction, updateAccountSettings } from "./action";
 
 export default function AccountSettingsCardClient({
   user,
-  csrfToken,
 }: {
   user: UserData;
-  csrfToken: string;
 }) {
   const [lastResult, action, isPending] = useActionState(
     updateAccountSettings,
@@ -62,12 +60,7 @@ export default function AccountSettingsCardClient({
     }
   };
   return (
-    <Base
-      sid={user.id}
-      action={action}
-      isPending={isPending}
-      csrfToken={csrfToken}
-    >
+    <Base sid={user.id} action={action} isPending={isPending}>
       <Stack>
         <Typography variant="h5" component={"h3"}>
           基本設定

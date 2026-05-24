@@ -15,11 +15,9 @@ import { updateBirthdate } from "./action";
 
 export default function BirthdateGuard({
   mustSetBirthdate,
-  csrfToken,
   initialBirthdate,
 }: {
   mustSetBirthdate: boolean;
-  csrfToken: string;
   initialBirthdate: string;
 }) {
   const [state, action, isPending] = useActionState(updateBirthdate, {
@@ -47,7 +45,6 @@ export default function BirthdateGuard({
           <Typography variant="body2">
             未成年者保護のため、生年月日の登録をお願いします。
           </Typography>
-          <input type="hidden" name="csrfToken" value={csrfToken} />
           <TextField
             required
             label="生年月日"

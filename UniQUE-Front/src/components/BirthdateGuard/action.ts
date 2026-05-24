@@ -2,19 +2,13 @@
 
 import { Session } from "@/classes/Session";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
-import { FormRequestErrors } from "@/errors/FormRequestErrors";
 import { FrontendErrors } from "@/errors/FrontendErrors";
-import { VerifyCSRFToken } from "@/libs/csrf";
 
 export const updateBirthdate = async (
   prevState: { birthdate: string; status: FormStatus | null },
   formData: FormData,
 ): Promise<{ birthdate: string; status: FormStatus | null }> => {
   try {
-    const csrfToken = formData.get("csrfToken") as string;
-    const isVerified = VerifyCSRFToken(csrfToken);
-    if (!isVerified) throw FormRequestErrors.CSRFTokenMismatch;
-
     const birthdate = formData.get("birthdate") as string;
     if (!birthdate) throw FrontendErrors.InvalidInput;
 

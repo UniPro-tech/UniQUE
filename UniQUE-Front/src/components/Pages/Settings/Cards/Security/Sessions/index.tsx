@@ -20,11 +20,9 @@ import { logoutSession } from "./action";
 export default function SessionsSection({
   currentSessionId,
   sessions,
-  csrfToken,
 }: {
   currentSessionId: string;
   sessions: SessionData[];
-  csrfToken: string;
 }) {
   const [latestResult, action] = useActionState(logoutSession, {
     sessions: sessions as SessionData[],
@@ -155,7 +153,6 @@ export default function SessionsSection({
                   </Box>
                   {!isDeleted && (
                     <Box component="form" action={action}>
-                      <input type="hidden" name="csrfToken" value={csrfToken} />
                       <input
                         type="hidden"
                         name="sessionId"

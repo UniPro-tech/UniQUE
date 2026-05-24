@@ -1,7 +1,6 @@
 import { unauthorized } from "next/navigation";
 import { Session } from "@/classes/Session";
 import type { UserData } from "@/classes/types/User";
-import { generateCSRFToken } from "@/libs/csrf";
 import SecuritySettingsCardClient from "./Client";
 
 export default async function SecuritySettingsCard({
@@ -10,7 +9,6 @@ export default async function SecuritySettingsCard({
   user: UserData;
 }) {
   const uid = user.id;
-  const csrfToken = generateCSRFToken(uid);
   const session = await Session.getCurrent();
   if (!session) {
     unauthorized();
@@ -19,7 +17,6 @@ export default async function SecuritySettingsCard({
   return (
     <SecuritySettingsCardClient
       user={user}
-      csrfToken={csrfToken}
       currentSessionId={session.id}
       sessions={sessions}
     />
