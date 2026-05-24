@@ -10,7 +10,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
-	"github.com/oklog/ulid"
+	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 

@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwe"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/oklog/ulid"
+	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
