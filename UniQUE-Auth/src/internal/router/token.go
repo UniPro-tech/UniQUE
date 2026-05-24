@@ -285,7 +285,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 			return err
 		}
 
-		if _, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).Update(tx.OauthToken.DeletedAt, time.Now()); err != nil {
+		if _, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).Update(tx.OauthToken.DeletedAt, time.Now().UTC()); err != nil {
 			return err
 		}
 
