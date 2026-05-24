@@ -1,6 +1,7 @@
 package router
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -45,19 +46,14 @@ func SessionsGet(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
 	sessions, err := q.Session.Where(q.Session.UserID.Eq(userID), q.Session.DeletedAt.IsNull()).Order(q.Session.CreatedAt.Desc()).Find()
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	// Map to response type to avoid exposing gorm.DeletedAt in Swagger
-	if sessions == nil {
-		c.JSON(http.StatusOK, SessionListResponse{Data: []SessionResponse{}})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
@@ -96,26 +92,37 @@ func SessionsDelete(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
-	session, err := q.Session.Where(q.Session.ID.Eq(sid)).First()
-	if err != nil && err != gorm.ErrRecordNotFound {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
+	var userID string
 
-	if _, err := q.Session.Where(q.Session.ID.Eq(sid)).Delete(); err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	userID := ""
-	if session != nil {
+	// レコードの取得と削除をトランザクション化
+	err := q.Transaction(func(tx *query.Query) error {
+		session, err := tx.Session.Where(tx.Session.ID.Eq(sid)).First()
+		if err != nil {
+			return err
+		}
 		userID = session.UserID
+
+		if _, err := tx.Session.Where(tx.Session.ID.Eq(sid)).Delete(); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 既に削除されている、または存在しない場合は冪等性を保つために204を返す
+			c.Status(http.StatusNoContent)
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
+
 	writeAuditLog(c, "DELETE", "sessions/"+sid, &userID, nil, &sid, map[string]interface{}{
 		"method":     c.Request.Method,
 		"path":       c.Request.URL.Path,
@@ -124,10 +131,10 @@ func SessionsDelete(c *gin.Context) {
 		"user_agent": c.Request.UserAgent(),
 	})
 
-	c.Status(204)
+	c.Status(http.StatusNoContent)
 }
 
-// getSessionById godoc
+// GetSessionById godoc
 // @Summary Get session by ID
 // @Description 内部用: セッションIDからセッション情報を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
 // @Tags internal
@@ -140,18 +147,18 @@ func GetSessionById(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
 	session, err := q.Session.Where(q.Session.ID.Eq(sid)).First()
-	if err != nil && err != gorm.ErrRecordNotFound {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	if session == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -44,30 +45,15 @@ func ConsentList(c *gin.Context) {
 	appID := c.Query("application_id")
 	scope := c.Query("scope")
 
-	var (
-		results []*model.Consent
-		err     error
-	)
-
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
-	if userID == "" && appID == "" && scope == "" {
-		results, err = q.Consent.Find()
-		if err != nil {
-			c.JSON(500, gin.H{"error": "internal server error"})
-			return
-		}
-		c.JSON(200, results)
-		return
-	}
-
-	// build conditions
+	// build conditions dynamically
 	conds := []gen.Condition{}
 	if userID != "" {
 		conds = append(conds, q.Consent.UserID.Eq(userID))
@@ -79,17 +65,22 @@ func ConsentList(c *gin.Context) {
 		conds = append(conds, q.Consent.Scope.Eq(scope))
 	}
 
+	var results []*model.Consent
+	var err error
+
 	// perform query
 	if len(conds) > 0 {
 		results, err = q.Consent.Where(conds...).Find()
 	} else {
 		results, err = q.Consent.Find()
 	}
+
 	if err != nil {
-		c.JSON(500, gin.H{"error": "internal server error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
-	c.JSON(200, results)
+
+	c.JSON(http.StatusOK, results)
 }
 
 // ConsentCreate godoc
@@ -109,21 +100,25 @@ func ConsentCreate(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
+
+	now := time.Now().UTC()
 	newConsent := &model.Consent{
 		UserID:        req.UserID,
 		ApplicationID: req.ApplicationID,
 		Scope:         req.Scope,
-		CreatedAt:     time.Now().UTC(),
-		UpdatedAt:     time.Now().UTC(),
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
+
 	if err := q.Consent.Create(newConsent); err != nil {
-		c.JSON(500, gin.H{"error": "internal server error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
+
 	writeAuditLog(c, "CREATE", "consents/"+newConsent.ID, &newConsent.UserID, &newConsent.ApplicationID, nil, map[string]interface{}{
 		"method":          c.Request.Method,
 		"path":            c.Request.URL.Path,
@@ -134,6 +129,7 @@ func ConsentCreate(c *gin.Context) {
 		"application_id":  newConsent.ApplicationID,
 		"scope":           newConsent.Scope,
 	})
+
 	c.JSON(http.StatusCreated, newConsent)
 }
 
@@ -148,39 +144,52 @@ func ConsentCreate(c *gin.Context) {
 func ConsentDeleteByID(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		c.JSON(400, gin.H{"error": "id required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id required"})
 		return
 	}
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
-	consent, err := q.Consent.Where(q.Consent.ID.Eq(id)).First()
+	var consent *model.Consent
+
+	// 紐づくトークンとコンセント自体の削除をトランザクション化
+	err := q.Transaction(func(tx *query.Query) error {
+		var fetchErr error
+		consent, fetchErr = tx.Consent.Where(tx.Consent.ID.Eq(id)).First()
+		if fetchErr != nil {
+			return fetchErr
+		}
+		if consent == nil {
+			return gorm.ErrRecordNotFound
+		}
+
+		// ループ処理を廃止し、紐づくトークンを一括削除(バッチデリート)
+		if _, err := tx.OauthToken.Where(tx.OauthToken.ConsentID.Eq(consent.ID)).Delete(); err != nil {
+			return err
+		}
+
+		// コンセントの削除
+		if _, err := tx.Consent.Delete(consent); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		c.JSON(500, gin.H{"error": "internal server error"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "consent not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
-	if consent == nil {
-		c.JSON(404, gin.H{"error": "consent not found"})
-		return
-	}
-	_, err = q.Consent.Delete(consent)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "internal server error"})
-		return
-	}
-	linkedTokens, err := q.OauthToken.Where(q.OauthToken.ConsentID.Eq(consent.ID)).Find()
-	if err != nil {
-		c.JSON(500, gin.H{"error": "internal server error"})
-		return
-	}
-	for _, token := range linkedTokens {
-		q.OauthToken.Delete(token)
-	}
+
 	writeAuditLog(c, "DELETE", "consents/"+id, &consent.UserID, &consent.ApplicationID, nil, map[string]interface{}{
 		"method":          c.Request.Method,
 		"path":            c.Request.URL.Path,
@@ -191,5 +200,6 @@ func ConsentDeleteByID(c *gin.Context) {
 		"application_id":  consent.ApplicationID,
 		"scope":           consent.Scope,
 	})
-	c.JSON(200, gin.H{"message": "deleted"})
+
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }

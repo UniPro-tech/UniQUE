@@ -360,14 +360,6 @@ func splitAndTrim(s string) []string {
 	return result
 }
 
-// derefPtr safely dereferences a string pointer, returning an empty string if nil.
-func derefPtr(s *string) string {
-	if s != nil {
-		return *s
-	}
-	return ""
-}
-
 // getUserPermissions aggregates a user's permissions from their roles
 func getUserPermissions(userID string, db *gorm.DB) (constants.Permission, error) {
 	q := query.Use(db)

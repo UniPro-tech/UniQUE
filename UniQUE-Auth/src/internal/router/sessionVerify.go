@@ -1,6 +1,8 @@
 package router
 
 import (
+	"errors"
+	"net/http"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -18,7 +20,7 @@ type SessionVerifyResponse struct {
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
 }
 
-// SessionVerifyPost godoc
+// SessionVerifyGet godoc
 // @Summary session verify endpoint
 // @Schemes
 // @Description 内部用のセッション検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
@@ -29,21 +31,39 @@ type SessionVerifyResponse struct {
 // @Router /internal/session_verify [get]
 func SessionVerifyGet(c *gin.Context) {
 	req := SessionVerifyRequest{}
-	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(400, gin.H{"error": "bad request"})
+	// GETリクエストのため、ShouldBindQuery を使用して明示的にクエリからバインドする
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
-	session, err := q.Session.Where(q.Session.ID.Eq(req.JTI), q.Session.DeletedAt.IsNull(), q.Session.ExpiresAt.Gt(time.Now())).First()
+
+	session, err := q.Session.Where(
+		q.Session.ID.Eq(req.JTI),
+		q.Session.DeletedAt.IsNull(),
+		q.Session.ExpiresAt.Gt(time.Now()),
+	).First()
+
 	if err != nil {
-		c.JSON(200, SessionVerifyResponse{Valid: false})
+		// 対象が見つからない（または削除済み・期限切れ）場合は、正常な処理として Valid: false を返す
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, SessionVerifyResponse{Valid: false})
+			return
+		}
+		// データベース接続エラーなど、予期せぬシステムエラーの場合は500を返す
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
-	c.JSON(200, SessionVerifyResponse{Valid: true, UserID: session.UserID, ExpiresAt: session.ExpiresAt})
+
+	c.JSON(http.StatusOK, SessionVerifyResponse{
+		Valid:     true,
+		UserID:    session.UserID,
+		ExpiresAt: session.ExpiresAt,
+	})
 }

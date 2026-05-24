@@ -1,6 +1,8 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -23,68 +25,65 @@ type RevocationRequest struct {
 func Revocation(c *gin.Context) {
 	var req RevocationRequest
 	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
 		return
 	}
 	q := query.Use(db)
 
-	// トークンの失効処理
-	// token_type_hint が指定されている場合はその種別を優先して探索し、見つからなければフォールバックしてもう一方を探索する
-	// RFC7009 に従い、トークンが見つからなくてもエラーは返さず成功(200)を返す
-	if req.TokenTypeHint != nil {
-		switch *req.TokenTypeHint {
-		case "access_token":
-			if res, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.Token)).Delete(); err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			} else if res.RowsAffected == 0 {
-				// access_token が見つからなければ refresh_token 側を試す
-				if _, err := q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
-					c.JSON(500, gin.H{"error": err.Error()})
-					return
+	// トークンの失効処理をトランザクション化
+	err := q.Transaction(func(tx *query.Query) error {
+		// token_type_hint が指定されている場合はその種別を優先して探索
+		if req.TokenTypeHint != nil {
+			switch *req.TokenTypeHint {
+			case "access_token":
+				res, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Delete()
+				if err != nil {
+					return err
+				}
+				// access_token が見つからなければ refresh_token 側を試す (RFC7009 フォールバック仕様)
+				if res.RowsAffected == 0 {
+					if _, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
+						return err
+					}
+				}
+			case "refresh_token":
+				res, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete()
+				if err != nil {
+					return err
+				}
+				// refresh_token が見つからなければ access_token 側を試す (RFC7009 フォールバック仕様)
+				if res.RowsAffected == 0 {
+					if _, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Delete(); err != nil {
+						return err
+					}
+				}
+			default:
+				// 不明なヒントの場合は OR 条件を用いて1回のクエリで両方から探索・削除
+				if _, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Or(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
+					return err
 				}
 			}
-		case "refresh_token":
-			if res, err := q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			} else if res.RowsAffected == 0 {
-				// refresh_token が見つからなければ access_token 側を試す
-				if _, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.Token)).Delete(); err != nil {
-					c.JSON(500, gin.H{"error": err.Error()})
-					return
-				}
-			}
-		default:
-			// 不明なヒントは両方試す
-			if _, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.Token)).Delete(); err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			if _, err := q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
+		} else {
+			// ヒントがない場合は OR 条件を用いて1回のクエリで両方を探索・削除 (クエリ数を削減)
+			if _, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Or(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
+				return err
 			}
 		}
-	} else {
-		// ヒントがない場合は両方を探索する
-		if _, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.Token)).Delete(); err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
-		if _, err := q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
-	// RFC7009: トークンが存在しない場合でも 200 を返す
-	c.Status(200)
+	// RFC7009: トークンが元々存在しない（またはすでに失効している）場合でも、安全のため 200 OK を返す
+	c.Status(http.StatusOK)
 }
