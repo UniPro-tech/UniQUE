@@ -284,6 +284,8 @@ func createUser(c *gin.Context) {
 		ExternalEmail:     input.ExternalEmail,
 		Status:            status,
 		AffiliationPeriod: stringToPtr(input.AffiliationPeriod),
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
 	}
 	q := query.Use(db)
 	if err := q.User.Create(&user); err != nil {
@@ -327,6 +329,8 @@ func createUser(c *gin.Context) {
 		p := &model.Profile{
 			UserID:      user.ID,
 			DisplayName: input.Profile.DisplayName,
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
 		}
 		if input.Profile.Bio != "" {
 			p.Bio = &input.Profile.Bio
@@ -554,6 +558,7 @@ func updateUser(c *gin.Context) {
 	if input.Status != nil {
 		updates["status"] = *input.Status
 	}
+	updates["updated_at"] = time.Now().UTC()
 	if len(updates) > 0 {
 		if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(updates); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -677,6 +682,7 @@ func updateUser(c *gin.Context) {
 				return
 			}
 		} else if len(profileUpdates) > 0 {
+			profileUpdates["updated_at"] = time.Now().UTC()
 			if _, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).Updates(profileUpdates); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -972,6 +978,7 @@ func patchUser(c *gin.Context) {
 				return
 			}
 		} else if len(profileUpdates) > 0 {
+			profileUpdates["updated_at"] = time.Now().UTC()
 			if _, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).Updates(profileUpdates); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -1123,7 +1130,12 @@ func addRoleForUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ur := &model.UserRole{UserID: id, RoleID: input.RoleID}
+	ur := &model.UserRole{
+		UserID:    id,
+		RoleID:    input.RoleID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
 	if err := q.UserRole.Create(ur); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -1381,6 +1393,8 @@ func addExternalIdentity(c *gin.Context) {
 		AccessToken:    input.AccessToken,
 		RefreshToken:   input.RefreshToken,
 		TokenExpiresAt: input.TokenExpiresAt,
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
 	}
 	if input.TokenExpiresAt != nil {
 		ei.TokenExpiresAt = timeToTimePtr(*input.TokenExpiresAt)
@@ -1552,6 +1566,8 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		ExternalUserID: input.ExternalUserID,
 		AccessToken:    input.AccessToken,
 		RefreshToken:   input.RefreshToken,
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
 	}
 	if input.TokenExpiresAt != nil {
 		ei.TokenExpiresAt = timeToTimePtr(*input.TokenExpiresAt)
@@ -1663,6 +1679,7 @@ func emailCodeCheck(c *gin.Context) {
 	case "registration":
 		_, err = q.User.Where(query.User.ID.Eq(evc.UserID)).Updates(map[string]interface{}{
 			"email_verified": true,
+			"updated_at":     time.Now().UTC(),
 		})
 		// Discord連携が終わっているかどうかを判定
 		externalCount, _ := q.ExternalIdentity.Where(
@@ -1677,6 +1694,7 @@ func emailCodeCheck(c *gin.Context) {
 		_, err = q.User.Where(query.User.ID.Eq(evc.UserID)).Updates(map[string]interface{}{
 			"external_email": evc.NewEmail,
 			"email_verified": true,
+			"updated_at":     time.Now().UTC(),
 		})
 		_, _ = q.EmailVerificationCode.Delete(&model.EmailVerificationCode{ID: evc.ID})
 	}
@@ -1756,6 +1774,9 @@ func approveUserRegist(c *gin.Context) {
 		return
 	}
 	updateProfiles["joined_at"] = joinedAt
+
+	updateProfiles["updated_at"] = time.Now().UTC()
+	updates["updated_at"] = time.Now().UTC()
 
 	_, err = q.User.Where(query.User.ID.Eq(user_id)).Updates(updates)
 	if err != nil {
@@ -2018,7 +2039,7 @@ func changePassword(c *gin.Context) {
 		return
 	}
 
-	if _, err := q.User.Where(query.User.ID.Eq(id)).Update(q.User.PasswordHash, respData.PasswordHash); err != nil {
+	if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]any{"password_hash": respData.PasswordHash, "updated_at": time.Now().UTC()}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
 		return
 	}
@@ -2088,6 +2109,7 @@ func sendEmailChangeVerification(user_id, email, name string, q *query.Query, co
 		UserID:      user_id,
 		ExpiresAt:   time.Now().Add(10 * time.Minute),
 		NewEmail:    stringToPtr(email),
+		CreatedAt:   time.Now().UTC(),
 	})
 	if err != nil {
 		return err

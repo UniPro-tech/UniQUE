@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/constants"
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
@@ -232,6 +233,8 @@ func createAnnouncement(c *gin.Context) {
 		Title:     input.Title,
 		Content:   input.Content,
 		CreatedBy: createdByID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 	}
 	if input.IsPinned != nil {
 		ann.IsPinned = *input.IsPinned
@@ -298,6 +301,8 @@ func updateAnnouncement(c *gin.Context) {
 	if input.IsPinned != nil {
 		updates["is_pinned"] = *input.IsPinned
 	}
+	updates["updated_at"] = time.Now().UTC()
+
 	q := query.Use(db)
 	if len(updates) > 0 {
 		if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Updates(updates); err != nil {
@@ -357,7 +362,7 @@ func patchAnnouncement(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updates := map[string]interface{}{}
+	updates := map[string]any{}
 	if input.Title != nil {
 		updates["title"] = *input.Title
 	}
@@ -367,6 +372,8 @@ func patchAnnouncement(c *gin.Context) {
 	if input.IsPinned != nil {
 		updates["is_pinned"] = *input.IsPinned
 	}
+	updates["updated_at"] = time.Now().UTC()
+
 	q := query.Use(db)
 	if len(updates) > 0 {
 		if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Updates(updates); err != nil {
@@ -449,7 +456,10 @@ func pinAnnouncement(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&input)
 	q := query.Use(db)
-	if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Update(query.Announcement.IsPinned, input.Pin); err != nil {
+	updates := map[string]any{}
+	updates["is_pinned"] = input.Pin
+	updates["updated_at"] = time.Now().UTC()
+	if _, err := q.Announcement.Where(query.Announcement.ID.Eq(id)).Updates(updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

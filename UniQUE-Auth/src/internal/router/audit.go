@@ -37,6 +37,7 @@ func writeAuditLog(c *gin.Context, action, target string, userID, applicationID,
 		TargetResource: target,
 		Trusted:        false,
 		Details:        &detailStr,
+		CreatedAt:      time.Now().UTC(),
 	}
 
 	if err := query.Use(db).AuditLog.Create(entry); err != nil {
