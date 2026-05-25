@@ -1,9 +1,9 @@
 ---
 name: Bug report
-about: 不具合の報告
-title: ""
+description: 不具合の報告
+projects: ["UniPro-tech/25"]
 labels: kind/bug
-assignees: ""
+type: bug
 body:
   - type: textarea
     id: bug-summary
@@ -65,8 +65,9 @@ body:
         - Other
     validations:
       required: false
-  - type: markdown
+  - type: upload
     attributes:
-      value: |
-        **スクリーンショット等**
-        スクリーンショット等は、作成後に添付してください。
+      label: スクリーンショット等
+      description: スクリーンショットがあれば添付してください。
+    validations:
+      required: false
