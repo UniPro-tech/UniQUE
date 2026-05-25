@@ -35,20 +35,14 @@ export default function SecuritySettingsCardClient({
             パスワードの変更や二段階認証の設定を行います。
           </Typography>
         </Stack>
-        <PasswordSection
-          user={user}
-          handleClickOpen={handleClickOpen}
-        />
+        <PasswordSection user={user} handleClickOpen={handleClickOpen} />
         <TOTPSection user={user} />
         <SessionsSection
           currentSessionId={currentSessionId}
           sessions={sessions}
         />
       </Card>
-      <ForgotPassword
-        open={open}
-        handleClose={handleClose}
-      />
+      <ForgotPassword open={open} handleClose={handleClose} />
     </SnackbarProvider>
   );
 }
