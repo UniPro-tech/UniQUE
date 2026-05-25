@@ -13,7 +13,7 @@ import * as React from "react";
 import { useInitialFormState } from "../../../Client";
 import { submitMigration } from "../../actions/migration";
 import { SitemarkIcon } from "../../CustomIcons";
-import { Card, SignInContainer } from "../Base";
+import { Card } from "../Base";
 
 export default function MigrationCard() {
   const initialState = useInitialFormState();
@@ -120,184 +120,175 @@ export default function MigrationCard() {
   const router = useRouter();
 
   return (
-    <SignInContainer
-      direction="column"
-      sx={{
-        justifyContent: "space-between",
-      }}
-    >
-      <Card variant="outlined">
-        <Box sx={{ display: { xs: "flex", md: "none" } }}>
-          <SitemarkIcon />
-        </Box>
-        <Typography
-          component="h1"
-          variant="h4"
-          sx={{ width: "100%", fontSize: "clamp(2rem, 10vw, 2.15rem)" }}
-        >
-          アカウント移行
-        </Typography>
-        <Box
-          component="form"
-          noValidate
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            width: "100%",
-            gap: 2,
-          }}
-          action={async (formdata: FormData) => {
-            setInProgress(true);
-            const path = await submitMigration(formdata);
-            setInProgress(false);
-            router.replace(path);
-          }}
-        >
-          <FormControl>
-            <FormLabel htmlFor="name">お名前</FormLabel>
-            <TextField
-              helperText={
-                "ニックネームでも構いません。お好きな表示名を設定してください。"
-              }
-              id="name"
-              type="text"
-              name="name"
-              placeholder="your name"
-              defaultValue={initialState?.name}
-              autoComplete="name"
-              autoFocus
-              required
-              fullWidth
-              variant="outlined"
-              color={emailError ? "error" : "primary"}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel htmlFor="email">内部メールアドレス</FormLabel>
-            <TextField
-              error={emailError}
-              helperText={emailErrorMessage}
-              id="email"
-              type="email"
-              name="email"
-              placeholder="your@uniproject.jp"
-              defaultValue={initialState?.email}
-              autoComplete="email"
-              autoFocus
-              required
-              fullWidth
-              variant="outlined"
-              color={emailError ? "error" : "primary"}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel htmlFor="external_email">外部メールアドレス</FormLabel>
-            <TextField
-              error={externalEmailError}
-              helperText={externalEmailErrorMessage}
-              id="external_email"
-              type="email"
-              name="external_email"
-              placeholder="your@example.com"
-              defaultValue={initialState?.externalEmail}
-              autoComplete="email"
-              autoFocus
-              required
-              fullWidth
-              variant="outlined"
-              color={externalEmailError ? "error" : "primary"}
-            />
-          </FormControl>
-          <FormControl>
-            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-              <FormLabel htmlFor="password">パスワード</FormLabel>
-            </Box>
-            <TextField
-              error={passwordError}
-              helperText={passwordErrorMessage}
-              name="password"
-              placeholder="••••••"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              autoFocus
-              required
-              fullWidth
-              variant="outlined"
-              color={passwordError ? "error" : "primary"}
-            />
-          </FormControl>
-          <FormControl>
-            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-              <FormLabel htmlFor="confirm_password">
-                パスワード（確認）
-              </FormLabel>
-            </Box>
-            <TextField
-              error={confirmPasswordError}
-              helperText={confirmPasswordErrorMessage}
-              name="confirm_password"
-              placeholder="••••••"
-              type="password"
-              id="confirm_password"
-              autoFocus
-              required
-              fullWidth
-              variant="outlined"
-              color={confirmPasswordError ? "error" : "primary"}
-            />
-          </FormControl>
-          <FormControlLabel
-            control={<Checkbox value="agreeTos" color="primary" />}
-            label={
-              <>
-                <Link href="/terms" target="_blank">
-                  利用規約
-                </Link>
-                と
-                <Link href="/privacy" target="_blank">
-                  プライバシーポリシー
-                </Link>
-                、
-                <Link href="/club_statute" target="_blank">
-                  サークル規約
-                </Link>
-                に同意します
-              </>
+    <Card variant="outlined">
+      <Box sx={{ display: { xs: "flex", md: "none" } }}>
+        <SitemarkIcon />
+      </Box>
+      <Typography
+        component="h1"
+        variant="h4"
+        sx={{ width: "100%", fontSize: "clamp(2rem, 10vw, 2.15rem)" }}
+      >
+        アカウント移行
+      </Typography>
+      <Box
+        component="form"
+        noValidate
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          gap: 2,
+        }}
+        action={async (formdata: FormData) => {
+          setInProgress(true);
+          const path = await submitMigration(formdata);
+          setInProgress(false);
+          router.replace(path);
+        }}
+      >
+        <FormControl>
+          <FormLabel htmlFor="name">お名前</FormLabel>
+          <TextField
+            helperText={
+              "ニックネームでも構いません。お好きな表示名を設定してください。"
             }
-          />
-          <FormHelperText error={agreeTosError}>
-            {agreeTosErrorMessage}
-          </FormHelperText>
-          <Button
-            type="submit"
+            id="name"
+            type="text"
+            name="name"
+            placeholder="your name"
+            defaultValue={initialState?.name}
+            autoComplete="name"
+            autoFocus
+            required
             fullWidth
-            variant="contained"
-            onSubmit={validateInputs}
-            disabled={inProgress}
-          >
-            {!inProgress ? "サインアップ" : "サインアップ中..."}
-          </Button>
-        </Box>
-        <Divider>or</Divider>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <Typography sx={{ textAlign: "center" }}>
-            メンバーではありませんか？{" "}
-            <Link href="/signup" variant="body2" sx={{ alignSelf: "center" }}>
-              登録申請
-            </Link>
-          </Typography>
-        </Box>
-        <Divider>or</Divider>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <Typography sx={{ textAlign: "center" }}>
-            アカウントをお持ちですか？{" "}
-            <Link href="/signin" variant="body2" sx={{ alignSelf: "center" }}>
-              サインイン
-            </Link>
-          </Typography>
-        </Box>
-      </Card>
-    </SignInContainer>
+            variant="outlined"
+            color={emailError ? "error" : "primary"}
+          />
+        </FormControl>
+        <FormControl>
+          <FormLabel htmlFor="email">内部メールアドレス</FormLabel>
+          <TextField
+            error={emailError}
+            helperText={emailErrorMessage}
+            id="email"
+            type="email"
+            name="email"
+            placeholder="your@uniproject.jp"
+            defaultValue={initialState?.email}
+            autoComplete="email"
+            autoFocus
+            required
+            fullWidth
+            variant="outlined"
+            color={emailError ? "error" : "primary"}
+          />
+        </FormControl>
+        <FormControl>
+          <FormLabel htmlFor="external_email">外部メールアドレス</FormLabel>
+          <TextField
+            error={externalEmailError}
+            helperText={externalEmailErrorMessage}
+            id="external_email"
+            type="email"
+            name="external_email"
+            placeholder="your@example.com"
+            defaultValue={initialState?.externalEmail}
+            autoComplete="email"
+            autoFocus
+            required
+            fullWidth
+            variant="outlined"
+            color={externalEmailError ? "error" : "primary"}
+          />
+        </FormControl>
+        <FormControl>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+            <FormLabel htmlFor="password">パスワード</FormLabel>
+          </Box>
+          <TextField
+            error={passwordError}
+            helperText={passwordErrorMessage}
+            name="password"
+            placeholder="••••••"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            autoFocus
+            required
+            fullWidth
+            variant="outlined"
+            color={passwordError ? "error" : "primary"}
+          />
+        </FormControl>
+        <FormControl>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+            <FormLabel htmlFor="confirm_password">パスワード（確認）</FormLabel>
+          </Box>
+          <TextField
+            error={confirmPasswordError}
+            helperText={confirmPasswordErrorMessage}
+            name="confirm_password"
+            placeholder="••••••"
+            type="password"
+            id="confirm_password"
+            autoFocus
+            required
+            fullWidth
+            variant="outlined"
+            color={confirmPasswordError ? "error" : "primary"}
+          />
+        </FormControl>
+        <FormControlLabel
+          control={<Checkbox value="agreeTos" color="primary" />}
+          label={
+            <>
+              <Link href="/terms" target="_blank">
+                利用規約
+              </Link>
+              と
+              <Link href="/privacy" target="_blank">
+                プライバシーポリシー
+              </Link>
+              、
+              <Link href="/club_statute" target="_blank">
+                サークル規約
+              </Link>
+              に同意します
+            </>
+          }
+        />
+        <FormHelperText error={agreeTosError}>
+          {agreeTosErrorMessage}
+        </FormHelperText>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          onSubmit={validateInputs}
+          disabled={inProgress}
+        >
+          {!inProgress ? "サインアップ" : "サインアップ中..."}
+        </Button>
+      </Box>
+      <Divider>or</Divider>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Typography sx={{ textAlign: "center" }}>
+          メンバーではありませんか？{" "}
+          <Link href="/signup" variant="body2" sx={{ alignSelf: "center" }}>
+            登録申請
+          </Link>
+        </Typography>
+      </Box>
+      <Divider>or</Divider>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Typography sx={{ textAlign: "center" }}>
+          アカウントをお持ちですか？{" "}
+          <Link href="/signin" variant="body2" sx={{ alignSelf: "center" }}>
+            サインイン
+          </Link>
+        </Typography>
+      </Box>
+    </Card>
   );
 }

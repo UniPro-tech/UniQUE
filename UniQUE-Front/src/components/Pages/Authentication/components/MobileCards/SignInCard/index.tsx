@@ -47,7 +47,7 @@ export default function SignInCard() {
   const router = useRouter();
 
   return (
-    <Card variant="outlined">
+    <Card variant="outlined" sx={{ overflow: "visible" }} id="test">
       <Box sx={{ display: { xs: "flex", md: "none" } }}>
         <SitemarkIcon />
       </Box>

@@ -45,7 +45,7 @@ export default function AuthLayout(props: { children: React.ReactNode }) {
                 sx={{
                   justifyContent: "center",
                   gap: { xs: 6, sm: 12 },
-                  p: { xs: 2, sm: 4 },
+                  p: { xs: 0, sm: 4 },
                   m: "auto",
                 }}
               >
