@@ -28,10 +28,10 @@ body:
       label: Component
       description: どのコンポーネントに対する実装が必要か、わかる場合は選択してください。
       options:
-        - API
-        - Auth
-        - Frontend
-        - Mail
-        - Other
+        - label: API
+        - label: Auth
+        - label: Frontend
+        - label: Mail
+        - label: Other
     validations:
       required: false

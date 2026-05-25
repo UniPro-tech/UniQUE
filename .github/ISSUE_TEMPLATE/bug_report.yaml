@@ -30,11 +30,11 @@ body:
       label: Component
       description: どのコンポーネントで発生しているか、わかる場合は選択してください。
       options:
-        - API
-        - Auth
-        - Frontend
-        - Mail
-        - Other
+        - label: API
+        - label: Auth
+        - label: Frontend
+        - label: Mail
+        - label: Other
     validations:
       required: false
   - type: dropdown
