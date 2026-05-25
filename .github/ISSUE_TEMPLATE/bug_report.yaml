@@ -24,7 +24,7 @@ body:
         2. 〇〇というエラーが発生した
     validations:
       required: true
-  - type: checkbox
+  - type: checkboxes
     id: component
     attributes:
       label: Component

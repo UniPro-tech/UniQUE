@@ -22,7 +22,7 @@ body:
         例:「〇〇のたびにいつもイライラします。」「〇〇の際にこの機能がないため△△できません。」
     validations:
       required: true
-  - type: checkbox
+  - type: checkboxes
     id: component
     attributes:
       label: Component
