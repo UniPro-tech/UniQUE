@@ -1,7 +1,6 @@
 ---
 name: Feature request
 about: 新しい機能のリクエスト
-title: ""
 labels: kind/feature
 projects: ["UniPro-tech/24"]
 type: Feature
