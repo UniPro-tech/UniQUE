@@ -1,0 +1,72 @@
+---
+name: Bug report
+about: 不具合の報告
+title: ""
+labels: kind/bug
+assignees: ""
+body:
+  - type: textarea
+    id: bug-summary
+    attributes:
+      label: 概要
+      description: 不具合についてまとめてください。
+      placeholder: "例: /authorization エンドポイントが露出している。"
+    validations:
+      required: true
+  - type: input
+    id: bug-summary
+    attributes:
+      label: 再現手順
+      description: 再現手順を教えてください。(不明の場合は不明とお書きください)
+      placeholder: |
+        例:
+        1. 〇〇というデータを〇〇エンドポイントへ送る
+        2. 〇〇というエラーが発生した
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: どのコンポーネントで発生しているかわかる場合は選択してください。
+      options:
+        - API
+        - Auth
+        - Frontend
+        - Mail
+        - Other
+    validations:
+      required: false
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: OS
+      description: OSを選択してください。
+      options:
+        - All
+        - Windows
+        - macOS
+        - Linux
+        - iOS
+        - Android
+        - Other
+    validations:
+      required: false
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: ブラウザについて教えてください。
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        **スクリーンショット等**
+        スクリーンショット等は、作成後に添付してください。
