@@ -28,7 +28,7 @@ body:
     id: component
     attributes:
       label: Component
-      description: どのコンポーネントで発生しているかわかる場合は選択してください。
+      description: どのコンポーネントで発生しているか、わかる場合は選択してください。
       options:
         - API
         - Auth

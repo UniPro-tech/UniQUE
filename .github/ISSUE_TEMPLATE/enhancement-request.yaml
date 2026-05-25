@@ -1,0 +1,36 @@
+---
+name: Enhancement request
+description: 既存機能の改善リクエスト
+labels: kind/enhancement
+projects: ["UniPro-tech/24"]
+body:
+  - type: textarea
+    id: enhancement-summary
+    attributes:
+      label: 改善の内容
+      description: 改善の内容についてまとめてください。
+      placeholder: "例:「〇〇の挙動を△△にしてほしい。」「デザインを〇〇のように変えてほしい。」 "
+    validations:
+      required: true
+  - type: input
+    id: why
+    attributes:
+      label: なぜその機能が必要ですか？
+      description: 問題の内容を明確かつ簡潔に記述してください。
+      placeholder: |
+        例:「〇〇のたびにいつもイライラします。」「〇〇の際にこの機能がないため△△できません。」
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: どのコンポーネントについての改善が必要か、わかる場合は選択してください。
+      options:
+        - API
+        - Auth
+        - Frontend
+        - Mail
+        - Other
+    validations:
+      required: false

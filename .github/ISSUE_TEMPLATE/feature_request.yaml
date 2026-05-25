@@ -1,0 +1,38 @@
+---
+name: Feature request
+about: 新しい機能のリクエスト
+title: ""
+labels: kind/feature
+projects: ["UniPro-tech/24"]
+type: Feature
+body:
+  - type: textarea
+    id: feature-summary
+    attributes:
+      label: 新機能の内容
+      description: 新機能の内容についてまとめてください。
+      placeholder: "例:「Implisit Flowをサポートしてほしい。」「アイコン機能が欲しい」"
+    validations:
+      required: true
+  - type: input
+    id: why
+    attributes:
+      label: なぜその機能が必要ですか？
+      description: 問題の内容を明確かつ簡潔に記述してください。
+      placeholder: |
+        例:「〇〇のたびにいつもイライラします。」「〇〇の際にこの機能がないため△△できません。」
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: どのコンポーネントに対する実装が必要か、わかる場合は選択してください。
+      options:
+        - API
+        - Auth
+        - Frontend
+        - Mail
+        - Other
+    validations:
+      required: false
