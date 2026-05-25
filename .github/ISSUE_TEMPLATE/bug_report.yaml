@@ -14,7 +14,7 @@ body:
     validations:
       required: true
   - type: input
-    id: bug-summary
+    id: reprodution
     attributes:
       label: 再現手順
       description: 再現手順を教えてください。(不明の場合は不明とお書きください)
@@ -66,6 +66,7 @@ body:
     validations:
       required: false
   - type: upload
+    id: screenshot
     attributes:
       label: スクリーンショット等
       description: スクリーンショットがあれば添付してください。
