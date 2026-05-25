@@ -23,7 +23,7 @@ spec:
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
-            - name: mysql-conf
+            - name: myconf
               mountPath: /etc/mysql/conf.d
               readOnly: true
           envFrom:
