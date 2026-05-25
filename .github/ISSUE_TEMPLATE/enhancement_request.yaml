@@ -12,7 +12,7 @@ body:
       placeholder: "例:「〇〇の挙動を△△にしてほしい。」「デザインを〇〇のように変えてほしい。」 "
     validations:
       required: true
-  - type: input
+  - type: textarea
     id: why
     attributes:
       label: なぜその機能が必要ですか？
@@ -21,7 +21,7 @@ body:
         例:「〇〇のたびにいつもイライラします。」「〇〇の際にこの機能がないため△△できません。」
     validations:
       required: true
-  - type: dropdown
+  - type: checkbox
     id: component
     attributes:
       label: Component
