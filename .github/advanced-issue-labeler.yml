@@ -1,0 +1,17 @@
+policy:
+  - template:
+      - "bug_report.yaml"
+      - "enhancement_request.yaml"
+      - "feature_request.yaml"
+    section:
+      - id: ["component"]
+        block-list: []
+        label:
+          - name: scope/api
+            keys: ["API"]
+          - name: scope/auth
+            keys: ["Auth"]
+          - name: scope/front
+            keys: ["Frontend"]
+          - name: scope/mail
+            keys: ["Mail"]
