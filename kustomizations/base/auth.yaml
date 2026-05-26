@@ -22,7 +22,7 @@ spec:
             - containerPort: 8080
           env:
             - name: ENV
-              value: "debug"
+              value: "production"
           envFrom:
             - secretRef:
                 name: unique-auth-secrets
