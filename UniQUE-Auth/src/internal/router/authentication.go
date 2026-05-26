@@ -237,6 +237,17 @@ func AuthenticationPost(c *gin.Context) {
 
 		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
+			path := c.Request.URL.Path
+			query := c.Request.URL.RawQuery
+			slog.Error("An error occured",
+				slog.Int("status", 500),
+				slog.String("method", c.Request.Method),
+				slog.String("path", path),
+				slog.String("query", query),
+				slog.String("ip", c.ClientIP()),
+				slog.String("user_agent", c.Request.UserAgent()),
+				slog.String("error", err.Error()),
+			)
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
