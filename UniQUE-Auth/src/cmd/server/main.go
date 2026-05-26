@@ -1,8 +1,10 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/docs"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -36,18 +38,72 @@ func healthCheck(c *gin.Context) {
 	})
 }
 
+// slogMiddleware は Gin のアクセスログを slog で JSON 出力するためのミドルウェアです
+func slogMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
+		// リクエストを処理
+		c.Next()
+
+		latency := time.Since(start)
+		status := c.Writer.Status()
+
+		// Gin内部で発生したエラーのロギング
+		if len(c.Errors) > 0 {
+			for _, e := range c.Errors.Errors() {
+				slog.Error("Gin Internal Error", slog.String("error", e))
+			}
+		} else {
+			// アクセスログを構造化して出力
+			slog.Info("HTTP Request",
+				slog.Int("status", status),
+				slog.String("method", c.Request.Method),
+				slog.String("path", path),
+				slog.String("query", query),
+				slog.String("ip", c.ClientIP()),
+				slog.String("user_agent", c.Request.UserAgent()),
+				slog.Duration("latency", latency),
+			)
+		}
+	}
+}
+
 func main() {
+	// --- slog の初期化 ---
+	// JSONフォーマットで標準出力へログを書き出すように設定
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo, // 出力レベルを変更したい場合はここで調整
+	})
+	slog.SetDefault(slog.New(handler))
+
 	environmentConfigs := config.LoadConfig()
 
 	// Initialize database
 	dbConnection, err := db.NewDB()
-	dbConnection.Logger = dbConnection.Logger.LogMode(logger.Info)
 	if err != nil {
-		log.Fatal(err)
+		// 標準の log.Fatal ではなく slog.Error を使用して JSON 形式を維持
+		slog.Error("Failed to initialize database", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
+	dbConnection.Logger = dbConnection.Logger.LogMode(logger.Info)
 
-	// loggerとrecoveryミドルウェア付きGinルーター作成
-	r := gin.Default()
+	// ログレベルの決定（環境変数などで切り替えるイメージ）
+	var gormLogLevel logger.LogLevel
+
+	if environmentConfigs.Env == "production" {
+		gormLogLevel = logger.Error
+		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
+	} else {
+		gormLogLevel = logger.Info
+		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
+	}
+	r := gin.New()
+
+	// カスタム slog ミドルウェアと、パニックリカバリーを登録
+	r.Use(slogMiddleware(), gin.Recovery())
 
 	// Swagger Info
 	docs.SwaggerInfo.BasePath = "/"
@@ -95,5 +151,7 @@ func main() {
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+
+	slog.Info("Starting server on :8080")
 	r.Run()
 }

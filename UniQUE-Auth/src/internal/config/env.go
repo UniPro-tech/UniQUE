@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	Env           string
 	AppName       string
 	Version       string
 	FrontendURL   string
@@ -89,6 +90,7 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 	return &Config{
+		Env:           os.Getenv("ENV"),
 		AppName:       AppNameEnv,
 		FrontendURL:   FrontendURLEnv,
 		IssuerURL:     IssuerURLEnv,
