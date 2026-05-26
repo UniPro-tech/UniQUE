@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"log/slog"
 	"math/rand"
 	"strings"
 	"time"
@@ -68,7 +69,7 @@ func hasValidKeyPair(cfg config.Config) bool {
 	return true
 }
 
-func GenerateTokens(db *gorm.DB, config config.Config, consent *model.Consent, scopes, nonce string) (accessToken, IDToken, RefreshToken string, err error) {
+func GenerateTokens(db *gorm.DB, config config.Config, consent *model.Consent, scopes, nonce string, logger *slog.Logger) (accessToken, IDToken, RefreshToken string, err error) {
 	scopes = AlphabeticScopeString(scopes)
 	q := query.Use(db)
 
@@ -89,6 +90,7 @@ func GenerateTokens(db *gorm.DB, config config.Config, consent *model.Consent, s
 		}
 		IDTokenString, err = GenerateIDToken(q, IDTokenID, consent.UserID, consent.ApplicationID, nonce, scopes, config)
 		if err != nil {
+			logger.Error("Un error occured in idtoken gen", slog.String("error", err.Error()))
 			return "", "", "", err
 		}
 	} else {
