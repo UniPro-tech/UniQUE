@@ -262,6 +262,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 	var accessToken, idToken, refreshToken string
 
 	err = q.Transaction(func(tx *query.Query) error {
+		logger := middleware.GetLogger(c)
 		tokenset, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
 		if err != nil {
 			return err
@@ -281,6 +282,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 		// tx.OauthToken.UnderlyingDB() から、トランザクションコンテキストを持った *gorm.DB を安全に取得
 		accessToken, idToken, refreshToken, err = util.GenerateTokens(tx.OauthToken.UnderlyingDB(), cfg, consent, claims.Scope, "")
 		if err != nil {
+			logger.Error("An error occured in GenTokens")
 			return err
 		}
 
