@@ -151,7 +151,7 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 
 		cfg := *c.MustGet("config").(*config.Config)
 		// tx.OauthToken.UnderlyingDB() から、トランザクションコンテキストを持った *gorm.DB を安全に取得
-		accessToken, idToken, refreshToken, err = util.GenerateTokens(tx.OauthToken.UnderlyingDB(), cfg, consent, authReq.Scope, derefPtr(authReq.Nonce), middleware.GetLogger(c))
+		accessToken, idToken, refreshToken, err = util.GenerateTokens(tx, cfg, consent, authReq.Scope, derefPtr(authReq.Nonce), middleware.GetLogger(c))
 		if err != nil {
 			return err
 		}
@@ -280,7 +280,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 		}
 
 		// tx.OauthToken.UnderlyingDB() から、トランザクションコンテキストを持った *gorm.DB を安全に取得
-		accessToken, idToken, refreshToken, err = util.GenerateTokens(tx.OauthToken.UnderlyingDB(), cfg, consent, claims.Scope, "", middleware.GetLogger(c))
+		accessToken, idToken, refreshToken, err = util.GenerateTokens(tx, cfg, consent, claims.Scope, "", middleware.GetLogger(c))
 		if err != nil {
 			logger.Error("An error occured in GenTokens")
 			return err

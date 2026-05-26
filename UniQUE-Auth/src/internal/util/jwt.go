@@ -69,9 +69,8 @@ func hasValidKeyPair(cfg config.Config) bool {
 	return true
 }
 
-func GenerateTokens(db *gorm.DB, config config.Config, consent *model.Consent, scopes, nonce string, logger *slog.Logger) (accessToken, IDToken, RefreshToken string, err error) {
+func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent, scopes, nonce string, logger *slog.Logger) (accessToken, IDToken, RefreshToken string, err error) {
 	scopes = AlphabeticScopeString(scopes)
-	q := query.Use(db)
 
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
