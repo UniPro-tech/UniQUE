@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/docs"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -37,40 +36,6 @@ func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, HealthResponse{
 		Status: "ok",
 	})
-}
-
-// Gin のアクセスログを slog で JSON 出力するためのミドルウェア
-func slogMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		logger := middleware.GetLogger(c)
-		start := time.Now()
-
-		// 先に後続のハンドラー（AuthenticationPostなど）を実行させる
-		c.Next()
-
-		// ハンドラー実行中に c.AbortWithError() が呼ばれていたら、ここにエラーが入る
-		if len(c.Errors) > 0 {
-			err := c.Errors.Last() // 直近のエラーを取得
-			status := c.Writer.Status()
-
-			// 1箇所でまとめてエラーログをJSON出力
-			logger.Error("An error occurred",
-				slog.Int("status", status),
-				slog.String("error", err.Error()),
-			)
-
-			// 1箇所でまとめてクライアントにエラーレスポンス（JSON）を返却
-			c.JSON(status, gin.H{"error": "Internal Server Error"})
-			return
-		}
-
-		// エラーがなかった場合は、通常のアクセスログを出す
-		latency := time.Since(start)
-		logger.Info("HTTP Request",
-			slog.Int("status", c.Writer.Status()),
-			slog.Duration("latency", latency),
-		)
-	}
 }
 
 func main() {
@@ -106,7 +71,7 @@ func main() {
 
 	r := gin.New()
 	// カスタム slog ミドルウェアと、パニックリカバリーを登録
-	r.Use(slogMiddleware(), gin.Recovery())
+	r.Use(middleware.SlogMiddleware(), gin.Recovery())
 
 	// Swagger Info
 	docs.SwaggerInfo.BasePath = "/"
