@@ -211,8 +211,8 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 	}
 	var roleCustomID []string
 
-	err = q.UserRole.
-		LeftJoin(q.Role, q.UserRole.RoleID.EqCol(q.Role.ID)).
+	err = q.Role.
+		Join(q.UserRole, q.UserRole.RoleID.EqCol(q.Role.ID)).
 		Where(q.UserRole.UserID.Eq(userID)).
 		Select(q.Role.CustomID).
 		Scan(&roleCustomID)

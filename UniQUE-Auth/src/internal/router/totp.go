@@ -42,7 +42,7 @@ func GenerateTOTP(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -114,7 +114,7 @@ func GenerateTOTP(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "TOTP is already enabled"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -151,7 +151,7 @@ func VerifyTOTP(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -221,7 +221,7 @@ func DisableTOTP(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)

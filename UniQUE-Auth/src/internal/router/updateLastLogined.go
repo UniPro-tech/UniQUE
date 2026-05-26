@@ -2,6 +2,7 @@ package router
 
 import (
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -31,7 +32,7 @@ func UpdateLastLogined(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(500, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -42,7 +43,7 @@ func UpdateLastLogined(c *gin.Context) {
 			c.JSON(404, gin.H{"error": "session not found"})
 			return
 		}
-		c.JSON(500, gin.H{"error": "failed to fetch session"})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if session == nil {

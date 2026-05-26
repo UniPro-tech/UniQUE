@@ -3,6 +3,7 @@ package router
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -45,7 +46,7 @@ func PasswordResetRequestPost(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 

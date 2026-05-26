@@ -8,8 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"log"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -83,7 +81,6 @@ func TokenPost(c *gin.Context) {
 
 // authorization_code グラントの処理
 func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID string) {
-	logger := middleware.GetLogger(c)
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
@@ -167,7 +164,6 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 	})
 
 	if err != nil {
-		logger.Warn("Authorization code grant error", slog.String("error", err.Error()))
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization code"})
 			return
@@ -258,7 +254,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -300,8 +296,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refresh token"})
 			return
 		}
-		log.Printf("Refresh token grant error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -320,7 +315,7 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return nil
 	}
 	q := query.Use(db)

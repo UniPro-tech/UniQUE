@@ -46,7 +46,7 @@ func SessionsGet(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -92,7 +92,7 @@ func SessionsDelete(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -147,7 +147,7 @@ func GetSessionById(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -32,7 +33,7 @@ func Revocation(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
