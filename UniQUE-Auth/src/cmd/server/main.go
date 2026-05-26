@@ -56,7 +56,6 @@ func main() {
 		slog.Error("Failed to initialize database", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	dbConnection.Logger = dbConnection.Logger.LogMode(logger.Info)
 
 	// ログレベルの決定（環境変数などで切り替えるイメージ）
 	var gormLogLevel logger.LogLevel
