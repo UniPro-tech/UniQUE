@@ -38,36 +38,48 @@ func healthCheck(c *gin.Context) {
 	})
 }
 
-// slogMiddleware は Gin のアクセスログを slog で JSON 出力するためのミドルウェアです
+// Gin のアクセスログを slog で JSON 出力するためのミドルウェア
 func slogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
 
-		// リクエストを処理
+		// 先に後続のハンドラー（AuthenticationPostなど）を実行させる
 		c.Next()
 
-		latency := time.Since(start)
-		status := c.Writer.Status()
-
-		// Gin内部で発生したエラーのロギング
+		// ハンドラー実行中に c.AbortWithError() が呼ばれていたら、ここにエラーが入る
 		if len(c.Errors) > 0 {
-			for _, e := range c.Errors.Errors() {
-				slog.Error("Gin Internal Error", slog.String("error", e))
-			}
-		} else {
-			// アクセスログを構造化して出力
-			slog.Info("HTTP Request",
+			err := c.Errors.Last() // 直近のエラーを取得
+			status := c.Writer.Status()
+
+			// 1箇所でまとめてエラーログをJSON出力
+			slog.Error("An error occurred",
 				slog.Int("status", status),
 				slog.String("method", c.Request.Method),
 				slog.String("path", path),
 				slog.String("query", query),
 				slog.String("ip", c.ClientIP()),
 				slog.String("user_agent", c.Request.UserAgent()),
-				slog.Duration("latency", latency),
+				slog.String("error", err.Error()),
 			)
+
+			// 1箇所でまとめてクライアントにエラーレスポンス（JSON）を返却
+			c.JSON(status, gin.H{"error": "Internal Server Error"})
+			return
 		}
+
+		// エラーがなかった場合は、通常のアクセスログを出す
+		latency := time.Since(start)
+		slog.Info("HTTP Request",
+			slog.Int("status", c.Writer.Status()),
+			slog.String("method", c.Request.Method),
+			slog.String("path", path),
+			slog.String("query", query),
+			slog.String("ip", c.ClientIP()),
+			slog.String("user_agent", c.Request.UserAgent()),
+			slog.Duration("latency", latency),
+		)
 	}
 }
 
