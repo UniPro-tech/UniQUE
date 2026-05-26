@@ -261,9 +261,12 @@ func createUser(c *gin.Context) {
 		return
 	}
 	resp, err := http.Post(config.IssuerInternalURL+"/internal/password_hash", "application/json", strings.NewReader(string(reqBody)))
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("auth server error"))
 	}
 	defer resp.Body.Close()
 	var respData struct {

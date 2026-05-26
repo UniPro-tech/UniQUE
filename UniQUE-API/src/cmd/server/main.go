@@ -87,9 +87,9 @@ func main() {
 		c.Next()
 	})
 
+	r.Use(middleware.SlogMiddleware())
 	r.Use(middleware.AuthMiddleware())
 	r.Use(middleware.AuditLogMiddleware())
-	r.Use(middleware.SlogMiddleware())
 
 	// Routes
 	r.GET("/health", healthCheck)
