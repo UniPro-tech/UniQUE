@@ -122,6 +122,7 @@ func AuthorizationGet(c *gin.Context) {
 	err = q.Transaction(func(tx *query.Query) error {
 		now := time.Now().UTC()
 		authReq = &model.AuthorizationRequest{
+			ID:                  ulid.Make().String(),
 			ApplicationID:       req.ClientID,
 			RedirectURI:         req.RedirectURI,
 			ResponseType:        req.ResponseType,

@@ -10,6 +10,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
+	"github.com/oklog/ulid/v2"
 	"github.com/pquerna/otp/totp"
 	"gorm.io/gorm"
 )
@@ -80,6 +81,7 @@ func AuthenticationPost(c *gin.Context) {
 		err = q.Transaction(func(tx *query.Query) error {
 			now := time.Now().UTC()
 			session = &model.Session{
+				ID:          ulid.Make().String(),
 				UserID:      user.ID,
 				IPAddress:   req.IPAddress,
 				UserAgent:   req.UserAgent,
@@ -155,6 +157,7 @@ func AuthenticationPost(c *gin.Context) {
 		err = q.Transaction(func(tx *query.Query) error {
 			now := time.Now().UTC()
 			session = &model.Session{
+				ID:          ulid.Make().String(),
 				UserID:      user.ID,
 				IPAddress:   req.IPAddress,
 				UserAgent:   req.UserAgent,

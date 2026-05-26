@@ -8,6 +8,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
+	"github.com/oklog/ulid/v2"
 	"gorm.io/gen"
 	"gorm.io/gorm"
 )
@@ -107,6 +108,7 @@ func ConsentCreate(c *gin.Context) {
 
 	now := time.Now().UTC()
 	newConsent := &model.Consent{
+		ID:            ulid.Make().String(),
 		UserID:        req.UserID,
 		ApplicationID: req.ApplicationID,
 		Scope:         req.Scope,
