@@ -94,14 +94,15 @@ func main() {
 	var gormLogLevel logger.LogLevel
 
 	if environmentConfigs.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
 		gormLogLevel = logger.Error
 		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
 	} else {
 		gormLogLevel = logger.Info
 		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
 	}
-	r := gin.New()
 
+	r := gin.New()
 	// カスタム slog ミドルウェアと、パニックリカバリーを登録
 	r.Use(slogMiddleware(), gin.Recovery())
 

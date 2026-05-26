@@ -1,8 +1,7 @@
 package router
 
 import (
-	"log"
-	"strings"
+	"log/slog"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -59,6 +58,17 @@ func AuthenticationPost(c *gin.Context) {
 		// Handle password authentication
 		user, err, reason := passwordAuthentication(q, req.Username, req.Password)
 		if err != nil {
+			path := c.Request.URL.Path
+			query := c.Request.URL.RawQuery
+			slog.Error("An error occured",
+				slog.Int("status", 500),
+				slog.String("method", c.Request.Method),
+				slog.String("path", path),
+				slog.String("query", query),
+				slog.String("ip", c.ClientIP()),
+				slog.String("user_agent", c.Request.UserAgent()),
+				slog.String("error", err.Error()),
+			)
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
@@ -97,6 +107,17 @@ func AuthenticationPost(c *gin.Context) {
 		})
 
 		if err != nil {
+			path := c.Request.URL.Path
+			query := c.Request.URL.RawQuery
+			slog.Error("An error occured",
+				slog.Int("status", 500),
+				slog.String("method", c.Request.Method),
+				slog.String("path", path),
+				slog.String("query", query),
+				slog.String("ip", c.ClientIP()),
+				slog.String("user_agent", c.Request.UserAgent()),
+				slog.String("error", err.Error()),
+			)
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
@@ -109,6 +130,17 @@ func AuthenticationPost(c *gin.Context) {
 		// Return session ID as a token
 		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
+			path := c.Request.URL.Path
+			query := c.Request.URL.RawQuery
+			slog.Error("An error occured",
+				slog.Int("status", 500),
+				slog.String("method", c.Request.Method),
+				slog.String("path", path),
+				slog.String("query", query),
+				slog.String("ip", c.ClientIP()),
+				slog.String("user_agent", c.Request.UserAgent()),
+				slog.String("error", err.Error()),
+			)
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
@@ -142,6 +174,17 @@ func AuthenticationPost(c *gin.Context) {
 		// Handle TOTP authentication
 		user, err := totpAuthentication(q, req.Username, req.Code)
 		if err != nil {
+			path := c.Request.URL.Path
+			query := c.Request.URL.RawQuery
+			slog.Error("An error occured",
+				slog.Int("status", 500),
+				slog.String("method", c.Request.Method),
+				slog.String("path", path),
+				slog.String("query", query),
+				slog.String("ip", c.ClientIP()),
+				slog.String("user_agent", c.Request.UserAgent()),
+				slog.String("error", err.Error()),
+			)
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
@@ -172,6 +215,17 @@ func AuthenticationPost(c *gin.Context) {
 		})
 
 		if err != nil {
+			path := c.Request.URL.Path
+			query := c.Request.URL.RawQuery
+			slog.Error("An error occured",
+				slog.Int("status", 500),
+				slog.String("method", c.Request.Method),
+				slog.String("path", path),
+				slog.String("query", query),
+				slog.String("ip", c.ClientIP()),
+				slog.String("user_agent", c.Request.UserAgent()),
+				slog.String("error", err.Error()),
+			)
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
@@ -236,8 +290,18 @@ func passwordAuthentication(q *query.Query, username, password string) (resuser 
 	}
 	if ok, err := util.VerifyPassword(password, user.PasswordHash); err != nil || !ok {
 		reason := "invalid_credentials"
-		sanitizedUsername := strings.ReplaceAll(strings.ReplaceAll(username, "\n", "\\n"), "\r", "\\r")
-		log.Printf("Password verification failed for user %s: %v", sanitizedUsername, err)
+
+		// slogを使った構造化ログへ変更（サニタイズ処理はslogが自動で行うため不要に）
+		if err != nil {
+			slog.Warn("Password verification error",
+				slog.String("user", username),
+				slog.String("error", err.Error()),
+			)
+		} else {
+			slog.Warn("Password verification failed: invalid password",
+				slog.String("user", username),
+			)
+		}
 		return nil, nil, &reason
 	}
 	return user, nil, nil
