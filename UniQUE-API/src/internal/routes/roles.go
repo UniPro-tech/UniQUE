@@ -54,7 +54,6 @@ func assignRoleToAll(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -131,7 +130,6 @@ func listUsersForRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -222,7 +220,6 @@ func listRoles(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -265,7 +262,6 @@ func createRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	var input CreateRoleRequest
@@ -377,7 +373,6 @@ func getRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -419,7 +414,6 @@ func updateRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -526,7 +520,6 @@ func patchRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -629,7 +622,6 @@ func deleteRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -667,7 +659,6 @@ func addUserToRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	roleID := c.Param("id")
@@ -741,7 +732,6 @@ func removeUserFromRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	roleID := c.Param("id")

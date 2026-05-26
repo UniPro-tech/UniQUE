@@ -145,7 +145,6 @@ func listUsers(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -237,7 +236,6 @@ func createUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	config := c.MustGet("config").(config.Config)
@@ -267,6 +265,7 @@ func createUser(c *gin.Context) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		c.AbortWithError(http.StatusInternalServerError, errors.New("auth server error"))
+		return
 	}
 	defer resp.Body.Close()
 	var respData struct {
@@ -409,7 +408,6 @@ func createUser(c *gin.Context) {
 func getUser(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -526,7 +524,6 @@ func updateUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -793,7 +790,6 @@ func patchUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1130,7 +1126,6 @@ func deleteUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1157,7 +1152,6 @@ func listAppsForUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1202,7 +1196,6 @@ func addRoleForUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1266,7 +1259,6 @@ func removeRoleForUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1302,7 +1294,6 @@ func listRolesForUser(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1353,7 +1344,6 @@ func getUserPermissions(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1398,7 +1388,6 @@ func listExternalIdentities(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	cfg := c.MustGet("config").(config.Config)
@@ -1462,7 +1451,6 @@ func addExternalIdentity(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1554,7 +1542,6 @@ func removeExternalIdentity(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -1591,7 +1578,6 @@ func linkDiscordByEmailCode(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	var input EmailVerifyDiscordLinkRequest
@@ -1696,7 +1682,6 @@ func emailCodeCheck(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	var input EmailCodeCheckRequest
@@ -1816,7 +1801,6 @@ func approveUserRegist(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	user_id := c.Param("id")
@@ -1962,7 +1946,6 @@ func rejectUserRegist(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	user_id := c.Param("id")
@@ -1999,7 +1982,6 @@ func resendEmailVerification(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -2098,7 +2080,6 @@ func changePassword(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")

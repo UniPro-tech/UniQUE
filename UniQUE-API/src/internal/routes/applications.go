@@ -49,7 +49,6 @@ func listApplications(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -121,7 +120,6 @@ func createApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 
@@ -241,7 +239,6 @@ func getApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -289,7 +286,6 @@ func updateApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -447,7 +443,6 @@ func patchApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -595,7 +590,6 @@ func deleteApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -675,7 +669,6 @@ func listRedirectURIsForApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -714,7 +707,6 @@ func createRedirectURIForApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -789,7 +781,6 @@ func deleteRedirectURIForApplication(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")

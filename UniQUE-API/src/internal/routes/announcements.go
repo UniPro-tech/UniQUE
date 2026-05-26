@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -45,7 +44,6 @@ func RegisterAnnouncementRoutes(r *gin.Engine) {
 func listAnnouncements(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -165,7 +163,6 @@ func listAnnouncements(c *gin.Context) {
 func getAnnouncement(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -213,7 +210,6 @@ func getAnnouncement(c *gin.Context) {
 func createAnnouncement(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	var input CreateAnnouncementRequest
@@ -293,7 +289,6 @@ func createAnnouncement(c *gin.Context) {
 func updateAnnouncement(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -391,7 +386,6 @@ func updateAnnouncement(c *gin.Context) {
 func patchAnnouncement(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -488,7 +482,6 @@ func patchAnnouncement(c *gin.Context) {
 func deleteAnnouncement(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -522,7 +515,6 @@ func deleteAnnouncement(c *gin.Context) {
 func pinAnnouncement(c *gin.Context) {
 	db := getDB(c)
 	if db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
