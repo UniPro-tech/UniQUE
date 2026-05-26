@@ -9,6 +9,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/db"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/middleware"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/router"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -68,6 +69,8 @@ func main() {
 		gormLogLevel = logger.Info
 		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
 	}
+
+	query.SetDefault(dbConnection)
 
 	r := gin.New()
 	// カスタム slog ミドルウェアと、パニックリカバリーを登録

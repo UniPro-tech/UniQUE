@@ -54,6 +54,7 @@ func assignRoleToAll(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -106,7 +107,7 @@ func assignRoleToAll(c *gin.Context) {
 		if isNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -130,6 +131,7 @@ func listUsersForRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -154,7 +156,7 @@ func listUsersForRole(c *gin.Context) {
 	// Batch fetch via user_roles -> collect user IDs -> IN queries to avoid N+1
 	urs, err := q.UserRole.Where(query.UserRole.RoleID.Eq(id)).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if len(urs) == 0 {
@@ -167,7 +169,7 @@ func listUsersForRole(c *gin.Context) {
 	}
 	users, err := q.User.Where(query.User.ID.In(ids...)).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	profiles, _ := q.Profile.Where(query.Profile.UserID.In(ids...)).Find()
@@ -220,12 +222,13 @@ func listRoles(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
 	roles, err := q.Role.Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	var out []RoleDTO
@@ -262,6 +265,7 @@ func createRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	var input CreateRoleRequest
@@ -338,7 +342,7 @@ func createRole(c *gin.Context) {
 				c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "code": "R0002"})
 			}
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -373,6 +377,7 @@ func getRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -414,6 +419,7 @@ func updateRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -483,7 +489,7 @@ func updateRole(c *gin.Context) {
 		} else if isConflict {
 			c.JSON(http.StatusConflict, gin.H{"error": "role name already exists", "code": "R0002"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -520,6 +526,7 @@ func patchRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -588,7 +595,7 @@ func patchRole(c *gin.Context) {
 		} else if isConflict {
 			c.JSON(http.StatusConflict, gin.H{"error": "role name already exists", "code": "R0002"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -622,6 +629,7 @@ func deleteRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	id := c.Param("id")
@@ -635,7 +643,7 @@ func deleteRole(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -659,6 +667,7 @@ func addUserToRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	roleID := c.Param("id")
@@ -708,7 +717,7 @@ func addUserToRole(c *gin.Context) {
 		} else if isConflict {
 			c.JSON(http.StatusConflict, gin.H{"error": "user already has this role"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -732,6 +741,7 @@ func removeUserFromRole(c *gin.Context) {
 	}
 	db := getDB(c)
 	if db == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	roleID := c.Param("id")
@@ -744,7 +754,7 @@ func removeUserFromRole(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
