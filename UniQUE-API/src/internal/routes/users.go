@@ -677,6 +677,14 @@ func updateUser(c *gin.Context) {
 			}
 		}
 
+		// statusが変更された場合
+		// もしstatusがsuspend / archiveならsessionまるまる消す
+		if updatesUser.Status == "suspended" || updatesUser.Status == "archived" {
+			if _, err := q.Session.Where(query.Session.UserID.Eq(id)).Delete(); err != nil {
+				return err
+			}
+		}
+
 		// Profileの処理
 		if input.Profile != nil {
 			existing, err := q.Profile.Where(query.Profile.UserID.Eq(user.ID)).First()
