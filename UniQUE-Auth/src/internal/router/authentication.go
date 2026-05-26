@@ -3,6 +3,7 @@ package router
 import (
 	"errors"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -50,7 +51,7 @@ func AuthenticationPost(c *gin.Context) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.AbortWithError(500, errors.New("database not available"))
+		c.AbortWithError(http.StatusInternalServerError, errors.New("database not available"))
 		return
 	}
 	q := query.Use(db)
@@ -60,7 +61,7 @@ func AuthenticationPost(c *gin.Context) {
 		// Handle password authentication
 		user, err, reason := passwordAuthentication(q, req.Username, req.Password)
 		if err != nil {
-			c.AbortWithError(500, err)
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 		if user == nil {
@@ -99,19 +100,19 @@ func AuthenticationPost(c *gin.Context) {
 		})
 
 		if err != nil {
-			c.AbortWithError(500, err)
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
 		if session == nil || session.ID == "" {
-			c.AbortWithError(500, errors.New("Failed to create session"))
+			c.AbortWithError(http.StatusInternalServerError, errors.New("Failed to create session"))
 			return
 		}
 
 		// Return session ID as a token
 		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
-			c.AbortWithError(500, err)
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
@@ -144,7 +145,7 @@ func AuthenticationPost(c *gin.Context) {
 		// Handle TOTP authentication
 		user, err := totpAuthentication(q, req.Username, req.Code)
 		if err != nil {
-			c.AbortWithError(500, err)
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 		if user == nil {
@@ -175,18 +176,18 @@ func AuthenticationPost(c *gin.Context) {
 		})
 
 		if err != nil {
-			c.AbortWithError(500, err)
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
 		if session == nil || session.ID == "" {
-			c.AbortWithError(500, errors.New("Failed to create session"))
+			c.AbortWithError(http.StatusInternalServerError, errors.New("Failed to create session"))
 			return
 		}
 
 		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
-			c.AbortWithError(500, err)
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 

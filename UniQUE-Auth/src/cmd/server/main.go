@@ -9,6 +9,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/docs"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/db"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/router"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -41,9 +42,8 @@ func healthCheck(c *gin.Context) {
 // Gin のアクセスログを slog で JSON 出力するためのミドルウェア
 func slogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		logger := middleware.GetLogger(c)
 		start := time.Now()
-		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
 
 		// 先に後続のハンドラー（AuthenticationPostなど）を実行させる
 		c.Next()
@@ -54,13 +54,8 @@ func slogMiddleware() gin.HandlerFunc {
 			status := c.Writer.Status()
 
 			// 1箇所でまとめてエラーログをJSON出力
-			slog.Error("An error occurred",
+			logger.Error("An error occurred",
 				slog.Int("status", status),
-				slog.String("method", c.Request.Method),
-				slog.String("path", path),
-				slog.String("query", query),
-				slog.String("ip", c.ClientIP()),
-				slog.String("user_agent", c.Request.UserAgent()),
 				slog.String("error", err.Error()),
 			)
 
@@ -71,13 +66,8 @@ func slogMiddleware() gin.HandlerFunc {
 
 		// エラーがなかった場合は、通常のアクセスログを出す
 		latency := time.Since(start)
-		slog.Info("HTTP Request",
+		logger.Info("HTTP Request",
 			slog.Int("status", c.Writer.Status()),
-			slog.String("method", c.Request.Method),
-			slog.String("path", path),
-			slog.String("query", query),
-			slog.String("ip", c.ClientIP()),
-			slog.String("user_agent", c.Request.UserAgent()),
 			slog.Duration("latency", latency),
 		)
 	}

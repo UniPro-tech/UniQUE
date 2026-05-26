@@ -457,8 +457,8 @@ func InternalConsentedPost(c *gin.Context) {
 	// セッション取得
 	authorizationHeader := c.GetHeader("Authorization")
 	var sessionJWT string
-	if strings.HasPrefix(authorizationHeader, "Bearer ") {
-		sessionJWT = strings.TrimPrefix(authorizationHeader, "Bearer ")
+	if after, ok0 := strings.CutPrefix(authorizationHeader, "Bearer "); ok0 {
+		sessionJWT = after
 	}
 	sessionID, userID, err := util.ValidateSessionJWT(sessionJWT, c)
 	if err != nil || sessionID == "" || userID == "" {

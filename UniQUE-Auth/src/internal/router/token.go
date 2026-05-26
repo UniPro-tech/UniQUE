@@ -9,11 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
@@ -81,10 +83,11 @@ func TokenPost(c *gin.Context) {
 
 // authorization_code グラントの処理
 func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID string) {
+	logger := middleware.GetLogger(c)
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
 	}
 	q := query.Use(db)
@@ -164,6 +167,7 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 	})
 
 	if err != nil {
+		logger.Warn("Authorization code grant error", slog.String("error", err.Error()))
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization code"})
 			return
@@ -178,8 +182,7 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 		case "invalid_session":
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session"})
 		default:
-			log.Printf("Authorization code grant error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -313,6 +316,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 
 // クライアント認証の検査
 func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
+	logger := middleware.GetLogger(c)
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
@@ -324,6 +328,7 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
 	if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
 		clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
 		if err != nil {
+			logger.Warn("not valid authorization header")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "not valid authorization header"})
 			return nil
 		}
@@ -334,7 +339,7 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid client credentials"})
 				return nil
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return nil
 		}
 
@@ -354,7 +359,7 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid client credentials"})
 				return nil
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return nil
 		}
 
