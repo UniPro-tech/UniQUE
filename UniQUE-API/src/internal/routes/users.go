@@ -927,6 +927,11 @@ func patchUser(c *gin.Context) {
 					return err
 				}
 			}
+			if *body.Status.Value == "suspended" || *body.Status.Value == "archived" {
+				if _, err := tx.Session.Where(tx.Session.UserID.Eq(id)).Delete(); err != nil {
+					return err
+				}
+			}
 		}
 
 		// プロフィールの更新
