@@ -112,7 +112,7 @@ func parseDateFlexible(s string) (time.Time, error) {
 func getDB(c *gin.Context) *gorm.DB {
 	dbi, ok := c.MustGet("db").(*gorm.DB)
 	if !ok {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		c.AbortWithError(http.StatusInternalServerError, errors.New("database not available"))
 		return nil
 	}
 	return dbi
@@ -150,7 +150,7 @@ func listUsers(c *gin.Context) {
 	q := query.Use(db)
 	users, err := q.User.Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if len(users) == 0 {
@@ -255,12 +255,16 @@ func createUser(c *gin.Context) {
 	}
 	reqBody, err := json.Marshal(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	resp, err := http.Post(config.IssuerInternalURL+"/internal/password_hash", "application/json", strings.NewReader(string(reqBody)))
-	if err != nil || resp.StatusCode != http.StatusOK {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("auth server error"))
 		return
 	}
 	defer resp.Body.Close()
@@ -268,7 +272,7 @@ func createUser(c *gin.Context) {
 		PasswordHash string `json:"password_hash"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse password hash response"})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -372,7 +376,7 @@ func createUser(c *gin.Context) {
 				c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "code": "R0002"})
 			}
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -530,7 +534,7 @@ func updateUser(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	var input UpdateUserRequest
@@ -735,7 +739,7 @@ func updateUser(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1067,7 +1071,7 @@ func patchUser(c *gin.Context) {
 		case "invalid_joined_at_format":
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid joined_at format"})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -1075,7 +1079,7 @@ func patchUser(c *gin.Context) {
 	// rebuild response dto
 	updated, err := q.User.Where(query.User.ID.Eq(id)).First()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1127,7 +1131,7 @@ func deleteUser(c *gin.Context) {
 	id := c.Param("id")
 	q := query.Use(db)
 	if _, err := q.User.Delete(&model.User{ID: id}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -1154,7 +1158,7 @@ func listAppsForUser(c *gin.Context) {
 	q := query.Use(db)
 	apps, err := q.Application.Where(query.Application.UserID.Eq(id)).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if len(apps) == 0 {
@@ -1214,7 +1218,7 @@ func addRoleForUser(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "role already assigned"})
 		return
 	} else if err != gorm.ErrRecordNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1226,7 +1230,7 @@ func addRoleForUser(c *gin.Context) {
 		UpdatedAt: now,
 	}
 	if err := q.UserRole.Create(ur); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	resp := RoleDTO{
@@ -1265,11 +1269,11 @@ func removeRoleForUser(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "assignment not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if _, err := q.UserRole.Delete(&model.UserRole{UserID: id, RoleID: roleId}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -1296,7 +1300,7 @@ func listRolesForUser(c *gin.Context) {
 	q := query.Use(db)
 	urs, err := q.UserRole.Where(query.UserRole.UserID.Eq(id)).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if len(urs) == 0 {
@@ -1309,7 +1313,7 @@ func listRolesForUser(c *gin.Context) {
 	}
 	roles, err := q.Role.Where(query.Role.ID.In(ids...)).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	var out []RoleDTO
@@ -1351,13 +1355,13 @@ func getUserPermissions(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	permissions, err := middleware.GetUserPermissions(id, db)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1391,7 +1395,7 @@ func listExternalIdentities(c *gin.Context) {
 	q := query.Use(db)
 	eis, err := q.ExternalIdentity.Where(query.ExternalIdentity.UserID.Eq(id)).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if len(eis) == 0 {
@@ -1477,7 +1481,7 @@ func addExternalIdentity(c *gin.Context) {
 		ei.TokenExpiresAt = timeToTimePtr(*input.TokenExpiresAt)
 	}
 	if err := q.ExternalIdentity.Create(ei); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1548,11 +1552,11 @@ func removeExternalIdentity(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if _, err := q.ExternalIdentity.Delete(&model.ExternalIdentity{ID: eid}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -1608,7 +1612,7 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "discord_already_linked"})
 		return
 	} else if err != gorm.ErrRecordNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if existing, err := q.ExternalIdentity.Where(
@@ -1622,7 +1626,7 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "discord_already_linked"})
 		return
 	} else if err != gorm.ErrRecordNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1641,7 +1645,7 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		ei.TokenExpiresAt = timeToTimePtr(*input.TokenExpiresAt)
 	}
 	if err := q.ExternalIdentity.Create(ei); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	resp := ExternalIdentityDTO{
@@ -1733,7 +1737,7 @@ func emailCodeCheck(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "discord_not_linked"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -1774,7 +1778,7 @@ func emailCodeCheck(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, EmailCodeCheckResponse{Valid: true, Type: verificationType})
@@ -1815,7 +1819,7 @@ func approveUserRegist(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "notfound"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1828,7 +1832,7 @@ func approveUserRegist(c *gin.Context) {
 		// Discord連携を確認
 		count, err := q.ExternalIdentity.Where(q.ExternalIdentity.UserID.Eq(existedUser.ID), q.ExternalIdentity.Provider.Eq("discord")).Count()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 		if count == 0 {
@@ -1884,7 +1888,7 @@ func approveUserRegist(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1956,7 +1960,7 @@ func rejectUserRegist(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -1988,7 +1992,7 @@ func resendEmailVerification(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if user.EmailVerified {
@@ -2004,7 +2008,7 @@ func resendEmailVerification(c *gin.Context) {
 		query.EmailVerificationCode.UserID.Eq(id),
 	).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if len(existingCodes) == 0 {
@@ -2087,7 +2091,7 @@ func changePassword(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 

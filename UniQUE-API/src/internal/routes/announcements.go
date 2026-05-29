@@ -94,7 +94,7 @@ func listAnnouncements(c *gin.Context) {
 	}
 	anns, err := dao.Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -269,7 +269,7 @@ func createAnnouncement(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -365,7 +365,7 @@ func updateAnnouncement(c *gin.Context) {
 		if isNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -462,7 +462,8 @@ func patchAnnouncement(c *gin.Context) {
 		if isNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
 		}
 		return
 	}
@@ -494,7 +495,7 @@ func deleteAnnouncement(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -581,7 +582,7 @@ func pinAnnouncement(c *gin.Context) {
 		if isNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}

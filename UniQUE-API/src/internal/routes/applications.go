@@ -78,7 +78,7 @@ func listApplications(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	var out []ApplicationDTO
@@ -132,43 +132,43 @@ func createApplication(c *gin.Context) {
 
 	var input CreateApplicationRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	// Validate client secret requirement for confidential clients
 	if !input.PublicClient && input.ClientSecret == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client_secret is required for confidential clients"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "client_secret is required for confidential clients"})
 		return
 	}
 	if input.WebsiteURL.Set && input.WebsiteURL.Value != nil {
 		if err := validateExternalURL(*input.WebsiteURL.Value); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid website_url"})
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid website_url"})
 			return
 		}
 	}
 	if input.PrivacyPolicyURL.Set && input.PrivacyPolicyURL.Value != nil {
 		if err := validateExternalURL(*input.PrivacyPolicyURL.Value); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid privacy_policy_url"})
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid privacy_policy_url"})
 			return
 		}
 	}
 	if input.TermsURL.Set && input.TermsURL.Value != nil {
 		if err := validateExternalURL(*input.TermsURL.Value); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid terms_url"})
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid terms_url"})
 			return
 		}
 	}
 	// 文字数を200文字に制限
 	if input.WebsiteURL.Value != nil && len(*input.WebsiteURL.Value) > 200 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "website_url must be 200 characters or less"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "website_url must be 200 characters or less"})
 		return
 	}
 	if input.PrivacyPolicyURL.Value != nil && len(*input.PrivacyPolicyURL.Value) > 200 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "privacy_policy_url must be 200 characters or less"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "privacy_policy_url must be 200 characters or less"})
 		return
 	}
 	if input.TermsURL.Value != nil && len(*input.TermsURL.Value) > 200 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "terms_url must be 200 characters or less"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "terms_url must be 200 characters or less"})
 		return
 	}
 
@@ -203,7 +203,7 @@ func createApplication(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -245,7 +245,11 @@ func getApplication(c *gin.Context) {
 	q := query.Use(db)
 	a, err := q.Application.Where(query.Application.ID.Eq(id)).First()
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	resp := ApplicationDTO{
@@ -414,7 +418,7 @@ func updateApplication(c *gin.Context) {
 		} else if isForbidden {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": errMsg})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -570,7 +574,7 @@ func patchApplication(c *gin.Context) {
 		} else if isForbidden {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": errMsg})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -641,7 +645,7 @@ func deleteApplication(c *gin.Context) {
 		} else if isForbidden {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": errMsg})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -671,7 +675,7 @@ func listRedirectURIsForApplication(c *gin.Context) {
 	q := query.Use(db)
 	results, err := q.RedirectURI.Where(q.RedirectURI.ApplicationID.Eq(id), q.RedirectURI.DeletedAt.IsNull()).Find()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	response := make([]RedirectURIDTO, len(results))
@@ -752,7 +756,7 @@ func createRedirectURIForApplication(c *gin.Context) {
 		if isConflict {
 			c.JSON(http.StatusConflict, gin.H{"error": "redirect uri already exists"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -816,7 +820,7 @@ func deleteRedirectURIForApplication(c *gin.Context) {
 		if isNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "redirect uri not found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}

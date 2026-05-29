@@ -17,6 +17,7 @@ type DiscordConfig struct {
 }
 
 type Config struct {
+	Env                string
 	AppName            string
 	Version            string
 	FrontendURL        string
@@ -36,6 +37,7 @@ var (
 )
 
 var (
+	Env               = "production"
 	AppName           = "UniQUE"
 	FrontendURL       = "http://localhost:3000"
 	IssuerURL         = "http://localhost:8080"
@@ -85,7 +87,12 @@ func LoadConfig() *Config {
 	if DiscordConfig.ClientID == "" || DiscordConfig.ClientSecret == "" || DiscordConfig.Guild.ID == "" || DiscordConfig.Guild.MemberRoleID == "" || DiscordConfig.BotToken == "" {
 		panic("Discord configuration is not fully set in environment variables")
 	}
+	EnvEnv := os.Getenv("ENV")
+	if EnvEnv == "" {
+		EnvEnv = Env
+	}
 	return &Config{
+		Env:                EnvEnv,
 		AppName:            AppNameEnv,
 		FrontendURL:        FrontendURLEnv,
 		IssuerURL:          IssuerURLEnv,

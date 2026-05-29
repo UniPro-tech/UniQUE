@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/UniPro-tech/UniQUE-API/docs"
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
@@ -12,6 +13,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/internal/routes"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,15 +40,35 @@ func healthCheck(c *gin.Context) {
 }
 
 func main() {
+	// --- slog の初期化 ---
+	// JSONフォーマットで標準出力へログを書き出すように設定
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo, // 出力レベルを変更したい場合はここで調整
+	})
+	slog.SetDefault(slog.New(handler))
+
 	environmentConfigs := config.LoadConfig()
 
 	// Initialize database
 	dbConnection, err := db.NewDB()
 	if err != nil {
-		log.Fatal(err)
+		// 標準の log.Fatal ではなく slog.Error を使用して JSON 形式を維持
+		slog.Error("Failed to initialize database", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
-	// gormgen のグローバル変数を初期化 (query.User.ID 等の参照に必要)
+	// ログレベルの決定（環境変数などで切り替えるイメージ）
+	var gormLogLevel logger.LogLevel
+
+	if environmentConfigs.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+		gormLogLevel = logger.Error
+		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
+	} else {
+		gormLogLevel = logger.Info
+		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
+	}
+
 	query.SetDefault(dbConnection)
 
 	// loggerとrecoveryミドルウェア付きGinルーター作成
@@ -64,6 +86,7 @@ func main() {
 		c.Next()
 	})
 
+	r.Use(middleware.SlogMiddleware())
 	r.Use(middleware.AuthMiddleware())
 	r.Use(middleware.AuditLogMiddleware())
 

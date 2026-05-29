@@ -9,6 +9,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/db"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/middleware"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/router"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -55,7 +56,6 @@ func main() {
 		slog.Error("Failed to initialize database", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	dbConnection.Logger = dbConnection.Logger.LogMode(logger.Info)
 
 	// ログレベルの決定（環境変数などで切り替えるイメージ）
 	var gormLogLevel logger.LogLevel
@@ -68,6 +68,8 @@ func main() {
 		gormLogLevel = logger.Info
 		dbConnection.Logger = dbConnection.Logger.LogMode(gormLogLevel)
 	}
+
+	query.SetDefault(dbConnection)
 
 	r := gin.New()
 	// カスタム slog ミドルウェアと、パニックリカバリーを登録
