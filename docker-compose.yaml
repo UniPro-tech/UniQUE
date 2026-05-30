@@ -18,8 +18,8 @@ services:
       MYSQL_USER: api
       MYSQL_PASSWORD: NewPass123
     volumes:
+      - ./dev/mysql:/etc/mysql/conf.d
       - db-data:/var/lib/mysql
-      - ./dev/my.cnf:/etc/mysql/conf.d/my.cnf:ro
     ports:
       - "3306:3306"
     healthcheck:
