@@ -32,3 +32,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review
+          biome_flags: . --config-path="../.config/biome.github.json"
