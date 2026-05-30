@@ -225,7 +225,7 @@ export default function ProfileClient({
                     }
                   />
                 )}
-                {user?.affiliationPeriod && (
+                {user?.affiliationPeriod != null && (
                   <Chip
                     label={`${getAffiliationPeriodLabel(
                       user.affiliationPeriod as unknown as string | null,
@@ -470,7 +470,8 @@ export default function ProfileClient({
                         }}
                       />
                     </Stack>
-                    {identity.email && (
+                    {/* UniPro以外のメールアドレスの場合を想定しメールアドレスは管理者のみ表示可能にする */}
+                    {variant === "admin" && identity.email && (
                       <Typography
                         variant="caption"
                         color="text.secondary"

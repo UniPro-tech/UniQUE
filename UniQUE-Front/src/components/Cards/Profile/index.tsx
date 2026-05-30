@@ -9,9 +9,10 @@ interface ProfileProps {
 }
 
 export default async function Profile(props: ProfileProps) {
-  const externalIdentities = (await props.user.getExternalIdentities()).map(
-    (data) => data.toJson(),
-  );
+  const externalIdentities = await props.user
+    .getExternalIdentities()
+    .then((items) => items.map((data) => data.toJson()))
+    .catch(() => []);
   return (
     <ProfileClient
       {...props}
