@@ -261,15 +261,13 @@ export default function ProfileClient({
 
           {/* 編集モード / 閲覧モード */}
           {editMode ? (
-            <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-              <ProfileEditForm
-                userId={user.id}
-                profile={userProfile}
-                onCancel={() => setEditMode(false)}
-                onSuccess={() => setEditMode(false)}
-                setProfile={setUserProfile}
-              />
-            </SnackbarProvider>
+            <ProfileEditForm
+              userId={user.id}
+              profile={userProfile}
+              onCancel={() => setEditMode(false)}
+              onSuccess={() => setEditMode(false)}
+              setProfile={setUserProfile}
+            />
           ) : (
             <Box>
               <Typography
