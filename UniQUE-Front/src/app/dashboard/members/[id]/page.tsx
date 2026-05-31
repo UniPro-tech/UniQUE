@@ -33,10 +33,9 @@ export default async function UserDetailPage({
     PermissionBitsFields.USER_UPDATE,
   );
 
-  const userData = user.toJson();
   return (
     <Profile
-      user={userData}
+      user={user}
       variant={canUpdate ? "admin" : "detail"}
       showTimestamps
     />

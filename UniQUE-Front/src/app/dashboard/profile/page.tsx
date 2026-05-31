@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   if (!session) {
     unauthorized();
   }
-  const user = (await session.getUser()).toJson();
+  const user = await session.getUser();
 
   return <Profile user={user} variant="self" showTimestamps />;
 }
