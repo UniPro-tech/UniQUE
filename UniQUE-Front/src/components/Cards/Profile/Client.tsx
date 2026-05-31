@@ -15,6 +15,7 @@ import {
   X as XIcon,
 } from "@mui/icons-material";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -41,10 +42,15 @@ import {
 
 interface ProfileProps {
   user: UserData;
-  externalIdentities: ExternalIdentityData[];
+  externalIdentities: ExternalIdentityFetchResult;
   variant?: "self" | "detail" | "admin";
   onBack?: () => void;
   showTimestamps?: boolean;
+}
+
+export interface ExternalIdentityFetchResult {
+  externalIdentities: ExternalIdentityData[];
+  isError: boolean;
 }
 
 // プロフィール情報の1項目を表示するためのヘルパーコンポーネント
@@ -91,7 +97,7 @@ const getProviderLabel = (provider: string) => {
 
 export default function ProfileClient({
   user,
-  externalIdentities = [],
+  externalIdentities: exIdentFetchRes,
   variant = "self",
   onBack,
   showTimestamps = false,
@@ -411,13 +417,25 @@ export default function ProfileClient({
           連携アカウント一覧
         </Typography>
 
-        {externalIdentities.length === 0 ? (
+        {exIdentFetchRes.isError ? (
+          <Alert
+            severity="error"
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              borderColor: "error.light",
+              bgcolor: (theme) => `rgba(${theme.palette.error.main}, 0.04)`,
+            }}
+          >
+            連携アカウント情報の取得に失敗しました。時間をおいて再度お試しください。
+          </Alert>
+        ) : exIdentFetchRes.externalIdentities.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             連携済みの外部アカウントはありません。
           </Typography>
         ) : (
           <Grid container spacing={2}>
-            {externalIdentities.map((identity) => (
+            {exIdentFetchRes.externalIdentities.map((identity) => (
               <Grid size={{ xs: 12, sm: 6 }} key={identity.id}>
                 <Box
                   sx={{

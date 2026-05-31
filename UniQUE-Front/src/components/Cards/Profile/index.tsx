@@ -1,5 +1,5 @@
 import type { User } from "@/classes/User";
-import ProfileClient from "./Client";
+import ProfileClient, { type ExternalIdentityFetchResult } from "./Client";
 
 interface ProfileProps {
   user: User;
@@ -11,8 +11,17 @@ interface ProfileProps {
 export default async function Profile(props: ProfileProps) {
   const externalIdentities = await props.user
     .getExternalIdentities()
-    .then((items) => items.map((data) => data.toJson()))
-    .catch(() => []);
+    .then((items) => {
+      const itemData = items.map((data) => data.toJson());
+      return {
+        externalIdentities: itemData,
+        isError: false,
+      } as ExternalIdentityFetchResult;
+    })
+    .catch(() => ({
+      externalIdentities: [],
+      isError: true,
+    }));
   return (
     <ProfileClient
       {...props}
