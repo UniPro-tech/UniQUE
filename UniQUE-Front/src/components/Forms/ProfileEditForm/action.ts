@@ -14,14 +14,23 @@ export interface UpdateProfileData {
 
 export async function updateProfile(userId: string, data: UpdateProfileData) {
   try {
-    const hasUpdatePermission = await (
-      await (await Session.getCurrent())?.getUser()
-    )?.hasPermission(PermissionBitsFields.USER_UPDATE);
-    if (!hasUpdatePermission)
+    const currentUser = await (await Session.getCurrent())?.getUser();
+    if (!currentUser) {
       return {
         success: false,
-        error: "権限がありません。",
+        error: "ログインが必要です。",
       };
+    }
+    if (userId !== currentUser.id) {
+      const hasUpdatePermission = await currentUser?.hasPermission(
+        PermissionBitsFields.USER_UPDATE,
+      );
+      if (!hasUpdatePermission)
+        return {
+          success: false,
+          error: "権限がありません。",
+        };
+    }
     const user = await User.getById(userId);
 
     if (!user)
