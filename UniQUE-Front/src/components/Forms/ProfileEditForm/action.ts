@@ -15,7 +15,13 @@ export interface UpdateProfileData {
 export async function updateProfile(userId: string, data: UpdateProfileData) {
   try {
     const currentUser = await (await Session.getCurrent())?.getUser();
-    if (userId !== currentUser?.id) {
+    if (!currentUser) {
+      return {
+        success: false,
+        error: "ログインが必要です。",
+      };
+    }
+    if (userId !== currentUser.id) {
       const hasUpdatePermission = await currentUser?.hasPermission(
         PermissionBitsFields.USER_UPDATE,
       );
