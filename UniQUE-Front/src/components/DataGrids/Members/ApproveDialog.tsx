@@ -6,7 +6,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { enqueueSnackbar, SnackbarProvider } from "notistack";
+import { enqueueSnackbar } from "notistack";
 import * as React from "react";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
 import PeriodSelectorOptions from "@/components/PeriodSelectorOptions";
@@ -60,93 +60,91 @@ export default function ApproveRegistApplyDialog({
   }, [handleClose, state, deleteRowAction]);
 
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        slotProps={{
-          paper: {
-            sx: { backgroundImage: "none" },
-          },
-        }}
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      slotProps={{
+        paper: {
+          sx: { backgroundImage: "none" },
+        },
+      }}
+    >
+      <form
+        action={action}
+        onSubmit={handleSubmit}
+        id="approve-regist-apply-data-dialog"
       >
-        <form
-          action={action}
-          onSubmit={handleSubmit}
-          id="approve-regist-apply-data-dialog"
+        <DialogTitle>メンバーの承認</DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            width: "100%",
+          }}
         >
-          <DialogTitle>メンバーの承認</DialogTitle>
-          <DialogContent
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              width: "100%",
+          {!(user?.emailVerified && user.discordLinked) && (
+            <>
+              <Alert severity={"warning"} variant="outlined">
+                このユーザーはメールアドレス認証もしくはDiscord認証が済んでいません。
+              </Alert>
+              <input type="hidden" name="force" value={"true"} />
+            </>
+          )}
+          <DialogContentText>
+            下記の情報を入力後、承認ボタンを押してください。
+          </DialogContentText>
+          <input type="hidden" name="userId" value={user?.id} />
+          <PeriodSelectorOptions
+            onChange={(e) => {
+              if (!isManual && user) {
+                const generatedEmail = `${e.target.value as string}.${user?.customId}@uniproject.jp`;
+                setEmail(generatedEmail.toLowerCase());
+              }
             }}
-          >
-            {!(user?.emailVerified && user.discordLinked) && (
-              <>
-                <Alert severity={"warning"} variant="outlined">
-                  このユーザーはメールアドレス認証もしくはDiscord認証が済んでいません。
-                </Alert>
-                <input type="hidden" name="force" value={"true"} />
-              </>
-            )}
-            <DialogContentText>
-              下記の情報を入力後、承認ボタンを押してください。
-            </DialogContentText>
-            <input type="hidden" name="userId" value={user?.id} />
-            <PeriodSelectorOptions
-              onChange={(e) => {
-                if (!isManual && user) {
-                  const generatedEmail = `${e.target.value as string}.${user?.customId}@uniproject.jp`;
-                  setEmail(generatedEmail.toLowerCase());
-                }
-              }}
-            />
-            <TextField
-              label="メールアドレス"
-              type="email"
-              name="email"
-              required
-              fullWidth
-              variant="outlined"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value.toLowerCase());
-                setIsManual(true);
-              }}
-              placeholder="メールアドレスを入力してください"
-            />
-            <FormHelperText>
-              メールアドレスはtemp_を削除し、(所属期).xxxxx@uniproject.jpの形式としてください。
-            </FormHelperText>
-            <TextField
-              label="メールボックスのパスワード"
-              type="password"
-              name="mailboxPassword"
-              required
-              fullWidth
-              variant="outlined"
-              placeholder="メールボックスのパスワードを入力してください"
-              disabled={isPending}
-            />
-            <FormHelperText>
-              メールボックスのパスワードは初期パスワードとしてメンバーに通知されます。
-              <br />
-              さくらのメールボックスで操作してから承認してください。
-            </FormHelperText>
-          </DialogContent>
-          <DialogActions sx={{ pb: 3, px: 3 }}>
-            <Button onClick={handleClose} disabled={isPending}>
-              キャンセル
-            </Button>
-            <Button variant="contained" type="submit" disabled={isPending}>
-              承認
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-    </SnackbarProvider>
+          />
+          <TextField
+            label="メールアドレス"
+            type="email"
+            name="email"
+            required
+            fullWidth
+            variant="outlined"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value.toLowerCase());
+              setIsManual(true);
+            }}
+            placeholder="メールアドレスを入力してください"
+          />
+          <FormHelperText>
+            メールアドレスはtemp_を削除し、(所属期).xxxxx@uniproject.jpの形式としてください。
+          </FormHelperText>
+          <TextField
+            label="メールボックスのパスワード"
+            type="password"
+            name="mailboxPassword"
+            required
+            fullWidth
+            variant="outlined"
+            placeholder="メールボックスのパスワードを入力してください"
+            disabled={isPending}
+          />
+          <FormHelperText>
+            メールボックスのパスワードは初期パスワードとしてメンバーに通知されます。
+            <br />
+            さくらのメールボックスで操作してから承認してください。
+          </FormHelperText>
+        </DialogContent>
+        <DialogActions sx={{ pb: 3, px: 3 }}>
+          <Button onClick={handleClose} disabled={isPending}>
+            キャンセル
+          </Button>
+          <Button variant="contained" type="submit" disabled={isPending}>
+            承認
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 }

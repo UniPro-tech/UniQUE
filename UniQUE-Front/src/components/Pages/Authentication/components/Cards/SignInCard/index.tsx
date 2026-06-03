@@ -9,7 +9,6 @@ import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
-import { SnackbarProvider } from "notistack";
 import * as React from "react";
 import { useInitialFormState, useRedirectTo } from "../../../Client";
 import { submitSignIn } from "../../actions/signIn";
@@ -164,9 +163,7 @@ export default function SignUpCard() {
           {!inProgress ? "サインイン" : "サインイン中..."}
         </Button>
       </Box>
-      <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-        <ForgotPassword open={forgotPasswordOpen} handleClose={handleClose} />
-      </SnackbarProvider>
+      <ForgotPassword open={forgotPasswordOpen} handleClose={handleClose} />
     </Card>
   );
 }

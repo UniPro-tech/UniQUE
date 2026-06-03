@@ -12,7 +12,7 @@ export default function AuthLayout(props: { children: React.ReactNode }) {
       <body>
         <AppTheme>
           <CssBaseline enableColorScheme />
-          <SnackbarProvider>
+          <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
             <Stack
               direction="column"
               sx={[

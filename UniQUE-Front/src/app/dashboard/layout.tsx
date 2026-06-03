@@ -1,4 +1,5 @@
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
+import { SnackbarProvider } from "notistack";
 import { Session } from "@/classes/Session";
 import BirthdateGuard from "@/components/BirthdateGuard";
 import Drawer from "@/components/drawer";
@@ -19,14 +20,16 @@ export default async function RootLayout({
     <html lang="ja">
       <body className={`antialiased`}>
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-          <Drawer user={user?.toJson() || null} userRoles={roles}>
-            {children}
-          </Drawer>
+          <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
+            <Drawer user={user?.toJson() || null} userRoles={roles}>
+              {children}
+            </Drawer>
+            <BirthdateGuard
+              mustSetBirthdate={mustSetBirthdate}
+              initialBirthdate={birthdate || ""}
+            />
+          </SnackbarProvider>
         </AppRouterCacheProvider>
-        <BirthdateGuard
-          mustSetBirthdate={mustSetBirthdate}
-          initialBirthdate={birthdate || ""}
-        />
       </body>
     </html>
   );

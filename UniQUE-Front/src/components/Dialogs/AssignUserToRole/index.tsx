@@ -12,7 +12,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { enqueueSnackbar, SnackbarProvider } from "notistack";
+import { enqueueSnackbar } from "notistack";
 import * as React from "react";
 import type { UserData } from "@/classes/types/User";
 import {
@@ -104,89 +104,87 @@ export default function AssignUserToRoleDialog({
   };
 
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: { backgroundImage: "none" },
-          },
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: { backgroundImage: "none" },
+        },
+      }}
+    >
+      <DialogTitle>ユーザーを追加</DialogTitle>
+      <DialogContent
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          width: "100%",
+          minHeight: 200,
         }}
       >
-        <DialogTitle>ユーザーを追加</DialogTitle>
-        <DialogContent
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            width: "100%",
-            minHeight: 200,
-          }}
-        >
-          <DialogContentText>
-            「{roleName}」ロールに追加するユーザーを選択してください
-          </DialogContentText>
+        <DialogContentText>
+          「{roleName}」ロールに追加するユーザーを選択してください
+        </DialogContentText>
 
-          {error && (
-            <Alert severity="error" onClose={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-          {loading ? (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                py: 4,
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          ) : users.length === 0 ? (
-            <Alert severity="info">
-              割り当て可能なユーザーがいません。すべてのユーザーがこのロールに既に割り当てられています。
-            </Alert>
-          ) : (
-            <Autocomplete
-              options={users}
-              getOptionLabel={getUserLabel}
-              value={selectedUser}
-              onChange={(_event, newValue) => {
-                setSelectedUser(newValue);
-                setError(null);
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="ユーザーを検索"
-                  placeholder="名前またはメールアドレスで検索"
-                  disabled={submitting}
-                />
-              )}
-              noOptionsText="該当するユーザーが見つかりません"
-              disabled={submitting}
-            />
-          )}
-        </DialogContent>
-        <DialogActions sx={{ pb: 3, px: 3 }}>
-          <Button onClick={handleClose} disabled={submitting}>
-            キャンセル
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={!selectedUser || submitting || users.length === 0}
-            startIcon={submitting ? <CircularProgress size={20} /> : null}
+        {loading ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              py: 4,
+            }}
           >
-            {submitting ? "追加中..." : "追加"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </SnackbarProvider>
+            <CircularProgress />
+          </Box>
+        ) : users.length === 0 ? (
+          <Alert severity="info">
+            割り当て可能なユーザーがいません。すべてのユーザーがこのロールに既に割り当てられています。
+          </Alert>
+        ) : (
+          <Autocomplete
+            options={users}
+            getOptionLabel={getUserLabel}
+            value={selectedUser}
+            onChange={(_event, newValue) => {
+              setSelectedUser(newValue);
+              setError(null);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="ユーザーを検索"
+                placeholder="名前またはメールアドレスで検索"
+                disabled={submitting}
+              />
+            )}
+            noOptionsText="該当するユーザーが見つかりません"
+            disabled={submitting}
+          />
+        )}
+      </DialogContent>
+      <DialogActions sx={{ pb: 3, px: 3 }}>
+        <Button onClick={handleClose} disabled={submitting}>
+          キャンセル
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={!selectedUser || submitting || users.length === 0}
+          startIcon={submitting ? <CircularProgress size={20} /> : null}
+        >
+          {submitting ? "追加中..." : "追加"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

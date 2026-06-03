@@ -30,7 +30,6 @@ import {
   useTheme,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { SnackbarProvider } from "notistack";
 import { type ReactNode, useState } from "react";
 import type { ExternalIdentityData } from "@/classes/ExternalIdentity";
 import { type UserData, UserStatus } from "@/classes/types/User";
@@ -261,15 +260,13 @@ export default function ProfileClient({
 
           {/* 編集モード / 閲覧モード */}
           {editMode ? (
-            <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-              <ProfileEditForm
-                userId={user.id}
-                profile={userProfile}
-                onCancel={() => setEditMode(false)}
-                onSuccess={() => setEditMode(false)}
-                setProfile={setUserProfile}
-              />
-            </SnackbarProvider>
+            <ProfileEditForm
+              userId={user.id}
+              profile={userProfile}
+              onCancel={() => setEditMode(false)}
+              onSuccess={() => setEditMode(false)}
+              setProfile={setUserProfile}
+            />
           ) : (
             <Box>
               <Typography
@@ -566,13 +563,11 @@ export default function ProfileClient({
         </Stack>
       )}
 
-      <SnackbarProvider>
-        <PasswordResetAdmin
-          open={passwordResetOpen}
-          userId={user.id}
-          onClose={() => setPasswordResetOpen(false)}
-        />
-      </SnackbarProvider>
+      <PasswordResetAdmin
+        open={passwordResetOpen}
+        userId={user.id}
+        onClose={() => setPasswordResetOpen(false)}
+      />
     </Stack>
   );
 }

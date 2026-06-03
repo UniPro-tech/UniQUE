@@ -7,7 +7,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { SnackbarProvider, useSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import * as React from "react";
 import type { UserData } from "@/classes/types/User";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
@@ -29,16 +29,14 @@ export default function UserIdChangeApply({
     null as null | FormStatus,
   );
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-      <InnerDialog
-        open={open}
-        handleClose={handleClose}
-        user={user}
-        state={state}
-        action={action}
-        isPending={isPending}
-      />
-    </SnackbarProvider>
+    <InnerDialog
+      open={open}
+      handleClose={handleClose}
+      user={user}
+      state={state}
+      action={action}
+      isPending={isPending}
+    />
   );
 
   function InnerDialog({

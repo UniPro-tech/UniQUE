@@ -21,7 +21,7 @@ import {
   type GridRowId,
 } from "@mui/x-data-grid";
 import { jaJP } from "@mui/x-data-grid/locales";
-import { SnackbarProvider, useSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
 import type { ApplicationData } from "@/classes/Application";
 import { addRedirectUri, deleteRedirectUri } from "./action";
@@ -115,65 +115,63 @@ export default function RedirectUrisClient({
   );
 
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={500}>
-      <Stack spacing={2}>
-        <Typography variant="subtitle1">Redirect URIs</Typography>
+    <Stack spacing={2}>
+      <Typography variant="subtitle1">Redirect URIs</Typography>
 
-        <Paper sx={{ width: "100%", p: 2 }}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            sx={{
-              alignItems: "center",
-            }}
+      <Paper sx={{ width: "100%", p: 2 }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          sx={{
+            alignItems: "center",
+          }}
+        >
+          <TextField
+            label="Redirect URI"
+            value={newUri}
+            size="small"
+            onChange={(e) => setNewUri(e.target.value)}
+            sx={{ minWidth: 360, flex: 1 }}
+          />
+          <Button
+            variant="contained"
+            onClick={addUri}
+            disabled={saving || !newUri}
+            sx={{ whiteSpace: "nowrap" }}
           >
-            <TextField
-              label="Redirect URI"
-              value={newUri}
-              size="small"
-              onChange={(e) => setNewUri(e.target.value)}
-              sx={{ minWidth: 360, flex: 1 }}
-            />
-            <Button
-              variant="contained"
-              onClick={addUri}
-              disabled={saving || !newUri}
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              追加
-            </Button>
-          </Stack>
+            追加
+          </Button>
+        </Stack>
 
-          <Box sx={{ mt: 2 }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              disableRowSelectionOnClick
-              initialState={initialState}
-              pageSizeOptions={[5, 10, 25, 50]}
-              density="comfortable"
-              localeText={jaJP.components.MuiDataGrid.defaultProps.localeText}
-              autoHeight
-              rowHeight={56}
-              sx={{
-                borderRadius: 1,
-                "& .MuiDataGrid-cell": { py: 1.25 },
-                "& .MuiDataGrid-columnHeaders": (theme) => ({
-                  backgroundColor: theme.palette.grey[50],
-                }),
-              }}
-            />
-          </Box>
-        </Paper>
-        <DeleteRedirectUriDialog
-          open={deleteDialogOpen}
-          uri={uriToDelete}
-          application={application}
-          setUris={setUris}
-          onClose={() => setDeleteDialogOpen(false)}
-        />
-      </Stack>
-    </SnackbarProvider>
+        <Box sx={{ mt: 2 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            disableRowSelectionOnClick
+            initialState={initialState}
+            pageSizeOptions={[5, 10, 25, 50]}
+            density="comfortable"
+            localeText={jaJP.components.MuiDataGrid.defaultProps.localeText}
+            autoHeight
+            rowHeight={56}
+            sx={{
+              borderRadius: 1,
+              "& .MuiDataGrid-cell": { py: 1.25 },
+              "& .MuiDataGrid-columnHeaders": (theme) => ({
+                backgroundColor: theme.palette.grey[50],
+              }),
+            }}
+          />
+        </Box>
+      </Paper>
+      <DeleteRedirectUriDialog
+        open={deleteDialogOpen}
+        uri={uriToDelete}
+        application={application}
+        setUris={setUris}
+        onClose={() => setDeleteDialogOpen(false)}
+      />
+    </Stack>
   );
 }
 

@@ -13,7 +13,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { SnackbarProvider, useSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import { useState, useTransition } from "react";
 import type { ExternalIdentityData } from "@/classes/ExternalIdentity";
 import type { UserData } from "@/classes/types/User";
@@ -215,12 +215,10 @@ export default function SocialAccountsCardClient({
   externalIdentities: ExternalIdentityData[];
 }) {
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-      <SocialAccountsContent
-        user={user}
-        initialExternalIdentities={externalIdentities}
-      />
-    </SnackbarProvider>
+    <SocialAccountsContent
+      user={user}
+      initialExternalIdentities={externalIdentities}
+    />
   );
 }
 

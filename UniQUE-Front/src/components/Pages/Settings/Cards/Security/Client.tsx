@@ -1,6 +1,5 @@
 "use client";
 import { Card, Stack, Typography } from "@mui/material";
-import { SnackbarProvider } from "notistack";
 import React from "react";
 import type { SessionData } from "@/classes/Session";
 import type { UserData } from "@/classes/types/User";
@@ -22,7 +21,7 @@ export default function SecuritySettingsCardClient({
   const handleClickOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
+    <>
       <Card
         variant="outlined"
         sx={{ display: "flex", p: 2, flexDirection: "column", gap: 2 }}
@@ -43,6 +42,6 @@ export default function SecuritySettingsCardClient({
         />
       </Card>
       <ForgotPassword open={open} handleClose={handleClose} />
-    </SnackbarProvider>
+    </>
   );
 }

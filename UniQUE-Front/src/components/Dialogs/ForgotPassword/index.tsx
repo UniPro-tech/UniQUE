@@ -6,7 +6,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import OutlinedInput from "@mui/material/OutlinedInput";
-import { SnackbarProvider, useSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import * as React from "react";
 import { submitForgotPassword } from "./action";
 
@@ -22,57 +22,55 @@ export default function ForgotPassword({
   const [email, setEmail] = React.useState("");
   const { enqueueSnackbar } = useSnackbar();
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        onSubmit={async (formevent) => {
-          formevent.preventDefault();
-          const res = await submitForgotPassword(email);
-          enqueueSnackbar(res.message, { variant: res.status });
-          if (res.status === "success") {
-            handleClose();
-          }
-        }}
-        slotProps={{
-          paper: {
-            sx: { backgroundImage: "none" },
-          },
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      onSubmit={async (formevent) => {
+        formevent.preventDefault();
+        const res = await submitForgotPassword(email);
+        enqueueSnackbar(res.message, { variant: res.status });
+        if (res.status === "success") {
+          handleClose();
+        }
+      }}
+      slotProps={{
+        paper: {
+          sx: { backgroundImage: "none" },
+        },
+      }}
+    >
+      <DialogTitle>パスワードリセット</DialogTitle>
+      <DialogContent
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          width: "100%",
         }}
       >
-        <DialogTitle>パスワードリセット</DialogTitle>
-        <DialogContent
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            width: "100%",
-          }}
-        >
-          <DialogContentText>
-            アカウントに登録されている外部メールアドレスを入力してください。パスワードをリセットするためのリンクをお送りします。
-          </DialogContentText>
-          <OutlinedInput
-            autoFocus
-            required
-            margin="dense"
-            id="email"
-            name="email"
-            label="メールアドレス"
-            placeholder="example@example.com"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions sx={{ pb: 3, px: 3 }}>
-          <Button onClick={handleClose}>キャンセル</Button>
-          <Button variant="contained" type="submit">
-            送信
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </SnackbarProvider>
+        <DialogContentText>
+          アカウントに登録されている外部メールアドレスを入力してください。パスワードをリセットするためのリンクをお送りします。
+        </DialogContentText>
+        <OutlinedInput
+          autoFocus
+          required
+          margin="dense"
+          id="email"
+          name="email"
+          label="メールアドレス"
+          placeholder="example@example.com"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          fullWidth
+        />
+      </DialogContent>
+      <DialogActions sx={{ pb: 3, px: 3 }}>
+        <Button onClick={handleClose}>キャンセル</Button>
+        <Button variant="contained" type="submit">
+          送信
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

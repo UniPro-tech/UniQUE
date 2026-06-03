@@ -1,5 +1,4 @@
 import { Card } from "@mui/material";
-import { SnackbarProvider } from "notistack";
 
 export interface FormStatus {
   status: "error" | "success" | "default" | "warning" | "info" | undefined;
@@ -17,16 +16,14 @@ export default function Base({
   children: React.ReactNode;
 }) {
   return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-      <Card
-        component={"form"}
-        variant="outlined"
-        action={action}
-        sx={{ display: "flex", p: 2, flexDirection: "column", gap: 2 }}
-      >
-        <input type="hidden" name="sid" value={sid} />
-        {children}
-      </Card>
-    </SnackbarProvider>
+    <Card
+      component={"form"}
+      variant="outlined"
+      action={action}
+      sx={{ display: "flex", p: 2, flexDirection: "column", gap: 2 }}
+    >
+      <input type="hidden" name="sid" value={sid} />
+      {children}
+    </Card>
   );
 }

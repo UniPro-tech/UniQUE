@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { SnackbarProvider, useSnackbar, type VariantType } from "notistack";
+import { useSnackbar, type VariantType } from "notistack";
 import { useEffect } from "react";
 import { replacePath } from "@/libs/replacePathAction";
 
@@ -41,9 +41,5 @@ export default function TemporarySnackProvider({
   snacks: SnackbarData[];
   replaceDuration?: number;
 }) {
-  return (
-    <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-      <InnerSnackRunner snacks={snacks} replaceDuration={replaceDuration} />
-    </SnackbarProvider>
-  );
+  return <InnerSnackRunner snacks={snacks} replaceDuration={replaceDuration} />;
 }
