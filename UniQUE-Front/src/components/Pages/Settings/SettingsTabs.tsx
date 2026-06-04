@@ -37,6 +37,7 @@ export default function SettingsTabs({
         variant="scrollable"
         scrollButtons="auto"
         aria-label="settings tabs"
+        sx={{ mb: 2 }}
       >
         {labels.map((label, i) => (
           <Tab key={label} label={label} {...a11yProps(i)} />
@@ -51,7 +52,7 @@ export default function SettingsTabs({
           aria-labelledby={`settings-tab-${i}`}
           hidden={value !== i}
         >
-          {value === i && <Box sx={{ pt: 2 }}>{child}</Box>}
+          {value === i && <Box sx={{ pt: 2, pb: 2, px: 0 }}>{child}</Box>}
         </div>
       ))}
     </Box>
