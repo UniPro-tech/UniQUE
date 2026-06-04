@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { ExternalIdentity } from "@/classes/ExternalIdentity";
 import { Session } from "@/classes/Session";
+import { DISCORD_API_VERSION } from "@/constants/ExternalAPI";
 import { ResourceApiErrors } from "@/errors/ResourceApiErrors";
 
 // guild invite and role assignment are performed by backend API
@@ -78,19 +79,22 @@ export const GET = async (request: NextRequest) => {
 
   try {
     // 1. アクセストークンを取得
-    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+    const tokenResponse = await fetch(
+      `https://discord.com/api/${DISCORD_API_VERSION}/oauth2/token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+        }),
       },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-      }),
-    });
+    );
 
     if (!tokenResponse.ok) {
       const tokenErr = await tokenResponse.text().catch(() => null);
@@ -118,11 +122,14 @@ export const GET = async (request: NextRequest) => {
     } = tokenData;
 
     // 2. Discordユーザー情報を取得
-    const userResponse = await fetch("https://discord.com/api/users/@me", {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
+    const userResponse = await fetch(
+      `https://discord.com/api/${DISCORD_API_VERSION}/users/@me`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
       },
-    });
+    );
 
     if (!userResponse.ok) {
       const userErr = await userResponse.text().catch(() => null);

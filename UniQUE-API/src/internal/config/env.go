@@ -27,6 +27,7 @@ type Config struct {
 	DiscordConfig      DiscordConfig
 	GitHubClientID     string
 	GitHubClientSecret string
+	DiscordApiVersion  string
 }
 
 // envが設定されていない場合のデフォルト値
@@ -43,6 +44,7 @@ var (
 	IssuerURL         = "http://localhost:8080"
 	IssuerInternalURL = "http://localhost:8080"
 	EmailSenderURL    = "http://localhost:8080"
+	DiscordApiVersion = "v10"
 )
 
 func LoadConfig() *Config {
@@ -91,6 +93,10 @@ func LoadConfig() *Config {
 	if EnvEnv == "" {
 		EnvEnv = Env
 	}
+	DiscordApiVersionEnv := os.Getenv("DISCORD_API_VERSION")
+	if DiscordApiVersionEnv == "" {
+		DiscordApiVersionEnv = DiscordApiVersion
+	}
 	return &Config{
 		Env:                EnvEnv,
 		AppName:            AppNameEnv,
@@ -100,6 +106,7 @@ func LoadConfig() *Config {
 		EmailSenderURL:     EmailSenderURLEnv,
 		Version:            version,
 		DiscordConfig:      DiscordConfig,
+		DiscordApiVersion:  DiscordApiVersionEnv,
 		GitHubClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 		GitHubClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
 	}

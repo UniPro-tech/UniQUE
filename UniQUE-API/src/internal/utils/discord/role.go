@@ -17,7 +17,7 @@ func AddRoleToUser(externalUserID string, roleID string, cfg *config.Config) err
 		return fmt.Errorf("discord bot token or guild id not configured")
 	}
 
-	discordAPIEndpoint := fmt.Sprintf("https://discord.com/api/v10/guilds/%s/members/%s/roles/%s", guildId, externalUserID, roleID)
+	discordAPIEndpoint := fmt.Sprintf("https://discord.com/api/%s/guilds/%s/members/%s/roles/%s", cfg.DiscordApiVersion, guildId, externalUserID, roleID)
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 
 	req, err := http.NewRequest("PUT", discordAPIEndpoint, nil)

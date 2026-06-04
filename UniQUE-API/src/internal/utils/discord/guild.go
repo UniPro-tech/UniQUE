@@ -28,7 +28,7 @@ func AddToGuild(externalUserID string, db *gorm.DB, cfg *config.Config) error {
 		return fmt.Errorf("discord bot token or guild id not configured")
 	}
 
-	discordAPIEndpoint := fmt.Sprintf("https://discord.com/api/v10/guilds/%s/members/%s", guildId, externalUserID)
+	discordAPIEndpoint := fmt.Sprintf("https://discord.com/api/%s/guilds/%s/members/%s", cfg.DiscordApiVersion, guildId, externalUserID)
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 
 	// body: { "access_token": "<user access token>" }

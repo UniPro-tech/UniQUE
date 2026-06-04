@@ -32,7 +32,7 @@ func SendDirectMessage(userID string, content string, db *gorm.DB, config *confi
 	if err != nil {
 		return err
 	}
-	channelReq, err := http.NewRequest("POST", "https://discord.com/api/v10/users/@me/channels", bytes.NewReader(channelBody))
+	channelReq, err := http.NewRequest("POST", fmt.Sprintf("https://discord.com/api/%s/users/@me/channels", config.DiscordApiVersion), bytes.NewReader(channelBody))
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func SendDirectMessage(userID string, content string, db *gorm.DB, config *confi
 	if err != nil {
 		return err
 	}
-	msgURL := fmt.Sprintf("https://discord.com/api/v10/channels/%s/messages", channelRes.ID)
+	msgURL := fmt.Sprintf("https://discord.com/api/%s/channels/%s/messages", config.DiscordApiVersion, channelRes.ID)
 	msgReq, err := http.NewRequest("POST", msgURL, bytes.NewReader(msgBody))
 	if err != nil {
 		return err

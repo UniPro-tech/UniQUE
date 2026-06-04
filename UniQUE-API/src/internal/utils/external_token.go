@@ -49,7 +49,7 @@ func refreshDiscordToken(ei *model.ExternalIdentity, q *query.Query, cfg *config
 		"client_id":     {cfg.DiscordConfig.ClientID},
 		"client_secret": {cfg.DiscordConfig.ClientSecret},
 	}
-	resp, err := http.PostForm("https://discord.com/api/oauth2/token", data)
+	resp, err := http.PostForm(fmt.Sprintf("https://discord.com/api/%s/oauth2/token", cfg.DiscordApiVersion), data)
 	if err != nil {
 		return ei, fmt.Errorf("discord token refresh request failed: %w", err)
 	}

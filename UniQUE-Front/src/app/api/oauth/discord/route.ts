@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { DISCORD_API_VERSION } from "@/constants/ExternalAPI";
 
 /**
  * Discord OAuth認証の開始エンドポイント
@@ -59,7 +60,7 @@ export const GET = async (request: NextRequest) => {
     state,
   });
 
-  const authUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
+  const authUrl = `https://discord.com/api/${DISCORD_API_VERSION}/oauth2/authorize?${params.toString()}`;
 
   return Response.redirect(authUrl);
 };

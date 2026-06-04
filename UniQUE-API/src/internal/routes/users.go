@@ -1434,7 +1434,7 @@ func listExternalIdentities(c *gin.Context) {
 			}
 		}
 
-		if info, err := utils.FetchProviderUserInfo(refreshed); err == nil && info != nil {
+		if info, err := utils.FetchProviderUserInfo(refreshed, &cfg); err == nil && info != nil {
 			dto.Username = info.Username
 			dto.DisplayName = info.DisplayName
 			dto.AvatarURL = info.AvatarURL
@@ -1467,6 +1467,7 @@ func addExternalIdentity(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
+	cfg := c.MustGet("config").(config.Config)
 	var input CreateExternalIdentityRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -1529,7 +1530,7 @@ func addExternalIdentity(c *gin.Context) {
 		}
 	}
 
-	if info, err := utils.FetchProviderUserInfo(ei); err == nil && info != nil {
+	if info, err := utils.FetchProviderUserInfo(ei, &cfg); err == nil && info != nil {
 		resp.Username = info.Username
 		resp.DisplayName = info.DisplayName
 		resp.AvatarURL = info.AvatarURL
@@ -1675,7 +1676,7 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		CreatedAt:      ei.CreatedAt,
 		UpdatedAt:      ei.UpdatedAt,
 	}
-	if info, err := utils.FetchProviderUserInfo(ei); err == nil && info != nil {
+	if info, err := utils.FetchProviderUserInfo(ei, &config); err == nil && info != nil {
 		resp.Username = info.Username
 		resp.DisplayName = info.DisplayName
 		resp.AvatarURL = info.AvatarURL

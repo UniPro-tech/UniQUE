@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/UniPro-tech/UniQUE-API/internal/config"
 	"github.com/UniPro-tech/UniQUE-API/internal/model"
 )
 
@@ -24,12 +25,12 @@ type ProviderUserInfo struct {
 
 // FetchProviderUserInfo calls the providers userinfo API using the stored
 // access token and returns normalised common fields plus the raw JSON.
-func FetchProviderUserInfo(ei *model.ExternalIdentity) (*ProviderUserInfo, error) {
+func FetchProviderUserInfo(ei *model.ExternalIdentity, cfg *config.Config) (*ProviderUserInfo, error) {
 	switch ei.Provider {
 	case "discord":
-		return fetchDiscordUserInfo(ei)
+		return fetchDiscordUserInfo(ei, cfg)
 	case "github":
-		return fetchGitHubUserInfo(ei)
+		return fetchGitHubUserInfo(ei, cfg)
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", ei.Provider)
 	}
@@ -37,8 +38,8 @@ func FetchProviderUserInfo(ei *model.ExternalIdentity) (*ProviderUserInfo, error
 
 // ----- Discord -----
 
-func fetchDiscordUserInfo(ei *model.ExternalIdentity) (*ProviderUserInfo, error) {
-	req, err := http.NewRequest("GET", "https://discord.com/api/users/@me", nil)
+func fetchDiscordUserInfo(ei *model.ExternalIdentity, cfg *config.Config) (*ProviderUserInfo, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://discord.com/api/%s/users/@me", cfg.DiscordApiVersion), nil)
 	if err != nil {
 		return nil, fmt.Errorf("discord userinfo request creation failed: %w", err)
 	}
@@ -105,7 +106,7 @@ func fetchDiscordUserInfo(ei *model.ExternalIdentity) (*ProviderUserInfo, error)
 
 // ----- GitHub -----
 
-func fetchGitHubUserInfo(ei *model.ExternalIdentity) (*ProviderUserInfo, error) {
+func fetchGitHubUserInfo(ei *model.ExternalIdentity, _ *config.Config) (*ProviderUserInfo, error) {
 	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
 	if err != nil {
 		return nil, fmt.Errorf("github userinfo request creation failed: %w", err)
