@@ -1,5 +1,11 @@
 "use client";
 import {
+  AccessTime as AccessTimeIcon,
+  Devices as DevicesIcon,
+  Logout as LogoutIcon,
+  Public as PublicIcon,
+} from "@mui/icons-material";
+import {
   Box,
   Button,
   Card,
@@ -28,6 +34,7 @@ export default function SessionsSection({
     sessions: sessions as SessionData[],
     status: null as null | FormStatus,
   });
+
   useEffect(() => {
     if (latestResult.status) {
       enqueueSnackbar(latestResult.status.message, {
@@ -55,7 +62,8 @@ export default function SessionsSection({
   const displayedSessions = latestResult.sessions.slice(0, 5);
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
+      {/* ヘッダー部分 */}
       <Stack
         direction="row"
         spacing={2}
@@ -63,11 +71,12 @@ export default function SessionsSection({
           alignItems: "center",
         }}
       >
-        <Typography variant="h6" component={"h4"}>
+        <Typography variant="h6" sx={{ component: "h4" }}>
           セッション管理
         </Typography>
         <Divider sx={{ flexGrow: 1 }} />
       </Stack>
+
       {latestResult.sessions.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           現在アクティブなセッションはありません。
@@ -78,81 +87,141 @@ export default function SessionsSection({
             display: "flex",
             flexDirection: "column",
             gap: 2,
+            p: 0,
           }}
         >
           {displayedSessions.map((session) => {
             const ua = session.userAgent ? parseUA(session.userAgent) : null;
             const isDeleted = session.deletedAt !== null;
+            const isActive = session.id === activeSessionId && !isDeleted;
+
             return (
               <ListItem key={session.id} disablePadding>
                 <Card
+                  variant="outlined"
                   sx={{
-                    p: 2,
+                    p: 2.5,
                     width: "100%",
                     display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
+                    flexDirection: { xs: "column", sm: "row" },
+                    alignItems: { xs: "flex-start", sm: "center" },
                     justifyContent: "space-between",
                     gap: 2,
                     opacity: isDeleted ? 0.6 : 1,
+                    transition: "box-shadow 0.2s",
+                    "&:hover": {
+                      boxShadow: isDeleted ? "none" : 1,
+                    },
                   }}
                 >
-                  <Box>
-                    <Stack
-                      direction="row"
-                      spacing={1}
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{ flexGrow: 1, alignItems: "flex-start" }}
+                  >
+                    {/* アイコン部分 */}
+                    <Box
                       sx={{
-                        alignItems: "center",
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: isActive ? "primary.50" : "action.hover",
+                        color: isActive ? "primary.main" : "text.secondary",
+                        display: "flex",
                       }}
                     >
-                      <Typography variant="body1">
-                        {ua
-                          ? ua.browser !== "Unknown" || ua.os !== "Unknown"
-                            ? `${ua.browser} - ${ua.os}`
-                            : session.userAgent
-                          : `セッション ${session.id.slice(0, 8)}`}
-                      </Typography>
-                      {session.id === activeSessionId && !isDeleted && (
-                        <Chip
-                          label="現在のセッション"
-                          color="primary"
-                          size="small"
-                          variant="outlined"
-                          sx={{ ml: 1 }}
-                        />
-                      )}
-                      {isDeleted && (
-                        <Chip
-                          label="削除済み"
-                          color="error"
-                          size="small"
-                          variant="outlined"
-                          sx={{ ml: 1 }}
-                        />
-                      )}
+                      <DevicesIcon />
+                    </Box>
+
+                    {/* 情報部分 */}
+                    <Stack spacing={1} sx={{ flexGrow: 1 }}>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        sx={{
+                          alignItems: "center",
+                          flexGap: 1,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: "bold", lineHeight: 1.2 }}
+                        >
+                          {ua
+                            ? ua.browser !== "Unknown" || ua.os !== "Unknown"
+                              ? `${ua.browser} - ${ua.os}`
+                              : session.userAgent
+                            : `セッション ${session.id.slice(0, 8)}`}
+                        </Typography>
+
+                        {isActive && (
+                          <Chip
+                            label="現在のセッション"
+                            color="primary"
+                            size="small"
+                          />
+                        )}
+                        {isDeleted && (
+                          <Chip
+                            label="削除済み"
+                            color="error"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Stack>
+
+                      {/* メタデータ群 */}
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        useFlexGap
+                        sx={{
+                          color: "text.secondary",
+                          mt: 0.5,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {session.ipAddress && (
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            sx={{ alignItems: "center" }}
+                          >
+                            <PublicIcon fontSize="small" color="inherit" />
+                            <Typography variant="caption">
+                              {session.ipAddress}
+                            </Typography>
+                          </Stack>
+                        )}
+                        {session.lastLoginAt && (
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            sx={{ alignItems: "center" }}
+                          >
+                            <AccessTimeIcon fontSize="small" color="inherit" />
+                            <Typography variant="caption">
+                              最終ログイン:{" "}
+                              {new Date(session.lastLoginAt).toLocaleString()}
+                            </Typography>
+                          </Stack>
+                        )}
+                      </Stack>
                     </Stack>
-                    {session.ipAddress && (
-                      <Typography variant="body2" color="text.secondary">
-                        IPアドレス: {session.ipAddress}
-                      </Typography>
-                    )}
-                    {session.lastLoginAt && (
-                      <Typography variant="body2" color="text.secondary">
-                        最終ログイン:{" "}
-                        {new Date(session.lastLoginAt).toLocaleString()}
-                      </Typography>
-                    )}
-                    <Typography variant="body2" color="text.secondary">
-                      作成日: {new Date(session.createdAt).toLocaleString()}
-                    </Typography>
-                    {session.expiresAt && (
-                      <Typography variant="body2" color="text.secondary">
-                        有効期限: {new Date(session.expiresAt).toLocaleString()}
-                      </Typography>
-                    )}
-                  </Box>
+                  </Stack>
+
+                  {/* アクション部分 */}
                   {!isDeleted && (
-                    <Box component="form" action={action}>
+                    <Box
+                      component="form"
+                      action={action}
+                      sx={{
+                        width: { xs: "100%", sm: "auto" },
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
                       <input
                         type="hidden"
                         name="sessionId"
@@ -163,8 +232,10 @@ export default function SessionsSection({
                         variant="outlined"
                         size="small"
                         color="error"
+                        startIcon={<LogoutIcon />}
                         disabled={session.id === activeSessionId}
                         sx={{
+                          whiteSpace: "nowrap",
                           cursor:
                             session.id === activeSessionId
                               ? "not-allowed"
