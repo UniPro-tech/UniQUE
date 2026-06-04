@@ -1661,6 +1661,12 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	config := c.MustGet("config").(config.Config)
+	if err := discordutil.AddToGuild(input.ExternalUserID, db, &config); err != nil {
+		log.Printf("failed to add user to discord guild via email verify: %v", err)
+	}
+
 	resp := ExternalIdentityDTO{
 		ID:             ei.ID,
 		UserID:         ei.UserID,
