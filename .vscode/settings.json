@@ -1,22 +1,6 @@
 {
-  // TypeScriptファイル用の設定
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true
-  },
-  // TypeScript React (TSX) ファイル用の設定
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true
-  },
-  "[json]": {
-    "editor.quickSuggestions": {
-      "strings": true
-    },
-    "editor.suggest.insertMode": "replace",
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true
-  },
-  "biome.configurationPath": ".config/biome.json",
-  "biome.lsp.bin": "./UniQUE-Front/node_modules/.bin/biome"
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "biomejs.biome",
+	"biome.configurationPath": "./.config/biome.json",
+	"biome.lsp.bin": "./UniQUE-Front/node_modules/.bin/biome"
 }
