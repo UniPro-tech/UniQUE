@@ -2,9 +2,11 @@
 import { ErrorOutlineOutlined } from "@mui/icons-material";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import {
+  Box,
   Button,
-  Chip,
+  Divider,
   FormHelperText,
+  InputAdornment,
   Link,
   Stack,
   TextField,
@@ -61,114 +63,138 @@ export default function AccountSettingsCardClient({
   };
   return (
     <Base sid={user.id} action={action} isPending={isPending}>
-      <Stack>
-        <Typography variant="h5" component={"h3"}>
-          基本設定
-        </Typography>
-        <Typography variant="body2">
-          カスタムID、メールアドレスなどの変更を行います。
-        </Typography>
-      </Stack>
-      <TextField
-        required
-        label="UUID"
-        defaultValue={lastResult.user.id}
-        disabled
-      />
-      <input type="hidden" name="id" value={lastResult.user.id} />
-      <TextField
-        required
-        label="表示名"
-        defaultValue={lastResult.user.profile?.displayName || ""}
-        name="display_name"
-      />
-      <Stack>
-        <TextField
-          required
-          label="カスタムID"
-          defaultValue={lastResult.user.customId}
-          disabled
-        />
-        <FormHelperText>
-          カスタムIDを変更するには申請が必要です。
-          <Link href="#" onClick={() => setOpenUserIdChangeDialog(true)}>
-            申請する
-          </Link>
-        </FormHelperText>
-      </Stack>
-      <Stack>
-        <TextField
-          required
-          label="メールアドレス"
-          defaultValue={lastResult.user.email}
-          disabled
-        />
-        <FormHelperText>
-          メールアドレスは原則として所属期とカスタムIDに基づいて自動生成されます。
-        </FormHelperText>
-      </Stack>
-      <Stack spacing={1}>
-        <TextField
-          required
-          label="外部メールアドレス"
-          defaultValue={
-            lastResult.user.pendingEmail || lastResult.user.externalEmail || ""
-          }
-          name="external_email"
-        />
-        {(lastResult.user.externalEmail || lastResult.user.pendingEmail) &&
-          (lastResult.user.emailVerified && !lastResult.user.pendingEmail ? (
-            <Chip
-              icon={<VerifiedIcon />}
-              label="認証済み"
-              color="success"
-              size="small"
-              sx={{ alignSelf: "flex-start" }}
+      <Stack spacing={2}>
+        <Box>
+          <Typography variant="h5" component={"h3"}>
+            基本設定
+          </Typography>
+          <Typography variant="body2">
+            カスタムID、メールアドレスなどの変更を行います。
+          </Typography>
+        </Box>
+
+        {/* システム情報（変更不可） */}
+        <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1 }}>
+          <Typography variant={"subtitle1"} sx={{ mb: 2 }}>
+            システム情報
+          </Typography>
+          <Stack spacing={1}>
+            <TextField
+              required
+              label="UUID"
+              defaultValue={lastResult.user.id}
+              disabled
             />
-          ) : (
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                alignItems: "center",
+            <input type="hidden" name="id" value={lastResult.user.id} />
+            <TextField
+              required
+              label="カスタムID"
+              defaultValue={lastResult.user.customId}
+              disabled
+            />
+            <FormHelperText>
+              カスタムIDを変更するには申請が必要です。
+              <Link href="#" onClick={() => setOpenUserIdChangeDialog(true)}>
+                申請する
+              </Link>
+            </FormHelperText>
+            <TextField
+              required
+              label="メールアドレス"
+              defaultValue={lastResult.user.email}
+              disabled
+            />
+            <FormHelperText>
+              メールアドレスは原則として所属期とカスタムIDに基づいて自動生成されます。
+            </FormHelperText>
+            <TextField
+              label="所属期"
+              defaultValue={(
+                lastResult.user.affiliationPeriod || ""
+              ).toUpperCase()}
+              disabled
+            />
+          </Stack>
+        </Box>
+
+        <Divider />
+
+        {/* ユーザー編集可能情報 */}
+        <Box sx={{ p: 2 }}>
+          <Typography variant={"subtitle1"} sx={{ mb: 2 }}>
+            編集可能情報
+          </Typography>
+          <Stack spacing={2}>
+            <TextField
+              required
+              label="表示名"
+              defaultValue={lastResult.user.profile?.displayName || ""}
+              name="display_name"
+            />
+
+            <TextField
+              required
+              label="外部メールアドレス"
+              defaultValue={
+                lastResult.user.pendingEmail ||
+                lastResult.user.externalEmail ||
+                ""
+              }
+              name="external_email"
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {lastResult.user.externalEmail ||
+                      lastResult.user.pendingEmail ? (
+                        lastResult.user.emailVerified &&
+                        !lastResult.user.pendingEmail ? (
+                          <VerifiedIcon sx={{ color: "success.main" }} />
+                        ) : (
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ alignItems: "center" }}
+                          >
+                            <ErrorOutlineOutlined
+                              sx={{ color: "warning.main" }}
+                            />
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={handleResendVerification}
+                              disabled={isSendingVerification}
+                            >
+                              {isSendingVerification
+                                ? "送信中..."
+                                : "認証メールを送信"}
+                            </Button>
+                          </Stack>
+                        )
+                      ) : null}
+                    </InputAdornment>
+                  ),
+                },
               }}
-            >
-              <Chip
-                icon={<ErrorOutlineOutlined />}
-                label="未認証"
-                color="warning"
-                size="small"
+            />
+
+            <Stack>
+              <TextField
+                required
+                label="生年月日"
+                type="date"
+                name="birthdate"
+                defaultValue={lastResult.user.profile?.birthdate || ""}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                }}
+                disabled={!!lastResult.user.profile?.birthdate}
               />
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleResendVerification}
-                disabled={isSendingVerification}
-              >
-                {isSendingVerification ? "送信中..." : "認証メールを送信"}
-              </Button>
+              <FormHelperText>一度設定したら変更できません。</FormHelperText>
             </Stack>
-          ))}
+          </Stack>
+        </Box>
       </Stack>
-      <Stack>
-        <TextField
-          required
-          label="生年月日"
-          type="date"
-          name="birthdate"
-          defaultValue={lastResult.user.profile?.birthdate || ""}
-          slotProps={{
-            inputLabel: { shrink: true },
-          }}
-          disabled={!!lastResult.user.profile?.birthdate}
-        />
-        <FormHelperText>一度設定したら変更できません。</FormHelperText>
-      </Stack>
-      <TextField
-        label="所属期"
-        defaultValue={(lastResult.user.affiliationPeriod || "").toUpperCase()}
-        disabled
-      />
       <Button variant="contained" fullWidth type="submit">
         保存
       </Button>
