@@ -2,7 +2,6 @@
 import { ErrorOutlineOutlined } from "@mui/icons-material";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import {
-  Box,
   Button,
   Divider,
   FormHelperText,
@@ -64,21 +63,27 @@ export default function AccountSettingsCardClient({
   return (
     <Base sid={user.id} action={action} isPending={isPending}>
       <Stack spacing={2}>
-        <Box>
+        <Stack spacing={1}>
           <Typography variant="h5" component={"h3"}>
             基本設定
           </Typography>
           <Typography variant="body2">
             カスタムID、メールアドレスなどの変更を行います。
           </Typography>
-        </Box>
+        </Stack>
 
         {/* システム情報（変更不可） */}
-        <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1 }}>
-          <Typography variant={"subtitle1"} sx={{ mb: 2 }}>
-            システム情報
-          </Typography>
-          <Stack spacing={1}>
+        <Stack
+          spacing={2}
+          sx={{ p: 0, bgcolor: "background.paper", borderRadius: 1 }}
+        >
+          <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+            <Typography variant="h6" component={"h4"}>
+              システム情報
+            </Typography>
+            <Divider sx={{ flexGrow: 1 }} />
+          </Stack>
+          <Stack spacing={2}>
             <TextField
               required
               label="UUID"
@@ -91,13 +96,18 @@ export default function AccountSettingsCardClient({
               label="カスタムID"
               defaultValue={lastResult.user.customId}
               disabled
+              helperText={
+                <>
+                  カスタムIDを変更するには申請が必要です。
+                  <Link
+                    href="#"
+                    onClick={() => setOpenUserIdChangeDialog(true)}
+                  >
+                    申請する
+                  </Link>
+                </>
+              }
             />
-            <FormHelperText>
-              カスタムIDを変更するには申請が必要です。
-              <Link href="#" onClick={() => setOpenUserIdChangeDialog(true)}>
-                申請する
-              </Link>
-            </FormHelperText>
             <TextField
               required
               label="メールアドレス"
@@ -115,15 +125,21 @@ export default function AccountSettingsCardClient({
               disabled
             />
           </Stack>
-        </Box>
+        </Stack>
 
         <Divider />
 
         {/* ユーザー編集可能情報 */}
-        <Box sx={{ p: 2 }}>
-          <Typography variant={"subtitle1"} sx={{ mb: 2 }}>
-            編集可能情報
-          </Typography>
+        <Stack
+          spacing={2}
+          sx={{ p: 0, bgcolor: "background.paper", borderRadius: 1 }}
+        >
+          <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+            <Typography variant="h6" component={"h4"}>
+              編集可能情報
+            </Typography>
+            <Divider sx={{ flexGrow: 1 }} />
+          </Stack>
           <Stack spacing={2}>
             <TextField
               required
@@ -193,7 +209,7 @@ export default function AccountSettingsCardClient({
               <FormHelperText>一度設定したら変更できません。</FormHelperText>
             </Stack>
           </Stack>
-        </Box>
+        </Stack>
       </Stack>
       <Button variant="contained" fullWidth type="submit">
         保存
