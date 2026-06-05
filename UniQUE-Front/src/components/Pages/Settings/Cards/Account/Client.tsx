@@ -101,7 +101,10 @@ export default function AccountSettingsCardClient({
                   カスタムIDを変更するには申請が必要です。
                   <Link
                     href="#"
-                    onClick={() => setOpenUserIdChangeDialog(true)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setOpenUserIdChangeDialog(true);
+                    }}
                   >
                     申請する
                   </Link>
