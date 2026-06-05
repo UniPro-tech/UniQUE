@@ -7,7 +7,7 @@ import (
 	"github.com/UniPro-tech/UniQUE/Discord/internal"
 	"github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction/command/admin/maintenance"
 	"github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction/command/general"
-
+	usercommand "github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction/contextMenu/userCommand"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/snowflake/v2"
@@ -31,6 +31,12 @@ func RegistHandler(r *handler.Mux, ctxData *internal.BotContext) {
 		r.Use(AdminOnlyMiddleware(ctxData))
 		r.SlashCommand("/shutdown", maintenance.Shutdown(ctxData))
 	})
+	r.Route("/UniQUEユーザーを取得",
+		func(r handler.Router) {
+			r.Use(DeferReplyMiddleware(ctxData, true, false))
+			r.UserCommand("/", usercommand.GetUniQUE(ctxData))
+		},
+	)
 }
 
 func IsOwner(member discord.Member) bool {

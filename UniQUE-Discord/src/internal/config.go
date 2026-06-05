@@ -12,14 +12,15 @@ type Colors struct {
 }
 
 type Config struct {
-	BotName      string
-	Description  string
-	AdminGuildID string
-	AdminRoleID  string
-	BotVersion   string
-	URL          string
-	GitHub       string
-	Colors       Colors
+	BotName           string
+	Description       string
+	AdminGuildID      string
+	AdminRoleID       string
+	BotVersion        string
+	GitHub            string
+	Colors            Colors
+	UniqueAPIBaseURL  string
+	UniqueFrontendURL string
 }
 
 type BotContext struct {
@@ -34,15 +35,13 @@ var (
 
 // envが設定されていない場合のデフォルト値
 var (
-	BotName        = "UniBot"
-	Description    = "UniBotはデジタル創作サークルUniProjectの内製Discord Botです。"
-	AdminGuildID   = "1191346186880286770"
-	AdminRoleID    = "1390633352360628234"
-	GitHubRepo     = "UniPro-tech/UniBot"
-	HomePage       = "https://unibot.uniproject.jp"
-	SupportServer  = "https://discord.gg/HYWB2aztr8"
-	VoiceVoxURI    = "http://localhost:50021"
-	VoiceVoxAPIKey = ""
+	BotName           = "UniQUE System"
+	Description       = "UniQUE SystemのBotです。"
+	AdminGuildID      = "1191346186880286770"
+	AdminRoleID       = "1390633352360628234"
+	GitHubRepo        = "UniPro-tech/UniQUE"
+	UniqueAPIBaseURL  = "http://localhost:8001"
+	UniqueFrontendURL = "http://localhost:3000"
 )
 
 func LoadConfig() *Config {
@@ -75,19 +74,24 @@ func LoadConfig() *Config {
 	if GitHubRepoEnv == "" {
 		GitHubRepoEnv = GitHubRepo
 	}
-	HomePageEnv := os.Getenv("CONFIG_HOME_PAGE")
-	if HomePageEnv == "" {
-		HomePageEnv = HomePage
+	UniqueAPIBaseURLEnv := os.Getenv("CONFIG_UNIQUE_API_BASE_URL")
+	if UniqueAPIBaseURLEnv == "" {
+		UniqueAPIBaseURLEnv = UniqueAPIBaseURL
+	}
+	UniqueFrontendURLEnv := os.Getenv("CONFIG_UNIQUE_FRONTEND_URL")
+	if UniqueFrontendURLEnv == "" {
+		UniqueFrontendURLEnv = UniqueFrontendURL
 	}
 
 	return &Config{
-		BotName:      BotNameEnv,
-		Description:  DescriptionEnv,
-		AdminGuildID: AdminGuildIDEnv,
-		AdminRoleID:  AdminRoleIDEnv,
-		BotVersion:   version,
-		URL:          HomePageEnv,
-		GitHub:       "https://github.com/" + GitHubRepoEnv,
+		BotName:           BotNameEnv,
+		Description:       DescriptionEnv,
+		AdminGuildID:      AdminGuildIDEnv,
+		AdminRoleID:       AdminRoleIDEnv,
+		BotVersion:        version,
+		GitHub:            "https://github.com/" + GitHubRepoEnv,
+		UniqueAPIBaseURL:  UniqueAPIBaseURLEnv,
+		UniqueFrontendURL: UniqueFrontendURLEnv,
 		Colors: Colors{
 			Primary: 0x3498DB,
 			Success: 0x2ECC71,

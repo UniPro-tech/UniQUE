@@ -22,6 +22,7 @@ import (
 	customHandlers "github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/event"
 	interaction_handler "github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction"
 	"github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction/command"
+	contextmenu "github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction/contextMenu"
 )
 
 func main() {
@@ -84,6 +85,9 @@ func main() {
 	// Slash Command の登録
 	var generalCommands []discord.ApplicationCommandCreate
 	for _, cmd := range command.GeneralCommands {
+		generalCommands = append(generalCommands, cmd)
+	}
+	for _, cmd := range contextmenu.GeneralContextMenus {
 		generalCommands = append(generalCommands, cmd)
 	}
 
