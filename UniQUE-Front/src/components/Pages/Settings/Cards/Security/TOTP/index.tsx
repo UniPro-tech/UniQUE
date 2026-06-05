@@ -285,20 +285,29 @@ export default function TOTPSection({ user }: { user: UserData }) {
               onChange={(e) => setPassword(e.target.value)}
             />
           </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpenDialog(false)} color="inherit">
-            キャンセル
-          </Button>
-          <Button
-            type="submit"
-            form="totp-gen-form"
-            variant="contained"
-            disableElevation
+          <DialogActions
+            sx={{
+              flexDirection: { xs: "column", sm: "row" },
+            }}
           >
-            確認して生成
-          </Button>
-        </DialogActions>
+            <Button
+              onClick={() => setOpenDialog(false)}
+              color="inherit"
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              キャンセル
+            </Button>
+            <Button
+              type="submit"
+              form="totp-gen-form"
+              variant="contained"
+              disableElevation
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              確認して生成
+            </Button>
+          </DialogActions>
+        </DialogContent>
       </Dialog>
 
       {/* 無効化用パスワードダイアログ */}
@@ -327,21 +336,30 @@ export default function TOTPSection({ user }: { user: UserData }) {
               onChange={(e) => setDisablePassword(e.target.value)}
             />
           </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpenDisableDialog(false)} color="inherit">
-            キャンセル
-          </Button>
-          <Button
-            type="submit"
-            form="totp-disable-form"
-            variant="contained"
-            color="error"
-            disableElevation
+          <DialogActions
+            sx={{
+              flexDirection: { xs: "column", sm: "row" },
+            }}
           >
-            無効化する
-          </Button>
-        </DialogActions>
+            <Button
+              onClick={() => setOpenDisableDialog(false)}
+              color="inherit"
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              キャンセル
+            </Button>
+            <Button
+              type="submit"
+              form="totp-disable-form"
+              variant="contained"
+              color="error"
+              disableElevation
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              無効化する
+            </Button>
+          </DialogActions>
+        </DialogContent>
       </Dialog>
     </Stack>
   );
