@@ -71,7 +71,7 @@ export default function SessionsSection({
           alignItems: "center",
         }}
       >
-        <Typography variant="h6" sx={{ component: "h4" }}>
+        <Typography variant="h6" component={"h4"}>
           セッション管理
         </Typography>
         <Divider sx={{ flexGrow: 1 }} />

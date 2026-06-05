@@ -91,7 +91,7 @@ export default function ConsentSettingsCardClient({
     >
       {/* ヘッダー部分 */}
       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-        <Typography variant="h6" sx={{ component: "h3" }}>
+        <Typography variant="h6" component="h3">
           アプリ連携（OAuth同意）
         </Typography>
         <Divider sx={{ flexGrow: 1, ml: 1 }} />

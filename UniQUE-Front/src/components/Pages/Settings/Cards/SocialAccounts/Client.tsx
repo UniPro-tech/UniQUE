@@ -69,7 +69,7 @@ function SocialAccountsContent({
       }}
     >
       <Stack spacing={0.5}>
-        <Typography variant="h6" sx={{ component: "h3" }}>
+        <Typography variant="h6" component="h3">
           ソーシャルアカウント設定
         </Typography>
         <Typography variant="body2" color="text.secondary">

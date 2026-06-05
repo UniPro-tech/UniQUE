@@ -109,7 +109,7 @@ export default function TOTPSection({ user }: { user: UserData }) {
     <Stack spacing={3}>
       {/* ヘッダー部分 */}
       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-        <Typography variant="h6" sx={{ component: "h4" }}>
+        <Typography variant="h6" component={"h4"}>
           二段階認証（TOTP）
         </Typography>
         <Divider sx={{ flexGrow: 1, ml: 2 }} />
