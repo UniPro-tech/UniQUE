@@ -2,7 +2,6 @@
 import {
   Button,
   Divider,
-  FormHelperText,
   Link,
   Stack,
   TextField,
@@ -96,6 +95,18 @@ export default function PasswordSection({
         fullWidth
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
+        helperText={
+          <>
+            パスワードを忘れた場合は、{" "}
+            <Link
+              onClick={handleClickOpen}
+              underline="hover"
+              style={{ cursor: "pointer" }}
+            >
+              こちら
+            </Link>
+          </>
+        }
       />
       <TextField
         label="新しいパスワード"
@@ -131,16 +142,6 @@ export default function PasswordSection({
             "上記で入力したパスワードをもう一度ご入力ください"
           }
         />
-        <FormHelperText>
-          パスワードを忘れた場合は、{" "}
-          <Link
-            onClick={handleClickOpen}
-            underline="hover"
-            style={{ cursor: "pointer" }}
-          >
-            こちら
-          </Link>
-        </FormHelperText>
       </Stack>
       <Button variant="contained" fullWidth type="submit">
         保存

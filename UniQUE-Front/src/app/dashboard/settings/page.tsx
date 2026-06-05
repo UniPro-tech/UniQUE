@@ -5,6 +5,7 @@ import AccountSettingsCard from "@/components/Pages/Settings/Cards/Account";
 import ConsentSettingsCard from "@/components/Pages/Settings/Cards/Consent";
 import SecuritySettingsCard from "@/components/Pages/Settings/Cards/Security";
 import SocialAccountsSettingsCard from "@/components/Pages/Settings/Cards/SocialAccounts";
+import SettingsTabs from "@/components/Pages/Settings/SettingsTabs";
 import TemporarySnackProvider, {
   type SnackbarData,
 } from "@/components/TemporarySnackProvider";
@@ -57,12 +58,14 @@ export default async function Page({
         </Typography>
       </Stack>
       {user && (
-        <>
+        <SettingsTabs
+          labels={["プロフィール", "セキュリティ", "外部連携", "アプリ権限"]}
+        >
           <AccountSettingsCard user={user} />
           <SecuritySettingsCard user={user} />
           <SocialAccountsSettingsCard user={user} />
           <ConsentSettingsCard user={user} />
-        </>
+        </SettingsTabs>
       )}
     </Stack>
   );

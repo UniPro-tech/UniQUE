@@ -1,12 +1,18 @@
 "use client";
 
+import AppsIcon from "@mui/icons-material/Apps";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Card,
   Chip,
-  List,
-  ListItem,
+  Divider,
+  Link,
   Stack,
   Typography,
 } from "@mui/material";
@@ -50,8 +56,6 @@ export default function ConsentSettingsCardClient({
   const [consents, setConsents] = React.useState(initialConsents);
   const [revoking, setRevoking] = React.useState<string | null>(null);
 
-  // アプリ名の解決はサーバーサイドで行われる想定なので、ここでは何もしない
-
   const handleRevoke = async (consent: ConsentDTO) => {
     setRevoking(consent.id);
     try {
@@ -78,23 +82,40 @@ export default function ConsentSettingsCardClient({
   return (
     <Card
       variant="outlined"
-      sx={{ display: "flex", p: 2, flexDirection: "column", gap: 2 }}
+      sx={{
+        p: 3,
+        display: "flex",
+        flexDirection: "column",
+        gap: 2.5,
+      }}
     >
-      <Stack>
-        <Typography variant="h5" component="h3">
+      {/* ヘッダー部分 */}
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+        <Typography variant="h6" component="h3">
           アプリ連携（OAuth同意）
         </Typography>
-        <Typography variant="body2">
-          アクセスを許可したアプリケーションの一覧です。取り消すと、そのアプリからのアクセスが無効になります。
-        </Typography>
+        <Divider sx={{ flexGrow: 1, ml: 1 }} />
       </Stack>
 
+      <Typography variant="body2" color="text.secondary" sx={{ mt: -0.5 }}>
+        アクセスを許可したアプリケーションの一覧です。取り消すと、そのアプリからのアクセスが無効になります。
+      </Typography>
+
       {consents.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          現在、同意しているアプリケーションはありません。
-        </Typography>
+        <Box
+          sx={{
+            p: 3,
+            bgcolor: "action.hover",
+            borderRadius: 2,
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            現在、連携しているアプリケーションはありません。
+          </Typography>
+        </Box>
       ) : (
-        <List sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Box>
           {consents.map((consent) => {
             const appLabel =
               consent.applicationName ||
@@ -104,106 +125,156 @@ export default function ConsentSettingsCardClient({
             const scopes = consent.scope
               ? consent.scope.split(" ").filter(Boolean)
               : [];
+
             return (
-              <ListItem key={consent.id} disablePadding>
-                <Card
+              <Accordion
+                key={consent.id}
+                disableGutters
+                elevation={0}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1.5,
+                  overflow: "hidden",
+                  "&:before": { display: "none" }, // デフォルトの怪しい線を消去
+                  "&:not(:last-child)": { mb: 1.5 }, // アプリ同士の適度な隙間
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
                   sx={{
-                    p: 2,
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 2,
+                    "&:hover": { bgcolor: "action.hover" },
+                    px: { xs: 2, sm: 3 },
                   }}
                 >
-                  <Box
-                    sx={{
-                      flex: 1,
-                      minWidth: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1,
-                    }}
-                  >
-                    <Typography variant="subtitle1" noWrap>
+                  <Stack spacing={0.5} sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: "bold" }}
+                      noWrap
+                    >
                       {appLabel}
                     </Typography>
-                    {consent.applicationDescription && (
-                      <Typography variant="body2" color="text.secondary" noWrap>
-                        {consent.applicationDescription}
-                      </Typography>
-                    )}
-                    {consent.applicationWebsiteUrl && (
-                      <Typography variant="body2" color="text.secondary" noWrap>
-                        ウェブサイト:{" "}
-                        <a
-                          href={consent.applicationWebsiteUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {consent.applicationWebsiteUrl}
-                        </a>
-                      </Typography>
-                    )}
-                    {consent.applicationTermsUrl && (
-                      <Typography variant="body2" color="text.secondary" noWrap>
-                        利用規約:{" "}
-                        <a
-                          href={consent.applicationTermsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {consent.applicationTermsUrl}
-                        </a>
-                      </Typography>
-                    )}
-                    {consent.applicationPrivacyPolicyUrl && (
-                      <Typography variant="body2" color="text.secondary" noWrap>
-                        プライバシーポリシー:{" "}
-                        <a
-                          href={consent.applicationPrivacyPolicyUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {consent.applicationPrivacyPolicyUrl}
-                        </a>
-                      </Typography>
-                    )}
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      {consent.applicationDescription ||
+                        "クリックして詳細を表示"}
+                    </Typography>
+                  </Stack>
+                </AccordionSummary>
+
+                <AccordionDetails sx={{ pt: 0, pb: 2, px: { xs: 2, sm: 3 } }}>
+                  <Stack spacing={2}>
+                    <Divider />
+
+                    {/* リンク群 */}
+                    <Stack spacing={1}>
+                      {[
+                        {
+                          label: "ウェブサイト",
+                          url: consent.applicationWebsiteUrl,
+                        },
+                        { label: "利用規約", url: consent.applicationTermsUrl },
+                        {
+                          label: "プライバシーポリシー",
+                          url: consent.applicationPrivacyPolicyUrl,
+                        },
+                      ].map((link) =>
+                        link.url ? (
+                          <Typography
+                            key={link.label}
+                            variant="body2"
+                            sx={{
+                              display: "flex",
+                              alignItems: { xs: "flex-start", sm: "center" },
+                              gap: 1,
+                              flexDirection: { xs: "column", sm: "row" },
+                            }}
+                          >
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ minWidth: 145 }}
+                            >
+                              {link.label}:
+                            </Typography>
+                            <Link
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              underline="hover"
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              リンクを開く{" "}
+                              <OpenInNewIcon sx={{ fontSize: 16 }} />
+                            </Link>
+                          </Typography>
+                        ) : null,
+                      )}
+                    </Stack>
+
+                    {/* スコープ群 */}
                     {scopes.length > 0 && (
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        sx={{
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        {scopes.map((s) => (
-                          <Chip key={s} label={s} size="small" />
-                        ))}
+                      <Stack spacing={1}>
+                        <Typography variant="caption" color="text.secondary">
+                          許可された権限:
+                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          useFlexGap
+                          sx={{ flexWrap: "wrap" }}
+                        >
+                          {scopes.map((s) => (
+                            <Chip
+                              key={s}
+                              label={s}
+                              size="small"
+                              variant="outlined"
+                            />
+                          ))}
+                        </Stack>
                       </Stack>
                     )}
-                    {consent.createdAt && (
+
+                    {/* アクションと日付 */}
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      sx={{
+                        pt: 1,
+                        justifyContent: "space-between",
+                        alignItems: { xs: "flex-start", sm: "center" },
+                        gap: 1,
+                      }}
+                    >
                       <Typography variant="caption" color="text.secondary">
-                        許可日:{" "}
-                        {new Date(consent.createdAt).toLocaleDateString()}
+                        {consent.createdAt
+                          ? `許可日: ${new Date(consent.createdAt).toLocaleDateString()}`
+                          : ""}
                       </Typography>
-                    )}
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    disabled={revoking === consent.id}
-                    onClick={() => handleRevoke(consent)}
-                  >
-                    {revoking === consent.id ? "取り消し中..." : "取り消す"}
-                  </Button>
-                </Card>
-              </ListItem>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        disabled={revoking === consent.id}
+                        onClick={() => handleRevoke(consent)}
+                        disableElevation
+                      >
+                        {revoking === consent.id
+                          ? "取り消し中..."
+                          : "連携を取り消す"}
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
             );
           })}
-        </List>
+        </Box>
       )}
     </Card>
   );
