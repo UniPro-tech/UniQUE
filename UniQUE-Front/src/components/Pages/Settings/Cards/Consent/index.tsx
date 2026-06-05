@@ -61,10 +61,38 @@ export default async function ConsentSettingsCard({
       return { ...c, applicationName: appId };
     }),
   );
+  const testConsents: ConsentDTO[] = [
+    {
+      id: "consent1",
+      clientId: "client1",
+      applicationId: "app1",
+      userId: user.id,
+      scope: "read write",
+      createdAt: new Date().toISOString(),
+      applicationName: "Test App 1",
+      applicationDescription: "This is a test application.",
+      applicationWebsiteUrl: "https://example.com",
+      applicationPrivacyPolicyUrl: "https://example.com/privacy",
+      applicationTermsUrl: "https://example.com/terms",
+    },
+    {
+      id: "consent1",
+      clientId: "client1",
+      applicationId: "app1",
+      userId: user.id,
+      scope: "read write",
+      createdAt: new Date().toISOString(),
+      applicationName: "Test App 1",
+      applicationDescription: "This is a test application.",
+      applicationWebsiteUrl: "https://example.com",
+      applicationPrivacyPolicyUrl: "https://example.com/privacy",
+      applicationTermsUrl: "https://example.com/terms",
+    },
+  ];
 
   return (
     <ConsentSettingsCardClient
-      consents={resolvedConsents}
+      consents={testConsents}
       revokeConsent={revokeConsentAction}
     />
   );

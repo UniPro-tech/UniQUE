@@ -41,9 +41,12 @@ export default function SecuritySettingsCardClient({
           </Stack>
 
           <Stack
-            direction="row"
+            direction={{ xs: "column", sm: "row" }}
             spacing={1}
-            sx={{ alignItems: "center", flexWrap: "wrap" }}
+            sx={{
+              alignItems: { xs: "flex-start", sm: "center" },
+              flexWrap: "wrap",
+            }}
           >
             <Chip
               label={`TOTP: ${totpStatus}`}

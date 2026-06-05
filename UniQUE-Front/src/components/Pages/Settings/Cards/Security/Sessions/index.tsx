@@ -135,11 +135,11 @@ export default function SessionsSection({
                     {/* 情報部分 */}
                     <Stack spacing={1} sx={{ flexGrow: 1 }}>
                       <Stack
-                        direction="row"
+                        direction={{ xs: "column", sm: "row" }}
                         spacing={1}
                         useFlexGap
                         sx={{
-                          alignItems: "center",
+                          alignItems: { xs: "flex-start", sm: "center" },
                           flexGap: 1,
                         }}
                       >
@@ -173,7 +173,7 @@ export default function SessionsSection({
 
                       {/* メタデータ群 */}
                       <Stack
-                        direction="row"
+                        direction={{ xs: "column", sm: "row" }}
                         spacing={2}
                         useFlexGap
                         sx={{
@@ -184,11 +184,20 @@ export default function SessionsSection({
                       >
                         {session.ipAddress && (
                           <Stack
-                            direction="row"
+                            direction={{ xs: "row" }}
                             spacing={0.5}
-                            sx={{ alignItems: "center" }}
+                            sx={{
+                              alignItems: { xs: "flex-start", sm: "center" },
+                            }}
                           >
-                            <PublicIcon fontSize="small" color="inherit" />
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              sx={{ alignItems: "center" }}
+                            >
+                              <PublicIcon fontSize="small" color="inherit" />
+                              <Typography variant="caption">IP:</Typography>
+                            </Stack>
                             <Typography variant="caption">
                               {session.ipAddress}
                             </Typography>
@@ -196,13 +205,26 @@ export default function SessionsSection({
                         )}
                         {session.lastLoginAt && (
                           <Stack
-                            direction="row"
+                            direction={{ xs: "column", sm: "row" }}
                             spacing={0.5}
-                            sx={{ alignItems: "center" }}
+                            sx={{
+                              alignItems: { xs: "flex-start", sm: "center" },
+                            }}
                           >
-                            <AccessTimeIcon fontSize="small" color="inherit" />
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              sx={{ alignItems: "center" }}
+                            >
+                              <AccessTimeIcon
+                                fontSize="small"
+                                color="inherit"
+                              />
+                              <Typography variant="caption">
+                                最終ログイン:
+                              </Typography>
+                            </Stack>
                             <Typography variant="caption">
-                              最終ログイン:{" "}
                               {new Date(session.lastLoginAt).toLocaleString()}
                             </Typography>
                           </Stack>
