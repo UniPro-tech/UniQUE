@@ -194,11 +194,11 @@ type ExternalIdentityDTO struct {
 	AvatarURL   string `json:"avatar_url,omitempty"`
 	Email       string `json:"email,omitempty"`
 	// Decoded ID Token claims (JWT payload)
-	IDTokenClaims map[string]interface{} `json:"id_token_claims,omitempty"`
+	IDTokenClaims map[string]any `json:"id_token_claims,omitempty"`
 	// Raw provider-specific userinfo data
-	ProviderData map[string]interface{} `json:"provider_data,omitempty"`
-	CreatedAt    time.Time              `json:"created_at"`
-	UpdatedAt    time.Time              `json:"updated_at"`
+	ProviderData map[string]any `json:"provider_data,omitempty"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
 }
 
 // ExternalIdentityListResponse wraps a list of external identities

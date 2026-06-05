@@ -52,8 +52,8 @@ func RegisterUserRoutes(r *gin.Engine) {
 		// 権限一覧の取得は自分自身のみ
 		g.GET(":id/permissions", middleware.RequirePermissionOrSelf(constants.USER_READ), getUserPermissions)
 
-		// 外部ID連携の閲覧は自分自身 OR USER_READ権限(EXTERNAL_IDENTITY_READと同等)
-		g.GET(":id/external_identities", middleware.RequirePermissionOrSelf(constants.USER_READ), listExternalIdentities)
+		// 外部ID連携の閲覧は複雑なため外で認証しない
+		g.GET(":id/external_identities", listExternalIdentities)
 
 		// 外部ID連携の追加は自分自身 OR USER_UPDATE権限(EXTERNAL_IDENTITY_WRITEと同等)
 		g.POST(":id/external_identities", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), addExternalIdentity)
@@ -1395,6 +1395,11 @@ func getUserPermissions(c *gin.Context) {
 // @Success 200 {object} routes.ExternalIdentityListResponse
 // @Router /users/{id}/external_identities [get]
 func listExternalIdentities(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found in context"})
+		return
+	}
 	if isOAuth := IsOAuth(c); isOAuth {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
 		return
@@ -1428,18 +1433,38 @@ func listExternalIdentities(c *gin.Context) {
 			UpdatedAt:      refreshed.UpdatedAt,
 		}
 
+		// ユーザーIDを検証する
+		// 自分自身もしくはUSER_READ権限を持つトークンであればIDトークンのクレームを返す
+		userModel, ok := user.(*model.User)
+		if !ok || userModel == nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "ユーザー情報が取得できませんでした"})
+			return
+		}
 		if refreshed.IDToken != nil {
 			if claims, err := utils.DecodeIDTokenClaims(*refreshed.IDToken); err == nil {
-				dto.IDTokenClaims = claims
+				dto.Username = claims["name"].(string)
+				dto.DisplayName = claims["name"].(string)
+				dto.AvatarURL = claims["picture"].(string)
+				if userModel.ID == id {
+					dto.IDTokenClaims = claims
+				}
 			}
 		}
 
 		if info, err := utils.FetchProviderUserInfo(refreshed, &cfg); err == nil && info != nil {
-			dto.Username = info.Username
-			dto.DisplayName = info.DisplayName
-			dto.AvatarURL = info.AvatarURL
-			dto.Email = info.Email
-			dto.ProviderData = info.ProviderData
+			if dto.Username == "" {
+				dto.Username = info.Username
+			}
+			if dto.DisplayName == "" {
+				dto.DisplayName = info.DisplayName
+			}
+			if dto.AvatarURL == "" {
+				dto.AvatarURL = info.AvatarURL
+			}
+			if userModel.ID == id {
+				dto.Email = info.Email
+				dto.ProviderData = info.ProviderData
+			}
 		}
 
 		out = append(out, dto)
