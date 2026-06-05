@@ -47,23 +47,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// /internal/users への POST（ユーザー作成）はスキップ
-		if c.Request.Method == "POST" && c.Request.URL.Path == "/internal/users" {
-			c.Next()
-			return
-		}
-		// /internal/users/email_verify への POST(メール認証)はスキップ
-		if c.Request.Method == "POST" && c.Request.URL.Path == "/internal/users/email_verify" {
-			c.Next()
-			return
-		}
-		// /internal/users/email_verify/:code への GET(コード参照)はスキップ
-		if c.Request.Method == "GET" && strings.HasPrefix(c.Request.URL.Path, "/internal/users/email_verify/") {
-			c.Next()
-			return
-		}
-		// /internal/users/email_verify/discord_link への POST(Discord連携)はスキップ
-		if c.Request.Method == "POST" && c.Request.URL.Path == "/internal/users/email_verify/discord_link" {
+		// /internal/* は内部のトラフィックのためスキップ
+		if strings.HasPrefix(c.Request.URL.Path, "/internal/") {
 			c.Next()
 			return
 		}

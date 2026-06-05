@@ -971,6 +971,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/external_identities/search": {
+            "get": {
+                "description": "Search for external identities by provider and external user ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Search external identities",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider name",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "External user ID",
+                        "name": "external_user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ExternalIdentityListResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}": {
             "get": {
                 "description": "Get a single user with optional profile",
@@ -1035,6 +1069,27 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/routes.UserDTO"
                         }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Hard delete user data",
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             },
@@ -1831,7 +1886,7 @@ const docTemplate = `{
                 "id_token_claims": {
                     "description": "Decoded ID Token claims (JWT payload)",
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "provider": {
                     "type": "string"
@@ -1839,7 +1894,7 @@ const docTemplate = `{
                 "provider_data": {
                     "description": "Raw provider-specific userinfo data",
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "updated_at": {
                     "type": "string"

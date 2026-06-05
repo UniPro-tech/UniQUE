@@ -32,54 +32,7 @@ import (
 func RegisterUserRoutes(r *gin.Engine) {
 	// 公開ルート
 	g := r.Group("/users")
-	{
-		// ユーザー一覧の取得は認証不要（基本情報のみ公開）
-		g.GET("", listUsers)
-
-		// ユーザー情報の取得は認証不要（基本情報のみ公開、詳細は自分自身のみ）
-		g.GET(":id", getUser)
-
-		// ユーザーのアプリ一覧は自分自身 OR APP_READ権限
-		g.GET(":id/apps", middleware.RequirePermissionOrSelf(constants.APP_READ), listAppsForUser)
-
-		// ロールの追加・削除はPERMISSION_MANAGE権限が必要
-		g.POST(":id/roles", middleware.RequirePermission(constants.PERMISSION_MANAGE), addRoleForUser)
-		g.DELETE(":id/roles/:roleId", middleware.RequirePermission(constants.PERMISSION_MANAGE), removeRoleForUser)
-
-		// ロール一覧の取得は自分自身 OR PERMISSION_MANAGE権限
-		g.GET(":id/roles", middleware.RequirePermissionOrSelf(constants.PERMISSION_MANAGE), listRolesForUser)
-
-		// 権限一覧の取得は自分自身のみ
-		g.GET(":id/permissions", middleware.RequirePermissionOrSelf(constants.USER_READ), getUserPermissions)
-
-		// 外部ID連携の閲覧は複雑なため外で認証しない
-		g.GET(":id/external_identities", listExternalIdentities)
-
-		// 外部ID連携の追加は自分自身 OR USER_UPDATE権限(EXTERNAL_IDENTITY_WRITEと同等)
-		g.POST(":id/external_identities", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), addExternalIdentity)
-
-		// 外部ID連携の削除は自分自身 OR USER_UPDATE権限(EXTERNAL_IDENTITY_DELETEと同等)
-		g.DELETE(":id/external_identities/:eid", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), removeExternalIdentity)
-
-		// ユーザー情報の更新は自分自身 OR USER_UPDATE権限
-		g.PUT(":id", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), updateUser)
-		g.PATCH(":id", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), patchUser)
-
-		// パスワード変更: 自分自身またはUSER_UPDATE権限
-		g.PUT(":id/password/change", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), changePassword)
-
-		// ユーザーの削除はUSER_DELETE権限が必要
-		g.DELETE(":id", middleware.RequirePermission(constants.USER_DELETE), deleteUser)
-
-		// ユーザー登録の承認はフロントと同じくUSER_CREATE権限が必要
-		g.POST(":id/approve", middleware.RequirePermission(constants.USER_CREATE), approveUserRegist)
-
-		// ユーザー登録の却下もUSER_CREATE権限が必要（フロントと整合）
-		g.POST(":id/reject", middleware.RequirePermission(constants.USER_CREATE), rejectUserRegist)
-
-		// メール認証の再送は自分自身 OR USER_UPDATE権限
-		g.POST(":id/resend_email_verification", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), resendEmailVerification)
-	}
+	registUserRouteFromGroup(g)
 
 	// 内部用ルート（作成系）
 	ig := r.Group("/internal/users")
@@ -87,7 +40,60 @@ func RegisterUserRoutes(r *gin.Engine) {
 		ig.POST("", createUser)
 		ig.POST("email_verify/discord_link", linkDiscordByEmailCode)
 		ig.POST("email_verify", emailCodeCheck)
+		registUserRouteFromGroup(ig)
 	}
+}
+
+func registUserRouteFromGroup(g *gin.RouterGroup) {
+	// ユーザー一覧の取得は認証不要（基本情報のみ公開）
+	g.GET("", listUsers)
+
+	// ユーザー情報の取得は認証不要（基本情報のみ公開、詳細は自分自身のみ）
+	g.GET(":id", getUser)
+
+	// ユーザーのアプリ一覧は自分自身 OR APP_READ権限
+	g.GET(":id/apps", middleware.RequirePermissionOrSelf(constants.APP_READ), listAppsForUser)
+
+	// ロールの追加・削除はPERMISSION_MANAGE権限が必要
+	g.POST(":id/roles", middleware.RequirePermission(constants.PERMISSION_MANAGE), addRoleForUser)
+	g.DELETE(":id/roles/:roleId", middleware.RequirePermission(constants.PERMISSION_MANAGE), removeRoleForUser)
+
+	// ロール一覧の取得は自分自身 OR PERMISSION_MANAGE権限
+	g.GET(":id/roles", middleware.RequirePermissionOrSelf(constants.PERMISSION_MANAGE), listRolesForUser)
+
+	// 権限一覧の取得は自分自身のみ
+	g.GET(":id/permissions", middleware.RequirePermissionOrSelf(constants.USER_READ), getUserPermissions)
+
+	// 外部ID連携の閲覧は誰でも可能だが内部的に返す情報をフィルタリングする
+	g.GET(":id/external_identities", listExternalIdentities)
+
+	// 外部IDから検索をかけられるようにする
+	g.GET("external_identities/search", searchExternalIdentities)
+
+	// 外部ID連携の追加は自分自身 OR USER_UPDATE権限(EXTERNAL_IDENTITY_WRITEと同等)
+	g.POST(":id/external_identities", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), addExternalIdentity)
+
+	// 外部ID連携の削除は自分自身 OR USER_UPDATE権限(EXTERNAL_IDENTITY_DELETEと同等)
+	g.DELETE(":id/external_identities/:eid", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), removeExternalIdentity)
+
+	// ユーザー情報の更新は自分自身 OR USER_UPDATE権限
+	g.PUT(":id", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), updateUser)
+	g.PATCH(":id", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), patchUser)
+
+	// パスワード変更: 自分自身またはUSER_UPDATE権限
+	g.PUT(":id/password/change", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), changePassword)
+
+	// ユーザーの削除はUSER_DELETE権限が必要
+	g.DELETE(":id", middleware.RequirePermission(constants.USER_DELETE), deleteUser)
+
+	// ユーザー登録の承認はフロントと同じくUSER_CREATE権限が必要
+	g.POST(":id/approve", middleware.RequirePermission(constants.USER_CREATE), approveUserRegist)
+
+	// ユーザー登録の却下もUSER_CREATE権限が必要（フロントと整合）
+	g.POST(":id/reject", middleware.RequirePermission(constants.USER_CREATE), rejectUserRegist)
+
+	// メール認証の再送は自分自身 OR USER_UPDATE権限
+	g.POST(":id/resend_email_verification", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), resendEmailVerification)
 }
 
 // parseDateFlexible attempts to parse date/time strings in multiple
@@ -1468,6 +1474,53 @@ func listExternalIdentities(c *gin.Context) {
 		}
 
 		out = append(out, dto)
+	}
+	c.JSON(http.StatusOK, ExternalIdentityListResponse{Data: out})
+}
+
+// searchExternalIdentities godoc
+// @Summary Search external identities
+// @Description Search for external identities by provider and external user ID
+// @Tags users
+// @Produce json
+// @Param provider query string false "Provider name"
+// @Param external_user_id query string false "External user ID"
+// @Success 200 {object} routes.ExternalIdentityListResponse
+// @Router /users/external_identities/search [get]
+func searchExternalIdentities(c *gin.Context) {
+	if isOAuth := IsOAuth(c); isOAuth {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
+		return
+	}
+	db := getDB(c)
+	if db == nil {
+		return
+	}
+	provider := c.Query("provider")
+	externalUserID := c.Query("external_user_id")
+	q := query.Use(db)
+	eis, err := q.ExternalIdentity.Where(
+		query.ExternalIdentity.Provider.Eq(provider),
+		query.ExternalIdentity.ExternalUserID.Eq(externalUserID),
+	).Find()
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if len(eis) == 0 {
+		c.JSON(http.StatusOK, ExternalIdentityListResponse{Data: []ExternalIdentityDTO{}})
+		return
+	}
+	var out []ExternalIdentityDTO
+	for _, e := range eis {
+		out = append(out, ExternalIdentityDTO{
+			ID:             e.ID,
+			UserID:         e.UserID,
+			Provider:       e.Provider,
+			ExternalUserID: e.ExternalUserID,
+			CreatedAt:      e.CreatedAt,
+			UpdatedAt:      e.UpdatedAt,
+		})
 	}
 	c.JSON(http.StatusOK, ExternalIdentityListResponse{Data: out})
 }
