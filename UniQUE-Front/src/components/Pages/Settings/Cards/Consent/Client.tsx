@@ -243,11 +243,12 @@ export default function ConsentSettingsCardClient({
 
                     {/* アクションと日付 */}
                     <Stack
-                      direction="row"
+                      direction={{ xs: "column", sm: "row" }}
                       sx={{
                         pt: 1,
                         justifyContent: "space-between",
-                        alignItems: "center",
+                        alignItems: { xs: "flex-start", sm: "center" },
+                        gap: 1,
                       }}
                     >
                       <Typography variant="caption" color="text.secondary">
