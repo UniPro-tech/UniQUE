@@ -18,8 +18,6 @@ spec:
       containers:
         - name: unique-discord
           image: registry.uniproject.jp/infra/unique-discord:1.0.0
-          ports:
-            - containerPort: 8080
           envFrom:
             - secretRef:
                 name: unique-discord-secrets
