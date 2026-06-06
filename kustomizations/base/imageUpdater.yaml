@@ -23,3 +23,7 @@ spec:
           imageName: "registry.uniproject.jp/infra/unique-mail:x.x.x"
           commonUpdateSettings:
             updateStrategy: "semver"
+        - alias: "unique-discord"
+          imageName: "registry.uniproject.jp/infra/unique-discord:x.x.x"
+          commonUpdateSettings:
+            updateStrategy: "semver"

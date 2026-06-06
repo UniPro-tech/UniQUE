@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: unique-discord
-          image: registry.uniproject.jp/infra/unique-discord:1.0.0
+          image: registry.uniproject.jp/infra/unique-discord:1.0.1
           envFrom:
             - secretRef:
                 name: unique-discord-secrets
