@@ -14,4 +14,4 @@ resources:
   - ./hpa.yaml
   - ./mysql-conf.yaml
   - ./discord.yaml
-  # - ./internal-policy.yaml
+  - ./nginx.yaml

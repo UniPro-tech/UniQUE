@@ -17,8 +17,7 @@ spec:
       services:
         - kind: Service
           name: internal-blocker
-          port: 9999
-    # 内部Authパスへのアクセスをブロック（最優先）
+          port: 80
     - kind: Rule
       match: Host(`auth.uniproject.jp`) && PathPrefix(`/internal/`)
       observability:
@@ -29,7 +28,7 @@ spec:
       services:
         - kind: Service
           name: internal-blocker
-          port: 9999
+          port: 80
     # メインのAPIルート
     - kind: Rule
       match: Host(`api.uniproject.jp`) && PathPrefix(`/`)

@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: internal-blocker-config
+data:
+  nginx.conf: |
+    user  nginx;
+    worker_processes  auto;
+    error_log  /var/log/nginx/error.log notice;
+    pid        /var/run/nginx.pid;
+
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/json; # デフォルトをJSONに設定
+
+        server {
+            listen       80 default_server;
+
+            # すべてのリクエストに対して403とJSONを返す
+            location / {
+                default_type application/json;
+                return 403 '{"status": 403, "error": "Forbidden", "message": "Access Denied: /internal/* is not accessible from outside."}';
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: internal-blocker
+  labels:
+    app: internal-blocker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: internal-blocker
+  template:
+    metadata:
+      labels:
+        app: internal-blocker
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: config-volume
+          configMap:
+            name: internal-blocker-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: internal-blocker
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: internal-blocker
