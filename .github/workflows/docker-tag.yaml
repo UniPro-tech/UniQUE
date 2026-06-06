@@ -8,6 +8,7 @@ on:
       - "mail/v*"
       - "front/v*"
       - "db/v*"
+      - "discord/v*"
   workflow_dispatch:
 
 concurrency:
@@ -55,6 +56,10 @@ jobs:
               ;;
             db)
               echo "DIR=UniQUE-DB" >> $GITHUB_ENV
+              echo "IMAGE=registry.uniproject.jp/infra/unique-db" >> $GITHUB_ENV
+              ;;
+            discord)
+              echo "DIR=UniQUE-Discord" >> $GITHUB_ENV
               echo "IMAGE=registry.uniproject.jp/infra/unique-db" >> $GITHUB_ENV
               ;;
             *)
