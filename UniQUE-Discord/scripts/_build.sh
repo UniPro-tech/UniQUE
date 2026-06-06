@@ -11,7 +11,7 @@ if [[ "$*" == *"--dev"* ]]; then
 -X github.com/UniPro-tech/UniQUE/Discord/internal.GitBranch=$BRANCH" \
 cmd/bot/main.go
 else
-  VERSION=$(git describe --tags --abbrev=0)
+  VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "latest")  
 
   go build -ldflags "\
 -X github.com/UniPro-tech/UniQUE/Discord/internal.Version=$VERSION \
