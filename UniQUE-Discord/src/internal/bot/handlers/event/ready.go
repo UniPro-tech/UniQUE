@@ -15,6 +15,7 @@ import (
 func Ready(ctx *internal.BotContext, e *events.Ready) {
 	log.Println("Bot is ready 🚀")
 	log.Printf("Logged in as: %v#%v", e.User.Username, e.User.Discriminator)
+	resetBotStatus(e.Client())
 }
 
 func resetBotStatus(client *bot.Client) error {
