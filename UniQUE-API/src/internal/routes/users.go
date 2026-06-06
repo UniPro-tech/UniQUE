@@ -1133,7 +1133,7 @@ func patchUser(c *gin.Context) {
 
 // deleteUser godoc
 // @Summary Delete user
-// @Description Hard delete user data
+// @Description Delete user data
 // @Tags users
 // @Param id path string true "User ID"
 // @Success 204

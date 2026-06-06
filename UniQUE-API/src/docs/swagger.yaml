@@ -1145,7 +1145,7 @@ paths:
       - users
   /users/{id}:
     delete:
-      description: Hard delete user data
+      description: Delete user data
       parameters:
       - description: User ID
         in: path

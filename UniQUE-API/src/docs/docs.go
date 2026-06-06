@@ -1073,7 +1073,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Hard delete user data",
+                "description": "Delete user data",
                 "tags": [
                     "users"
                 ],
