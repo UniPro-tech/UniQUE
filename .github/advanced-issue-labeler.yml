@@ -15,5 +15,5 @@ policy:
             keys: ["Frontend"]
           - name: scope/mail
             keys: ["Mail"]
-          - name: ["Discord"]
+          - name: scope/discord
             keys: ["Discord"]
