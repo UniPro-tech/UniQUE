@@ -1,6 +1,6 @@
 module github.com/UniPro-tech/UniQUE/Discord
 
-go 1.24.4
+go 1.26.4
 
 require (
 	github.com/disgoorg/disgo v0.19.4
