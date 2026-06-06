@@ -215,13 +215,13 @@ definitions:
       id:
         type: string
       id_token_claims:
-        additionalProperties: true
+        additionalProperties: {}
         description: Decoded ID Token claims (JWT payload)
         type: object
       provider:
         type: string
       provider_data:
-        additionalProperties: true
+        additionalProperties: {}
         description: Raw provider-specific userinfo data
         type: object
       updated_at:
@@ -1144,6 +1144,20 @@ paths:
       tags:
       - users
   /users/{id}:
+    delete:
+      description: Delete user data
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete user
+      tags:
+      - users
     get:
       description: Get a single user with optional profile
       parameters:
@@ -1494,6 +1508,28 @@ paths:
         "204":
           description: No Content
       summary: Remove a role from a user
+      tags:
+      - users
+  /users/external_identities/search:
+    get:
+      description: Search for external identities by provider and external user ID
+      parameters:
+      - description: Provider name
+        in: query
+        name: provider
+        type: string
+      - description: External user ID
+        in: query
+        name: external_user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.ExternalIdentityListResponse'
+      summary: Search external identities
       tags:
       - users
 swagger: "2.0"

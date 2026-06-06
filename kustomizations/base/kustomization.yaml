@@ -13,4 +13,5 @@ resources:
   - ./mail.yaml
   - ./hpa.yaml
   - ./mysql-conf.yaml
+  - ./discord.yaml
   # - ./internal-policy.yaml

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord
+  labels:
+    app: unique-discord
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unique-discord
+  revisionHistoryLimit: 1
+  template:
+    metadata:
+      labels:
+        app: unique-discord
+    spec:
+      containers:
+        - name: unique-discord
+          image: registry.uniproject.jp/infra/unique-discord:1.0.0
+          envFrom:
+            - secretRef:
+                name: unique-discord-secrets
+          resources:
+            requests:
+              cpu: 500m # 必要最低限の0.5CPUを確保
+              memory: 64Mi # 必要最低限の64MiBを確保
+            limits:
+              cpu: 1000m # 最大1CPUまで使用可能
+              memory: 128Mi # 最大128MiBまで使用可能
+      imagePullSecrets:
+        - name: internal-harbor

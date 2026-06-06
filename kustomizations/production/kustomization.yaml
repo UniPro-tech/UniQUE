@@ -8,3 +8,4 @@ resources:
   - mysql-secret.yaml
   - auth-secret.yaml
   - mail-secret.yaml
+  - discord.yaml
