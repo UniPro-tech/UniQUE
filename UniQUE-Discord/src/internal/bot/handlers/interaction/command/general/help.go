@@ -25,32 +25,12 @@ func LoadHelpCommandContext() discord.SlashCommandCreate {
 						Value: "/about",
 					},
 					{
-						Name:  "ColorCode",
-						Value: "/colorcode",
-					},
-					{
 						Name:  "Help",
 						Value: "/help",
 					},
 					{
 						Name:  "Ping",
 						Value: "/ping",
-					},
-					{
-						Name:  "TTS",
-						Value: "/tts <subcommand>",
-					},
-					{
-						Name:  "TTS Dict",
-						Value: "/tts dict <subcommands>",
-					},
-					{
-						Name:  "TTS Skip",
-						Value: "/tts skip",
-					},
-					{
-						Name:  "TTS Speed",
-						Value: "/tts set speed <value>",
 					},
 				},
 			},
