@@ -16,7 +16,7 @@ FROM alpine:3.23.4
 WORKDIR /root/
 
 COPY --from=builder /app/src/main .
-RUN chmod 777 ./main
+RUN chmod 755 ./main
 
 CMD ["/root/main"]
 

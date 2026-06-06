@@ -55,7 +55,7 @@ func AdminOnlyMiddleware(ctx *internal.BotContext) func(next handler.Handler) ha
 					Description: "権限がありません。",
 					Color:       config.Colors.Error,
 					Footer: &discord.EmbedFooter{
-						Text:    "Requested by " + *e.Member().Nick,
+						Text:    "Requested by " + e.Member().EffectiveName(),
 						IconURL: e.User().EffectiveAvatarURL(),
 					},
 					Timestamp: func() *time.Time {

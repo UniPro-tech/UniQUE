@@ -97,9 +97,14 @@ func main() {
 	}
 
 	if _, err := client.Rest.SetGlobalCommands(client.ApplicationID, generalCommands); err != nil {
+		log.Fatal("failed to register global commands: ", err)
 	}
-	if _, err := client.Rest.SetGuildCommands(client.ApplicationID, snowflake.MustParse(ctxData.Config.AdminGuildID), adminCommands); err != nil {
-		log.Fatal(err)
+	guildID, parseErr := snowflake.Parse(ctxData.Config.AdminGuildID)
+	if parseErr != nil {
+		log.Fatal("invalid CONFIG_ADMIN_GUILD_ID: ", parseErr)
+	}
+	if _, err := client.Rest.SetGuildCommands(client.ApplicationID, guildID, adminCommands); err != nil {
+		log.Fatal("failed to register admin commands: ", err)
 	}
 
 	// 終了待機

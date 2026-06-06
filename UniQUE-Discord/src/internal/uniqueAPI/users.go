@@ -5,24 +5,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE/Discord/internal"
 	"github.com/disgoorg/snowflake/v2"
 )
 
 type ExternalUserDTO struct {
-	AvatarURL      string            `json:"avatar_url"`
-	CreatedAt      string            `json:"created_at"`
-	DisplayName    string            `json:"display_name"`
-	Email          string            `json:"email"`
-	ExternalUserID string            `json:"external_user_id"`
-	ID             string            `json:"id"`
-	IDTokenClaims  map[string]string `json:"id_token_claims"`
-	Provider       string            `json:"provider"`
-	ProviderData   map[string]string `json:"provider_data"`
-	UpdatedAt      string            `json:"updated_at"`
-	UserID         string            `json:"user_id"`
-	Username       string            `json:"username"`
+	AvatarURL      string         `json:"avatar_url"`
+	CreatedAt      string         `json:"created_at"`
+	DisplayName    string         `json:"display_name"`
+	Email          string         `json:"email"`
+	ExternalUserID string         `json:"external_user_id"`
+	ID             string         `json:"id"`
+	IDTokenClaims  map[string]any `json:"id_token_claims"`
+	Provider       string         `json:"provider"`
+	ProviderData   map[string]any `json:"provider_data"`
+	UpdatedAt      string         `json:"updated_at"`
+	UserID         string         `json:"user_id"`
+	Username       string         `json:"username"`
 }
 
 type UserProfileDTO struct {
@@ -53,11 +54,12 @@ type UserDTO struct {
 }
 
 func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (UserDTO, error) {
+	var uniqueAPIClient = &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/internal/users/external_identities/search?provider=discord&external_user_id=%s", ctx.Config.UniqueAPIBaseURL, userId.String()), nil)
 	if err != nil {
 		return UserDTO{}, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := uniqueAPIClient.Do(req)
 	if err != nil {
 		return UserDTO{}, err
 	}
@@ -89,7 +91,7 @@ func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (UserDTO, error)
 	if err != nil {
 		return UserDTO{}, err
 	}
-	resp, err = http.DefaultClient.Do(req)
+	resp, err = uniqueAPIClient.Do(req)
 	if err != nil {
 		return UserDTO{}, err
 	}
