@@ -4,13 +4,11 @@ go 1.26.4
 
 require (
 	github.com/disgoorg/disgo v0.19.4
-	github.com/disgoorg/godave/golibdave v0.1.0
 	github.com/disgoorg/snowflake/v2 v2.0.3
 )
 
 require (
 	github.com/disgoorg/godave v0.1.0 // indirect
-	github.com/disgoorg/godave/libdave v0.1.0 // indirect
 	github.com/disgoorg/json/v2 v2.0.0 // indirect
 	github.com/disgoorg/omit v1.0.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect

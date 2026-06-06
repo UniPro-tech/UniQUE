@@ -14,8 +14,6 @@ import (
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/disgoorg/disgo/voice"
-	"github.com/disgoorg/godave/golibdave"
 	"github.com/disgoorg/snowflake/v2"
 
 	"github.com/UniPro-tech/UniQUE/Discord/internal"
@@ -48,10 +46,6 @@ func main() {
 				gateway.IntentsNonPrivileged,
 				gateway.IntentMessageContent,
 			),
-		),
-		// DAVE
-		bot.WithVoiceManagerConfigOpts(
-			voice.WithDaveSessionCreateFunc(golibdave.NewSession),
 		),
 		// Event Listener
 		bot.WithEventListenerFunc(func(e *events.Ready) {
