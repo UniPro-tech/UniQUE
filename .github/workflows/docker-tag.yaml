@@ -60,7 +60,7 @@ jobs:
               ;;
             discord)
               echo "DIR=UniQUE-Discord" >> $GITHUB_ENV
-              echo "IMAGE=registry.uniproject.jp/infra/unique-db" >> $GITHUB_ENV
+              echo "IMAGE=registry.uniproject.jp/infra/unique-discord" >> $GITHUB_ENV
               ;;
             *)
               echo "Unknown service"; exit 1;
