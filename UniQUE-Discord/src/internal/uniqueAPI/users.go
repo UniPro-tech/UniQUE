@@ -53,25 +53,25 @@ type UserDTO struct {
 	UpdatedAt         string         `json:"updated_at"`
 }
 
-func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (UserDTO, error) {
+func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (*UserDTO, error) {
 	var uniqueAPIClient = &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/internal/users/external_identities/search?provider=discord&external_user_id=%s", ctx.Config.UniqueAPIBaseURL, userId.String()), nil)
 	if err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 	resp, err := uniqueAPIClient.Do(req)
 	if err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return UserDTO{}, fmt.Errorf("failed to get user info: %s, status: %d", string(body), resp.StatusCode)
+		return nil, fmt.Errorf("failed to get user info: %s, status: %d", string(body), resp.StatusCode)
 	}
 
 	var result struct {
@@ -79,37 +79,37 @@ func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (UserDTO, error)
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 
 	if len(result.Data) == 0 {
-		return UserDTO{}, nil
+		return nil, nil
 	}
 
 	targetUserId := result.Data[0].UserID
 	req, err = http.NewRequest("GET", fmt.Sprintf("%s/internal/users/%s", ctx.Config.UniqueAPIBaseURL, targetUserId), nil)
 	if err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 	resp, err = uniqueAPIClient.Do(req)
 	if err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return UserDTO{}, fmt.Errorf("failed to get user info: %s, status: %d", string(body), resp.StatusCode)
+		return nil, fmt.Errorf("failed to get user info: %s, status: %d", string(body), resp.StatusCode)
 	}
 
-	var userResult UserDTO
+	var userResult *UserDTO
 
 	if err := json.Unmarshal(body, &userResult); err != nil {
-		return UserDTO{}, err
+		return nil, err
 	}
 
 	return userResult, nil
