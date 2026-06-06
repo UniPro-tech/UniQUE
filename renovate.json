@@ -1,4 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>UniPro-tech/renovate-config"]
+  "extends": ["github>UniPro-tech/renovate-config"],
+  "kubernetes": {
+    "managerFilePatterns": ["/(^|/)kustomizations/.*\\.ya?ml$/"]
+  },
+  "docker-compose": {
+    "managerFilePatterns": ["/(^|/)(?:docker-)?compose[^/]*\\.ya?ml$/"]
+  }
 }
