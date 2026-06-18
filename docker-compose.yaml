@@ -10,7 +10,7 @@ services:
   # MySQL Database
   # ──────────────────────────────────────────────
   db:
-    image: mysql:9.6
+    image: mysql:9.7
     container_name: unique-db
     environment:
       MYSQL_ROOT_PASSWORD: Rootpassword
