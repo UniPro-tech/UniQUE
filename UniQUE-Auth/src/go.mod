@@ -7,7 +7,7 @@ require (
 	github.com/golang-jwt/jwe v0.0.0-20220815104040-b2647e820b90
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
-	github.com/oklog/ulid v1.3.1
+	github.com/oklog/ulid/v2 v2.1.1
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/pquerna/otp v1.5.0
 	github.com/swaggo/files v1.0.1
