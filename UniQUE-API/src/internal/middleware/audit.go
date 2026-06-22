@@ -25,8 +25,8 @@ func AuditLogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
-		action := methodToAuditAction(c.Request.Method)
-		if action == "" || shouldSkipAudit(c) {
+		action := MethodToAuditAction(c.Request.Method)
+		if action == "" || ShouldSkipAudit(c) {
 			return
 		}
 
@@ -78,7 +78,7 @@ func AuditLogMiddleware() gin.HandlerFunc {
 	}
 }
 
-func methodToAuditAction(method string) string {
+func MethodToAuditAction(method string) string {
 	switch method {
 	case http.MethodPost:
 		return "CREATE"
@@ -91,7 +91,7 @@ func methodToAuditAction(method string) string {
 	}
 }
 
-func shouldSkipAudit(c *gin.Context) bool {
+func ShouldSkipAudit(c *gin.Context) bool {
 	path := c.Request.URL.Path
 	if path == "/health" {
 		return true
