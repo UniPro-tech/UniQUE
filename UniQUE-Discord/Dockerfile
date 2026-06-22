@@ -12,7 +12,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/,sharing=locked \
 
 RUN ../scripts/_build.sh
 
-FROM alpine:3.23.4
+FROM alpine:3.24.1
 WORKDIR /root/
 
 COPY --from=builder /app/src/main .
