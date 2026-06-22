@@ -3,7 +3,7 @@ module github.com/UniPro-tech/UniQUE/Discord
 go 1.26.4
 
 require (
-	github.com/disgoorg/disgo v0.19.4
+	github.com/disgoorg/disgo v0.19.6
 	github.com/disgoorg/snowflake/v2 v2.0.3
 )
 
