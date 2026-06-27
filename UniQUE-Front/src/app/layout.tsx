@@ -36,9 +36,20 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${cn("font-mono", jetbrainsMono.variable)}`}>
+    <html
+      lang="ja"
+      className={`${cn("font-mono", jetbrainsMono.variable)}`}
+      suppressHydrationWarning
+    >
       <body className={`antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
