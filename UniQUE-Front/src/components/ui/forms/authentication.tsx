@@ -85,8 +85,9 @@ export function SigninForm({
                 <Input
                   autoComplete="current-password"
                   id="password"
-                  type="password"
                   name="password"
+                  placeholder="・・・・・・・・"
+                  type="password"
                   required
                 />
               </Field>
@@ -157,6 +158,7 @@ export function SignupForm({
                       autoComplete="new-password"
                       id="password"
                       name="password"
+                      placeholder="・・・・・・・・"
                       type="password"
                       required
                     />
@@ -169,6 +171,7 @@ export function SignupForm({
                       autoComplete="new-password"
                       id="confirm-password"
                       name="confirmPassword"
+                      placeholder="・・・・・・・・"
                       type="password"
                       required
                     />
