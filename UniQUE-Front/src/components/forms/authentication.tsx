@@ -121,41 +121,40 @@ export function SigninForm({
 const MIN_AGE = new Date();
 MIN_AGE.setFullYear(MIN_AGE.getFullYear() - 13); // 13年前の日付
 
-const contactFormSchema = z
-  .object({
-    displayName: z.string().min(1, "表示名は必須です"),
-    customId: z
-      .string()
-      .min(1, "ユーザーIDは必須です")
-      .min(3, "ユーザーIDは3文字以上で入力してください")
-      .max(30, "ユーザーIDは30文字以下で入力してください")
-      .regex(
-        /^[a-zA-Z0-9_-]+$/,
-        "ユーザーIDは英数字、_-のみで入力してください",
-      ),
-    externalEmail: z
-      .email("メールアドレスの形式が正しくありません")
-      .min(1, "メールアドレスは必須です"),
-    password: z
-      .string()
-      .min(1, "パスワードは必須です")
-      .min(8, "パスワードは8文字以上で入力してください"),
-    confirmPassword: z.string().min(1, "パスワード（再入力）は必須です"),
-    birthdate: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "パスワードが一致しません",
-    path: ["confirmPassword"],
-  })
-  .refine((data) => new Date(data.birthdate) < MIN_AGE, {
-    message: "13才未満の方はご登録いただけません。",
-    path: ["birthdate"],
-  });
-
 export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const contactFormSchema = z
+    .object({
+      displayName: z.string().min(1, "表示名は必須です"),
+      customId: z
+        .string()
+        .min(1, "ユーザーIDは必須です")
+        .min(3, "ユーザーIDは3文字以上で入力してください")
+        .max(30, "ユーザーIDは30文字以下で入力してください")
+        .regex(
+          /^[a-zA-Z0-9_-]+$/,
+          "ユーザーIDは英数字、_-のみで入力してください",
+        ),
+      externalEmail: z
+        .email("メールアドレスの形式が正しくありません")
+        .min(1, "メールアドレスは必須です"),
+      password: z
+        .string()
+        .min(1, "パスワードは必須です")
+        .min(8, "パスワードは8文字以上で入力してください"),
+      confirmPassword: z.string().min(1, "パスワード（再入力）は必須です"),
+      birthdate: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "パスワードが一致しません",
+      path: ["confirmPassword"],
+    })
+    .refine((data) => new Date(data.birthdate) < MIN_AGE, {
+      message: "13才未満の方はご登録いただけません。",
+      path: ["birthdate"],
+    });
   const {
     register,
     handleSubmit,
@@ -163,7 +162,9 @@ export function SignupForm({
   } = useForm<z.infer<typeof contactFormSchema>>({
     resolver: zodResolver(contactFormSchema),
   });
-  const onSubmit = async () => {};
+  const onSubmit = async () => {
+    // TODO: 登録
+  };
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -340,6 +341,42 @@ export function MigrateForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const contactFormSchema = z
+    .object({
+      displayName: z.string().min(1, "表示名は必須です"),
+      email: z
+        .email("メールアドレスの形式が正しくありません")
+        .regex(/^[a-zA-Z0-9._-]+@uniproject\.jp$/)
+        .min(1, "メールアドレスは必須です"),
+      externalEmail: z
+        .email("メールアドレスの形式が正しくありません")
+        .min(1, "メールアドレスは必須です"),
+      password: z
+        .string()
+        .min(1, "パスワードは必須です")
+        .min(8, "パスワードは8文字以上で入力してください"),
+      confirmPassword: z.string().min(1, "パスワード（再入力）は必須です"),
+      birthdate: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "パスワードが一致しません",
+      path: ["confirmPassword"],
+    })
+    .refine((data) => new Date(data.birthdate) < MIN_AGE, {
+      message: "13才未満の方はご登録いただけません。",
+      path: ["birthdate"],
+    });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<z.infer<typeof contactFormSchema>>({
+    resolver: zodResolver(contactFormSchema),
+  });
+
+  const onSubmit = () => {
+    // TODO: 送信処理
+  };
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -357,25 +394,36 @@ export function MigrateForm({
               ここでは、<strong>2026年4月以前からのメンバーの</strong>
               登録をUniQUEに移行するためのページです。
               新規にメンバー登録をされる方は、
-              <Link href={"/migrate"}>こちら</Link> から登録申請してください。
+              <Link href={"/signup"}>こちら</Link> から登録申請してください。
             </AlertDescription>
           </Alert>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="displayName">表示名</FieldLabel>
                 <Input
                   autoComplete="name"
                   id="displayName"
-                  name="displayName"
                   type="text"
                   placeholder="ゆにぷろ太郎"
                   required
+                  {...register("displayName")}
                 />
-                <FieldDescription>
-                  ニックネーム可・他のメンバーに公開されます。
+                <FieldDescription
+                  className={errors.displayName ? "text-red-500" : undefined}
+                >
+                  {errors.displayName ? (
+                    errors.displayName.message
+                  ) : (
+                    <>
+                      <strong className="text-red-500">
+                        新しく決めてください。
+                      </strong>
+                      ニックネーム可・他のメンバーに公開されます。
+                    </>
+                  )}
                 </FieldDescription>
               </Field>
               <Field>
@@ -383,11 +431,18 @@ export function MigrateForm({
                 <Input
                   autoComplete="email"
                   id="email"
-                  name="email"
                   type="text"
                   placeholder="00a.hogehoge@uniproject.jp"
                   required
+                  {...register("email")}
                 />
+                <FieldDescription
+                  className={errors.email ? "text-red-500" : undefined}
+                >
+                  {errors.email
+                    ? errors.email.message
+                    : "@uniproject.jpで終わるメールアドレスを入力してください。"}
+                </FieldDescription>
               </Field>
               <Field>
                 <FieldLabel htmlFor="externalEmail">
@@ -396,13 +451,17 @@ export function MigrateForm({
                 <Input
                   autoComplete="email"
                   id="externalEmail"
-                  name="externalEmail"
                   type="email"
                   placeholder="hogehoge@example.com"
                   required
+                  {...register("externalEmail")}
                 />
-                <FieldDescription>
-                  他のメンバーには非公開です。
+                <FieldDescription
+                  className={errors.externalEmail ? "text-red-500" : undefined}
+                >
+                  {errors.externalEmail
+                    ? errors.externalEmail.message
+                    : "他のメンバーには非公開です。登録したメールアドレスを入力してください。"}
                 </FieldDescription>
               </Field>
               <Field>
@@ -412,10 +471,10 @@ export function MigrateForm({
                     <Input
                       autoComplete="new-password"
                       id="password"
-                      name="password"
                       placeholder="・・・・・・・・"
                       type="password"
                       required
+                      {...register("password")}
                     />
                   </Field>
                   <Field>
@@ -425,17 +484,32 @@ export function MigrateForm({
                     <Input
                       autoComplete="new-password"
                       id="confirm-password"
-                      name="confirmPassword"
                       placeholder="・・・・・・・・"
                       type="password"
                       required
+                      {...register("confirmPassword")}
                     />
                   </Field>
                 </Field>
-                <FieldDescription>
-                  8文字以上の半角英数で
-                  <strong className="text-red-500">新しく決めて</strong>
-                  ください。
+                <FieldDescription
+                  className={
+                    errors.password || errors.confirmPassword
+                      ? "text-red-500"
+                      : undefined
+                  }
+                >
+                  {errors.password ? (
+                    errors.password.message
+                  ) : errors.confirmPassword ? (
+                    errors.confirmPassword.message
+                  ) : (
+                    <>
+                      8文字以上の半角英数で
+                      <strong className="text-red-500">
+                        新しく決めてください。
+                      </strong>
+                    </>
+                  )}
                 </FieldDescription>
               </Field>
               <Field>
@@ -465,13 +539,17 @@ export function MigrateForm({
                 <Input
                   autoComplete="bday"
                   id="birthdate"
-                  name="birthdate"
                   type="date"
                   placeholder="2000/03/04"
                   required
+                  {...register("birthdate")}
                 />
-                <FieldDescription>
-                  デフォルトで他のメンバーには非公開です。U-18ラベルのみ公開されます。
+                <FieldDescription
+                  className={errors.birthdate ? "text-red-500" : undefined}
+                >
+                  {errors.birthdate
+                    ? errors.birthdate.message
+                    : "デフォルトで他のメンバーには非公開です。U-18ラベルのみ公開されます。"}
                 </FieldDescription>
               </Field>
               <Field>
