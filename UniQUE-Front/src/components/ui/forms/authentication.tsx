@@ -1,3 +1,4 @@
+import { ChevronDownIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,12 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "../alert";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../collapsible";
 
 export function SigninForm({
   className,
@@ -75,12 +82,12 @@ export function SigninForm({
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">パスワード</FieldLabel>
-                  <a
+                  <Link
                     href="#"
-                    className="ml-auto text-sm underline-offset-4 hover:underline"
+                    className="ml-auto text-xs underline-offset-4 hover:underline"
                   >
-                    Forgot your password?
-                  </a>
+                    パスワードをお忘れですか？
+                  </Link>
                 </div>
                 <Input
                   autoComplete="current-password"
@@ -118,6 +125,16 @@ export function SignupForm({
           <CardDescription>
             メンバー登録申請を行うには必要事項を入力してください。
           </CardDescription>
+          <Alert variant={"default"} className="mt-5">
+            <InfoIcon className="font-medium" />
+            <AlertTitle className="font-medium">
+              2026年4月以前にメンバー登録した方へ
+            </AlertTitle>
+            <AlertDescription>
+              UniQUEには登録されておりませんので、
+              <Link href={"/migrate"}>こちら</Link> から登録を移行してください。
+            </AlertDescription>
+          </Alert>
         </CardHeader>
         <CardContent>
           <form>
@@ -134,6 +151,20 @@ export function SignupForm({
                 />
                 <FieldDescription>
                   ニックネーム可・他のメンバーに公開されます。
+                </FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="customId">ユーザーID</FieldLabel>
+                <Input
+                  autoComplete="username"
+                  id="customId"
+                  name="customId"
+                  type="text"
+                  placeholder="unipro_tarou"
+                  required
+                />
+                <FieldDescription>
+                  他人と被らず英数字と_が使用可能です。
                 </FieldDescription>
               </Field>
               <Field>
@@ -180,9 +211,198 @@ export function SignupForm({
                 <FieldDescription>8文字以上の半角英数</FieldDescription>
               </Field>
               <Field>
+                <FieldLabel htmlFor="birthdate">生年月日</FieldLabel>
+                <Collapsible className="rounded-md data-open:bg-muted">
+                  <CollapsibleTrigger
+                    render={
+                      <Button
+                        variant={"outline"}
+                        className="w-full"
+                        suppressHydrationWarning
+                      >
+                        生年月日が必要な理由
+                        <ChevronDownIcon className="ml-auto group-data-panel-open/button:rotate-180" />
+                      </Button>
+                    }
+                  />
+                  <CollapsibleContent className="flex flex-col items-start gap-2 p-2.5 pt-0 text-sm">
+                    <div>
+                      当サークルではDiscordを使用しています。UniProjectサークル規約により、Discordの利用規約に記載されている年齢に達しているかどうか、また、未成年者保護の観点から確認させていただいております。
+                    </div>
+                    {/*
+                    <Button size="xs">Learn More</Button>
+                    */}
+                  </CollapsibleContent>
+                </Collapsible>
+                <Input
+                  autoComplete="bday"
+                  id="birthdate"
+                  name="birthdate"
+                  type="date"
+                  placeholder="2000/03/04"
+                  required
+                />
+                <FieldDescription>
+                  デフォルトで他のメンバーには非公開です。U-18ラベルのみ公開されます。
+                </FieldDescription>
+              </Field>
+              <Field>
                 <Button type="submit">メンバー登録を申請する</Button>
                 <FieldDescription className="text-center">
-                  すでに登録済みの方は <Link href="#">サインイン</Link>
+                  すでに登録済みの方は <Link href="/signin">サインイン</Link>
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
+      <AgreeTOS />
+    </div>
+  );
+}
+
+export function MigrateForm({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl">アカウント移行</CardTitle>
+          <CardDescription>
+            2026年4月以前からのメンバー登録をUniQUEに移行します
+          </CardDescription>
+          <Alert variant={"default"} className="mt-5">
+            <InfoIcon className="font-medium" />
+            <AlertTitle className="font-medium">
+              メンバーの登録はできません
+            </AlertTitle>
+            <AlertDescription>
+              ここでは、<strong>2026年4月以前からのメンバーの</strong>
+              登録をUniQUEに移行するためのページです。
+              新規にメンバー登録をされる方は、
+              <Link href={"/migrate"}>こちら</Link> から登録申請してください。
+            </AlertDescription>
+          </Alert>
+        </CardHeader>
+        <CardContent>
+          <form>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="displayName">表示名</FieldLabel>
+                <Input
+                  autoComplete="name"
+                  id="displayName"
+                  name="displayName"
+                  type="text"
+                  placeholder="ゆにぷろ太郎"
+                  required
+                />
+                <FieldDescription>
+                  ニックネーム可・他のメンバーに公開されます。
+                </FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="email">内部メールアドレス</FieldLabel>
+                <Input
+                  autoComplete="email"
+                  id="email"
+                  name="email"
+                  type="text"
+                  placeholder="00a.hogehoge@uniproject.jp"
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="externalEmail">
+                  外部メールアドレス
+                </FieldLabel>
+                <Input
+                  autoComplete="email"
+                  id="externalEmail"
+                  name="externalEmail"
+                  type="email"
+                  placeholder="hogehoge@example.com"
+                  required
+                />
+                <FieldDescription>
+                  他のメンバーには非公開です。
+                </FieldDescription>
+              </Field>
+              <Field>
+                <Field className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="password">パスワード</FieldLabel>
+                    <Input
+                      autoComplete="new-password"
+                      id="password"
+                      name="password"
+                      placeholder="・・・・・・・・"
+                      type="password"
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="confirm-password">
+                      パスワードの確認
+                    </FieldLabel>
+                    <Input
+                      autoComplete="new-password"
+                      id="confirm-password"
+                      name="confirmPassword"
+                      placeholder="・・・・・・・・"
+                      type="password"
+                      required
+                    />
+                  </Field>
+                </Field>
+                <FieldDescription>
+                  8文字以上の半角英数で
+                  <strong className="text-red-500">新しく決めて</strong>
+                  ください。
+                </FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="birthdate">生年月日</FieldLabel>
+                <Collapsible className="rounded-md data-open:bg-muted">
+                  <CollapsibleTrigger
+                    render={
+                      <Button
+                        variant={"outline"}
+                        className="w-full"
+                        suppressHydrationWarning
+                      >
+                        生年月日が必要な理由
+                        <ChevronDownIcon className="ml-auto group-data-panel-open/button:rotate-180" />
+                      </Button>
+                    }
+                  />
+                  <CollapsibleContent className="flex flex-col items-start gap-2 p-2.5 pt-0 text-sm">
+                    <div>
+                      当サークルではDiscordを使用しています。UniProjectサークル規約により、Discordの利用規約に記載されている年齢に達しているかどうか、また、未成年者保護の観点から確認させていただいております。
+                    </div>
+                    {/*
+                    <Button size="xs">Learn More</Button>
+                    */}
+                  </CollapsibleContent>
+                </Collapsible>
+                <Input
+                  autoComplete="bday"
+                  id="birthdate"
+                  name="birthdate"
+                  type="date"
+                  placeholder="2000/03/04"
+                  required
+                />
+                <FieldDescription>
+                  デフォルトで他のメンバーには非公開です。U-18ラベルのみ公開されます。
+                </FieldDescription>
+              </Field>
+              <Field>
+                <Button type="submit">メンバー登録を申請する</Button>
+                <FieldDescription className="text-center">
+                  すでに登録済みの方は <Link href="/signin">サインイン</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>
@@ -204,6 +424,12 @@ function AgreeTOS() {
           利用規約
         </Link>{" "}
         と
+      </span>{" "}
+      <span>
+        <Link href="/club_statute" className="underline">
+          サークル規約
+        </Link>{" "}
+        、
       </span>{" "}
       <span>
         <Link href="/privacy" className="underline">
