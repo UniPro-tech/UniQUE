@@ -1,6 +1,6 @@
-import { AuthorizationErrors } from "@/errors/AuthorizationErrors";
-import { FrontendErrors } from "@/errors/FrontendErrors";
-import { ResourceApiErrors } from "@/errors/ResourceApiErrors";
+import { AuthorizationErrors } from "@/errors/authorization-errors";
+import { FrontendErrors } from "@/errors/frontend-errors";
+import { ResourceApiErrors } from "@/errors/resource-api-errors";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/libs/apiClient";
 import { toCamelcase } from "@/libs/snakeCamelUtil";
 import type { ProfileData } from "./Profile";

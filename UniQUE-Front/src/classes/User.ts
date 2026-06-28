@@ -1,6 +1,6 @@
 import { ConvertPermissionBitsToText } from "@/constants/Permission";
 import { AuthorizationErrors } from "@/errors/AuthorizationErrors";
-import { FrontendErrors } from "@/errors/FrontendErrors";
+import { FrontendErrors } from "@/errors/frontend-errors";
 import {
   ResourceApiErrorCodes,
   ResourceApiErrors,
@@ -125,7 +125,6 @@ export class User {
           | "websiteUrl"
           | "twitterHandle"
           | "bio"
-          | "birthdate"
           | "birthdateVisible"
         >
       >;

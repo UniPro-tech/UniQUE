@@ -1,4 +1,4 @@
-import { ResourceApiErrors } from "@/errors/ResourceApiErrors";
+import { ResourceApiErrors } from "@/errors/resource-api-errors";
 import { apiDelete, apiGet, apiPost } from "@/libs/apiClient";
 import { toCamelcase } from "@/libs/snakeCamelUtil";
 
