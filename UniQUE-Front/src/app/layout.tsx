@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
 
 import "./globals.css";
-import { JetBrains_Mono } from "next/font/google";
+import { BIZ_UDPGothic } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
-const jetbrainsMono = JetBrains_Mono({
+const udpbizGothic = BIZ_UDPGothic({
+  weight: "400",
   subsets: ["latin"],
   variable: "--font-mono",
 });
@@ -38,7 +39,7 @@ export default async function RootLayout({
   return (
     <html
       lang="ja"
-      className={`${cn("font-mono", jetbrainsMono.variable)}`}
+      className={`${cn("font-mono", udpbizGothic.variable)}`}
       suppressHydrationWarning
     >
       <body className={`antialiased`}>
