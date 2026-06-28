@@ -3,8 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronDownIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
+import { User } from "@/classes/User";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +30,59 @@ import {
   // FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { UniQUE_Error } from "@/errors/base";
+import { FrontendErrors } from "@/errors/frontend-errors";
 import { cn } from "@/lib/utils";
+import { toastOption } from "../ui/sonner";
 
 export function SigninForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(
+    undefined,
+  );
+
+  const contactFormSchema = z.object({
+    customId: z.string().min(1, "ユーザーIDを入力してください。"),
+    password: z.string().min(1, "パスワードを入力してください。"),
+  });
+  interface FormState {
+    customId: string;
+    password: string;
+  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<z.infer<typeof contactFormSchema>>({
+    resolver: zodResolver(contactFormSchema),
+  });
+
+  // onSubmits
+  const onSubmit: SubmitHandler<FormState> = async (data: FormState) => {
+    setIsSubmitting(true);
+    toast.promise(async () => {}, {
+      loading: `送信中...`,
+      success: `メンバー登録申請を送信しました！`,
+      error: (error: Error) => {
+        console.error(error);
+        if (error instanceof UniQUE_Error) {
+          if (!error.isConfidential) {
+            setErrorMessage(`[${error.code}] ${error.message}`);
+            return `[${error.code}] ${error.message}`;
+          }
+        }
+        setErrorMessage(
+          `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`,
+        );
+        return `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`;
+      },
+      ...toastOption,
+    });
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -42,9 +92,20 @@ export function SigninForm({
             {/* Login with your Apple or Google account */}
             ユーザーIDとパスワードを入力してサインイン
           </CardDescription>
+          {(errorMessage || errors.form || errors.root) && (
+            <Alert variant={"destructive"} className="mt-5">
+              <InfoIcon className="font-medium" />
+              <AlertTitle className="font-medium">
+                エラーが発生しました
+              </AlertTitle>
+              <AlertDescription>
+                {errorMessage || errors.form?.message || errors.root?.message}
+              </AlertDescription>
+            </Alert>
+          )}
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               {/* 今は使わないのでコメントアウト
               <Field>
@@ -78,11 +139,16 @@ export function SigninForm({
                 <Input
                   autoComplete="username"
                   id="customid"
-                  name="customid"
                   type="username"
                   placeholder="unipro-tarou"
                   required
+                  {...register("customId")}
                 />
+                {errors.customId && (
+                  <FieldDescription className="text-red-500">
+                    {errors.customId.message}
+                  </FieldDescription>
+                )}
               </Field>
               <Field>
                 <div className="flex items-center">
@@ -97,14 +163,21 @@ export function SigninForm({
                 <Input
                   autoComplete="current-password"
                   id="password"
-                  name="password"
                   placeholder="・・・・・・・・"
                   type="password"
                   required
+                  {...register("password")}
                 />
+                {errors.password && (
+                  <FieldDescription className="text-red-500">
+                    {errors.password.message}
+                  </FieldDescription>
+                )}
               </Field>
               <Field>
-                <Button type="submit">サインイン</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "送信中..." : "サインイン"}
+                </Button>
                 <FieldDescription className="text-center">
                   まだ登録してない方は <Link href={"/signup"}>こちら</Link>
                 </FieldDescription>
@@ -125,6 +198,11 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(
+    undefined,
+  );
+
   const contactFormSchema = z
     .object({
       displayName: z.string().min(1, "表示名は必須です"),
@@ -155,6 +233,14 @@ export function SignupForm({
       message: "13才未満の方はご登録いただけません。",
       path: ["birthdate"],
     });
+  interface FormState {
+    customId: string;
+    externalEmail: string;
+    displayName: string;
+    password: string;
+    confirmPassword: string;
+    birthdate: string;
+  }
   const {
     register,
     handleSubmit,
@@ -162,9 +248,44 @@ export function SignupForm({
   } = useForm<z.infer<typeof contactFormSchema>>({
     resolver: zodResolver(contactFormSchema),
   });
-  const onSubmit = async () => {
-    // TODO: 登録
+
+  // onSubmits
+  const onSubmit: SubmitHandler<FormState> = async (data: FormState) => {
+    setIsSubmitting(true);
+    toast.promise(
+      User.create(
+        {
+          customId: data.customId,
+          email: `tmp_${new Date().getUTCMilliseconds()}@uniproject.jp`,
+          externalEmail: data.externalEmail,
+          profile: {
+            displayName: data.displayName,
+            birthdate: data.birthdate,
+          },
+        },
+        data.password,
+      ),
+      {
+        loading: `送信中...`,
+        success: `メンバー登録申請を送信しました！`,
+        error: (error: Error) => {
+          console.error(error);
+          if (error instanceof UniQUE_Error) {
+            if (!error.isConfidential) {
+              setErrorMessage(`[${error.code}] ${error.message}`);
+              return `[${error.code}] ${error.message}`;
+            }
+          }
+          setErrorMessage(
+            `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`,
+          );
+          return `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`;
+        },
+        ...toastOption,
+      },
+    );
   };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -183,6 +304,17 @@ export function SignupForm({
               <Link href={"/migrate"}>こちら</Link> から登録を移行してください。
             </AlertDescription>
           </Alert>
+          {(errorMessage || errors.form || errors.root) && (
+            <Alert variant={"destructive"} className="mt-5">
+              <InfoIcon className="font-medium" />
+              <AlertTitle className="font-medium">
+                エラーが発生しました
+              </AlertTitle>
+              <AlertDescription>
+                {errorMessage || errors.form?.message || errors.root?.message}
+              </AlertDescription>
+            </Alert>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -319,11 +451,13 @@ export function SignupForm({
                 >
                   {errors.birthdate
                     ? errors.birthdate.message
-                    : "デフォルトで他のメンバーには非公開です。U-18ラベルのみ公開されます。"}
+                    : "デフォルトで他のメンバーには非公開です。未成年かどうかのみ公開されます。"}
                 </FieldDescription>
               </Field>
               <Field>
-                <Button type="submit">メンバー登録を申請する</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "送信中..." : "メンバー登録を申請する"}
+                </Button>
                 <FieldDescription className="text-center">
                   すでに登録済みの方は <Link href="/signin">サインイン</Link>
                 </FieldDescription>
