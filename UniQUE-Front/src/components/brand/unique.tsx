@@ -63,7 +63,7 @@ function UniQUE_LogotypeLight({ className }: { className?: string }) {
           cx="96.52"
           cy="63.5"
           r="16"
-          fill=""
+          fill="none"
           stroke="#1f8ae1"
           strokeMiterlimit={10}
           strokeWidth="15px"
