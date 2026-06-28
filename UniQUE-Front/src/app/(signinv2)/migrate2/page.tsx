@@ -1,4 +1,4 @@
-import { MigrateForm } from "@/components/ui/forms/authentication";
+import { MigrateForm } from "@/components/forms/authentication";
 
 export default function MigratePage() {
   return <MigrateForm />;
