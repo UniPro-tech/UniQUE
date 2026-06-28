@@ -62,3 +62,20 @@ export function getFrontendErrorSnackbarData(
       );
   }
 }
+
+export function getFrontendErrorString(error: string): string {
+  switch (error) {
+    case FrontendErrorCodes.UnhandledException:
+      return `[${FrontendErrorCodes.UnhandledException}] 不明なエラーが発生しました。再度お試しください。`;
+    case FrontendErrorCodes.NetworkError:
+      return `[${FrontendErrorCodes.NetworkError}] ネットワークエラーが発生しました。接続を確認してください。`;
+    case FrontendErrorCodes.InvalidInput:
+      return `[${FrontendErrorCodes.InvalidInput}] 無効な入力が提供されました。入力内容を確認してください。`;
+    case FrontendErrorCodes.TimeoutError:
+      return `[${FrontendErrorCodes.TimeoutError}] 操作がタイムアウトしました。再度お試しください。`;
+    case FrontendErrorCodes.SettingsLoadError:
+      return `[${FrontendErrorCodes.SettingsLoadError}] 設定の読み込みに失敗しました。ページを再読み込みしてください。`;
+    default:
+      return getFrontendErrorString(FrontendErrorCodes.UnhandledException);
+  }
+}
