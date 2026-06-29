@@ -42,7 +42,7 @@ func EmailChangeEmail(c *gin.Context) {
 	}
 
 	// メール送信
-	if err := utils.SendMail(htmlStr, textStr, "メールアドレス変更の確認", req.Email); err != nil {
+	if err := utils.SendMail(htmlStr, textStr, "メールアドレス変更の確認", req.Email, c); err != nil {
 		c.JSON(500, gin.H{"error": "mail send error: " + err.Error()})
 		return
 	}

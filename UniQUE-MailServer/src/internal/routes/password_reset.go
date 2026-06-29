@@ -40,7 +40,7 @@ func PasswordResetEmail(c *gin.Context) {
 	}
 
 	// メール送信
-	if err := utils.SendMail(htmlStr, textStr, "パスワードリセット", req.Email); err != nil {
+	if err := utils.SendMail(htmlStr, textStr, "パスワードリセット", req.Email, c); err != nil {
 		c.JSON(500, gin.H{"error": "mail send error: " + err.Error()})
 		return
 	}

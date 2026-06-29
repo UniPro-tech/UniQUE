@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/config"
+	"github.com/gin-gonic/gin"
 )
 
 var smtpConfig *config.SmtpConfig
@@ -19,8 +20,15 @@ func InitMailer(cfg *config.SmtpConfig) {
 }
 
 // SendMail はHTML/プレーンテキスト両方を含むメールを送信する。
-func SendMail(html, text, subject, to string) error {
+func SendMail(html, text, subject, to string, c *gin.Context) error {
+	logger := GetLogger(c, LoggerOption{
+		FilePath:    "internal/utils/mail.go",
+		PackageName: "utils",
+		Funcname:    "SendMail",
+		Layer:       "utils",
+	})
 	if smtpConfig == nil {
+		logger.Error("mailer not initialized: call InitMailer first")
 		return fmt.Errorf("mailer not initialized: call InitMailer first")
 	}
 
@@ -37,7 +45,11 @@ func SendMail(html, text, subject, to string) error {
 	if smtpConfig.Secure {
 		return sendWithImplicitTLS(addr, auth, to, msg)
 	}
-	return smtp.SendMail(addr, auth, smtpConfig.From, []string{to}, msg)
+	err := smtp.SendMail(addr, auth, smtpConfig.From, []string{to}, msg)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	return err
 }
 
 // buildMIMEMessage はmultipart/alternative形式のMIMEメッセージを構築する。
