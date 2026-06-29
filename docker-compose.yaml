@@ -153,7 +153,7 @@ services:
       SMTP_HOST: unipro.sakura.ne.jp
       SMTP_PORT: "587"
       SMTP_USERNAME: "yuito@uniproject.jp"
-      SMTP_PASSWORD: "ty_ttyy_11291129"
+      SMTP_PASSWORD: ""
       SMTP_FROM: "yuito@uniproject.jp"
       SMTP_SECURE: "false"
       FROM_NAME: "デジタル創作サークルUniProject | UniQUE"
