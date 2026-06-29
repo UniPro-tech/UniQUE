@@ -375,11 +375,11 @@ func createUser(c *gin.Context) {
 	if err != nil {
 		if isConflict {
 			if isCustomIDConflict {
-				c.JSON(http.StatusConflict, gin.H{"error": "username already exists", "code": "R0006"})
+				c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "propatiy": "custom_id"})
 			} else if isEmailConflict {
-				c.JSON(http.StatusConflict, gin.H{"error": "email already exists", "code": "R0007"})
+				c.JSON(http.StatusConflict, gin.H{"error": "email already exists", "propatiy": "external_email"})
 			} else {
-				c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry", "code": "R0002"})
+				c.JSON(http.StatusConflict, gin.H{"error": "duplicate entry"})
 			}
 		} else {
 			c.AbortWithError(http.StatusInternalServerError, err)
