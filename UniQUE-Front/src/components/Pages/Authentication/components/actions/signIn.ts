@@ -1,6 +1,9 @@
 "use server";
 import { cookies } from "next/headers";
-import { AuthenticationRequest, type Credentials } from "@/libs/authentication";
+import {
+  AuthenticationRequest,
+  type Credentials,
+} from "@/classes/User/authentication";
 import { SetSessionCookie } from "@/libs/cookies";
 
 export const submitSignIn = async (formData: FormData) => {

@@ -1,10 +1,8 @@
 import { ConvertPermissionBitsToText } from "@/constants/Permission";
 import { AuthorizationErrors } from "@/errors/AuthorizationErrors";
+import type { UniQUE_Error } from "@/errors/base";
 import { FrontendErrors } from "@/errors/frontend-errors";
-import {
-  ResourceApiErrorCodes,
-  ResourceApiErrors,
-} from "@/errors/ResourceApiErrors";
+import { ResourceApiErrors } from "@/errors/resource-api-errors";
 import {
   apiDelete,
   apiGet,
@@ -18,10 +16,16 @@ import { toCamelcase, toSnakecase } from "@/libs/snakeCamelUtil";
 import {
   ExternalIdentity,
   type ExternalIdentityCreateData,
-} from "./ExternalIdentity";
-import { Profile, type ProfileData } from "./Profile";
-import { Role, type RoleData } from "./Role";
-import { type UserData, UserStatus } from "./types/User";
+} from "../ExternalIdentity";
+import { Profile, type ProfileData } from "../Profile";
+import { Role, type RoleData } from "../Role";
+import { type UserData, UserStatus } from "../types/User";
+import {
+  AuthenticationRequest,
+  type AuthenticationResponse,
+} from "./authentication";
+
+export type { AuthenticationResponse, Credentials } from "./authentication";
 
 export class User {
   id: string;
@@ -130,22 +134,22 @@ export class User {
       >;
     },
     password: string,
-  ): Promise<User> {
+  ): Promise<User | Error | UniQUE_Error> {
     // カスタムIDは英数と_-のみ許可、3文字以上30文字以下
     if (!/^[a-zA-Z0-9_-]{3,30}$/.test(userData.customId)) {
-      throw FrontendErrors.InvalidInput;
+      return FrontendErrors.InvalidInput;
     }
     // カスタムIDは数字や_のみであればエラー
     if (/^[0-9_-]+$/.test(userData.customId)) {
-      throw FrontendErrors.InvalidInput;
+      return FrontendErrors.InvalidInput;
     }
     // カスタムIDの先頭の文字が数字や_、-であればエラー
     if (/^[0-9_-]/.test(userData.customId)) {
-      throw FrontendErrors.InvalidInput;
+      return FrontendErrors.InvalidInput;
     }
     // カスタムIDの最後の文字が_もしくは-であればエラー
     if (/[_-]$/.test(userData.customId)) {
-      throw FrontendErrors.InvalidInput;
+      return FrontendErrors.InvalidInput;
     }
     const response = await apiPost("/internal/users", {
       ...userData,
@@ -166,34 +170,33 @@ export class User {
         case 400: {
           const errorText = await response.json();
           console.log("Failed to create user:", errorText);
-          throw FrontendErrors.InvalidInput;
+          return FrontendErrors.InvalidInput;
         }
         case 409: {
           let errorCode: string | undefined;
           try {
             const errorData = (await response.json()) as {
-              code?: string;
+              propatiy?: string;
             } | null;
-            errorCode = errorData?.code;
+            errorCode = errorData?.propatiy;
           } catch {
             errorCode = undefined;
           }
           switch (errorCode) {
-            case ResourceApiErrorCodes.UsernameAlreadyExists:
-              throw ResourceApiErrors.UsernameAlreadyExists;
-            case ResourceApiErrorCodes.EmailAlreadyExists:
-              throw ResourceApiErrors.EmailAlreadyExists;
+            case "custom_id":
+              return ResourceApiErrors.CustomIdAlreadyExists;
+            case "external_email":
+              return ResourceApiErrors.ExternalEmailAlreadyExists;
             default:
-              throw ResourceApiErrors.ResourceAlreadyExists;
+              return ResourceApiErrors.ResourceAlreadyExists;
           }
         }
         default:
           console.log("Failed to create user:", await response.text());
-          throw ResourceApiErrors.ApiServerInternalError;
+          return ResourceApiErrors.ApiServerInternalError;
       }
     }
     const responseJson = await response.json();
-    console.log("User created successfully:", responseJson);
     return User.fromJson(responseJson);
   }
 
@@ -260,6 +263,18 @@ export class User {
     return camelCasedResponse.data.map((userData: UserData) =>
       User.fromJson(userData),
     );
+  }
+
+  // ------ Other Static Methods ------
+
+  static async signin(param: {
+    username?: string;
+    password?: string;
+    code?: string;
+    is_remember?: boolean;
+  }): Promise<AuthenticationResponse | UniQUE_Error | Error> {
+    const res = await AuthenticationRequest(param);
+    return res;
   }
 
   static async passwordResetRequest(email: string): Promise<void> {

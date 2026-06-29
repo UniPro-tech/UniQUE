@@ -3,11 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronDownIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { type SubmitHandler, useForm } from "react-hook-form";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User } from "@/classes/User";
+import { type AuthenticationResponse, User } from "@/classes/User";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,10 +31,11 @@ import {
   // FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { UniQUE_Error } from "@/errors/base";
-import { FrontendErrors } from "@/errors/frontend-errors";
+import { GetErrorMessageClient, UniQUE_Error } from "@/errors/base";
 import { cn } from "@/lib/utils";
-import { toastOption } from "../ui/sonner";
+import { Checkbox } from "../../ui/checkbox";
+import { toastOption } from "../../ui/sonner";
+import { type SignupFormState, signupAction } from "./action";
 
 export function SigninForm({
   className,
@@ -44,43 +46,65 @@ export function SigninForm({
     undefined,
   );
 
+  const router = useRouter();
+
   const contactFormSchema = z.object({
-    customId: z.string().min(1, "ユーザーIDを入力してください。"),
+    username: z.string().min(1, "ユーザーIDを入力してください。"),
     password: z.string().min(1, "パスワードを入力してください。"),
+    isRemember: z.boolean(),
   });
   interface FormState {
-    customId: string;
+    username: string;
     password: string;
+    isRemember: boolean;
   }
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<z.infer<typeof contactFormSchema>>({
     resolver: zodResolver(contactFormSchema),
+    defaultValues: {
+      isRemember: false,
+    },
   });
 
   // onSubmits
   const onSubmit: SubmitHandler<FormState> = async (data: FormState) => {
     setIsSubmitting(true);
-    toast.promise(async () => {}, {
-      loading: `送信中...`,
-      success: `メンバー登録申請を送信しました！`,
-      error: (error: Error) => {
-        console.error(error);
-        if (error instanceof UniQUE_Error) {
-          if (!error.isConfidential) {
-            setErrorMessage(`[${error.code}] ${error.message}`);
-            return `[${error.code}] ${error.message}`;
-          }
+    let nexthop: string | undefined;
+    toast.promise<AuthenticationResponse>(
+      async () => {
+        const res = await User.signin(data);
+        if (res instanceof Error || res instanceof UniQUE_Error) {
+          throw res;
         }
-        setErrorMessage(
-          `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`,
-        );
-        return `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`;
+        return res;
       },
-      ...toastOption,
-    });
+      {
+        ...toastOption,
+        loading: `送信中...`,
+        success: (data: AuthenticationResponse) => {
+          setErrorMessage(undefined);
+          if (data.requireMfa) {
+            nexthop = `/signin?mfa=1`;
+            return `他段階認証が必要です。`;
+          }
+          nexthop = `/dashboard`;
+          return `ログインに成功しました！`;
+        },
+        error: (error: Error) => {
+          const errorMessage = GetErrorMessageClient(error);
+          setErrorMessage(errorMessage);
+          return `${errorMessage}`;
+        },
+        finally: () => {
+          if (nexthop) router.push(nexthop);
+          setIsSubmitting(false);
+        },
+      },
+    );
   };
 
   return (
@@ -105,7 +129,11 @@ export function SigninForm({
           )}
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form
+            onSubmit={handleSubmit(onSubmit, (e) => {
+              console.log("Invalid", e);
+            })}
+          >
             <FieldGroup>
               {/* 今は使わないのでコメントアウト
               <Field>
@@ -142,11 +170,11 @@ export function SigninForm({
                   type="username"
                   placeholder="unipro-tarou"
                   required
-                  {...register("customId")}
+                  {...register("username")}
                 />
-                {errors.customId && (
+                {errors.username && (
                   <FieldDescription className="text-red-500">
-                    {errors.customId.message}
+                    {errors.username.message}
                   </FieldDescription>
                 )}
               </Field>
@@ -174,6 +202,27 @@ export function SigninForm({
                   </FieldDescription>
                 )}
               </Field>
+              <Field orientation="horizontal">
+                <Controller
+                  name="isRemember"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="remember"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <FieldLabel htmlFor="password">
+                  ログイン状態を保持する
+                </FieldLabel>
+              </Field>
+              {errors.password && (
+                <FieldDescription className="text-red-500">
+                  {errors.password.message}
+                </FieldDescription>
+              )}
               <Field>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "送信中..." : "サインイン"}
@@ -202,6 +251,8 @@ export function SignupForm({
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined,
   );
+
+  const router = useRouter();
 
   const contactFormSchema = z
     .object({
@@ -233,14 +284,6 @@ export function SignupForm({
       message: "13才未満の方はご登録いただけません。",
       path: ["birthdate"],
     });
-  interface FormState {
-    customId: string;
-    externalEmail: string;
-    displayName: string;
-    password: string;
-    confirmPassword: string;
-    birthdate: string;
-  }
   const {
     register,
     handleSubmit,
@@ -250,38 +293,33 @@ export function SignupForm({
   });
 
   // onSubmits
-  const onSubmit: SubmitHandler<FormState> = async (data: FormState) => {
+  const onSubmit: SubmitHandler<SignupFormState> = async (
+    data: SignupFormState,
+  ) => {
     setIsSubmitting(true);
+    let nexthop: string | undefined;
     toast.promise(
-      User.create(
-        {
-          customId: data.customId,
-          email: `tmp_${new Date().getUTCMilliseconds()}@uniproject.jp`,
-          externalEmail: data.externalEmail,
-          profile: {
-            displayName: data.displayName,
-            birthdate: data.birthdate,
-          },
-        },
-        data.password,
-      ),
+      async () => {
+        const res = await signupAction(data);
+        if (res instanceof Error || res instanceof UniQUE_Error) throw res;
+      },
       {
-        loading: `送信中...`,
-        success: `メンバー登録申請を送信しました！`,
-        error: (error: Error) => {
-          console.error(error);
-          if (error instanceof UniQUE_Error) {
-            if (!error.isConfidential) {
-              setErrorMessage(`[${error.code}] ${error.message}`);
-              return `[${error.code}] ${error.message}`;
-            }
-          }
-          setErrorMessage(
-            `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`,
-          );
-          return `[${FrontendErrors.UnhandledException.code}] ${FrontendErrors.UnhandledException.message}`;
-        },
         ...toastOption,
+        loading: `送信中...`,
+        success: () => {
+          setErrorMessage(undefined);
+          nexthop = `/signup/look_email`;
+          return `メンバー登録申請を送信しました！`;
+        },
+        error: (error: Error) => {
+          const errorMessage = GetErrorMessageClient(error);
+          setErrorMessage(errorMessage);
+          return `${errorMessage}`;
+        },
+        finally: () => {
+          if (nexthop) router.push(nexthop);
+          setIsSubmitting(false);
+        },
       },
     );
   };

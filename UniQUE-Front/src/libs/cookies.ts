@@ -1,7 +1,7 @@
 "use server";
 import "server-only";
 import { cookies } from "next/headers";
-import type { AuthenticationResponse } from "./authentication";
+import type { AuthenticationResponse } from "../classes/User/authentication";
 
 // サーバー/クライアント両対応の cookie 取得
 export const getAllCookies = async (): Promise<string> => {
@@ -36,5 +36,24 @@ export const SetSessionCookie = async (response: AuthenticationResponse) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     expires,
+  });
+};
+
+export const SetCookie = async (
+  key: string,
+  value: string,
+  option?: {
+    exp?: Date;
+    domain?: string;
+    priority?: "low" | "medium" | "high";
+    path?: string;
+  },
+) => {
+  const cookieStore = await cookies();
+  cookieStore.set(key, value || "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    ...option,
   });
 };

@@ -46,6 +46,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-const toastOption: ExternalToast = { position: "bottom-right" };
+const toastOption: ExternalToast = { position: "top-center" };
 
 export { Toaster, toastOption };
