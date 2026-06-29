@@ -21,10 +21,24 @@ export const ResourceApiErrors = {
     code: "R0005",
     type: UniQUE_ErrorType.RESOURCE_API_ERROR,
   }),
+  CustomIdAlreadyExists: new UniQUE_Error(
+    `ご指定のユーザーIDは既に使用されています。`,
+    {
+      code: "R1001",
+      type: UniQUE_ErrorType.RESOURCE_API_ERROR,
+    },
+  ),
+  ExternalEmailAlreadyExists: new UniQUE_Error(
+    `このメールアドレスは既に登録されています。。`,
+    {
+      code: "R1002",
+      type: UniQUE_ErrorType.RESOURCE_API_ERROR,
+    },
+  ),
   ApiServerInternalError: new UniQUE_Error(
     `APIサーバーでエラーが発生しました。`,
     {
-      code: "R0006",
+      code: "R9006",
       type: UniQUE_ErrorType.RESOURCE_API_ERROR,
     },
   ),
