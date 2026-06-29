@@ -17,10 +17,11 @@ definitions:
         type: boolean
       password:
         type: string
+      session_jwt:
+        type: string
       type:
         enum:
         - password
-        - mfa
         - totp
         type: string
       user_agent:
@@ -41,6 +42,8 @@ definitions:
         type: boolean
       session_jwt:
         type: string
+    required:
+    - session_jwt
     type: object
   router.AuthorizationResponse:
     properties:
@@ -802,7 +805,7 @@ paths:
       summary: token verify endpoint
       tags:
       - internal
-  /internal/totp/{user_id}:
+  /internal/totp/{uid}:
     post:
       consumes:
       - application/json
@@ -822,7 +825,7 @@ paths:
       summary: Generate TOTP secret and QR code
       tags:
       - internal
-  /internal/totp/{user_id}/disable:
+  /internal/totp/{uid}/disable:
     post:
       consumes:
       - application/json
@@ -842,7 +845,7 @@ paths:
       summary: Disable TOTP
       tags:
       - internal
-  /internal/totp/{user_id}/verify:
+  /internal/totp/{uid}/verify:
     post:
       consumes:
       - application/json

@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `is_mfa_verified` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '多段階認証をパスしているかどうか' AFTER `is_remember`;

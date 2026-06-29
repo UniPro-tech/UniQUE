@@ -47,6 +47,7 @@ func SessionVerifyGet(c *gin.Context) {
 	session, err := q.Session.Where(
 		q.Session.ID.Eq(req.JTI),
 		q.Session.DeletedAt.IsNull(),
+		q.Session.IsMfaVerified.Is(true),
 		q.Session.ExpiresAt.Gt(time.Now().UTC()),
 	).First()
 

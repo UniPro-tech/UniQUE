@@ -19,15 +19,16 @@ import (
 type AuthenticationRequest struct {
 	Username   string `json:"username" binding:"omitempty"`
 	Password   string `json:"password" binding:"omitempty"`
+	SessionJWT string `json:"session_jwt" binding:"omitempty"`
 	Code       string `json:"code" binding:"omitempty"` // for MFA/TOTP
 	IPAddress  string `json:"ip_address"`
 	UserAgent  string `json:"user_agent"`
-	Type       string `json:"type" binding:"required,oneof=password mfa totp"`
+	Type       string `json:"type" binding:"required,oneof=password totp"`
 	IsRemember bool   `json:"is_remember" default:"false"`
 }
 
 type AuthenticationResponse struct {
-	SessionJWT string   `json:"session_jwt" binding:"omitempty"`
+	SessionJWT string   `json:"session_jwt" binding:"required"`
 	RequireMFA bool     `json:"require_mfa" binding:"omitempty"`
 	MFATypes   []string `json:"mfa_type" binding:"omitempty"` // "totp"
 }
@@ -69,14 +70,6 @@ func AuthenticationPost(c *gin.Context) {
 			return
 		}
 
-		if user.IsTotpEnabled {
-			c.JSON(200, AuthenticationResponse{
-				RequireMFA: true,
-				MFATypes:   []string{"totp"},
-			})
-			return
-		}
-
 		var session *model.Session
 		// トランザクション処理の開始
 		err = q.Transaction(func(tx *query.Query) error {
@@ -87,7 +80,7 @@ func AuthenticationPost(c *gin.Context) {
 				IPAddress:   req.IPAddress,
 				UserAgent:   req.UserAgent,
 				IsRemember:  req.IsRemember,
-				ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
+				ExpiresAt:   CalculateSessionExpiry(req.IsRemember, user.IsTotpEnabled),
 				LastLoginAt: now,
 				CreatedAt:   now,
 				UpdatedAt:   now,
@@ -140,6 +133,8 @@ func AuthenticationPost(c *gin.Context) {
 
 		c.JSON(200, AuthenticationResponse{
 			SessionJWT: sessionJWT,
+			RequireMFA: true,
+			MFATypes:   []string{"totp"},
 		})
 	case "totp":
 		// Handle TOTP authentication
@@ -163,7 +158,7 @@ func AuthenticationPost(c *gin.Context) {
 				IPAddress:   req.IPAddress,
 				UserAgent:   req.UserAgent,
 				IsRemember:  req.IsRemember,
-				ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
+				ExpiresAt:   CalculateSessionExpiry(req.IsRemember, false),
 				LastLoginAt: now,
 				CreatedAt:   now,
 				UpdatedAt:   now,
@@ -258,8 +253,11 @@ func passwordAuthentication(q *query.Query, username, password string) (resuser 
 }
 
 // CalculateSessionExpiry calculates the session expiry time based on the remember flag.
-func CalculateSessionExpiry(remember bool) (expiryTime time.Time) {
+func CalculateSessionExpiry(remember bool, is_mfa bool) (expiryTime time.Time) {
 	now := time.Now().UTC()
+	if is_mfa {
+		return now.Add(10 * time.Minute)
+	}
 	if remember {
 		return now.Add(30 * 24 * time.Hour) // 30 days
 	}

@@ -51,7 +51,7 @@ func SessionsGet(c *gin.Context) {
 	}
 	q := query.Use(db)
 
-	sessions, err := q.Session.Where(q.Session.UserID.Eq(userID), q.Session.DeletedAt.IsNull()).Order(q.Session.CreatedAt.Desc()).Find()
+	sessions, err := q.Session.Where(q.Session.UserID.Eq(userID), q.Session.DeletedAt.IsNull(), q.Session.IsMfaVerified.Is(true)).Order(q.Session.CreatedAt.Desc()).Find()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return

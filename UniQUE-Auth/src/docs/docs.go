@@ -702,7 +702,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/totp/{user_id}": {
+        "/internal/totp/{uid}": {
             "post": {
                 "description": "TOTPのシークレットとQRコード用URIを生成します。ユーザーがTOTPをセットアップする際に使用します。",
                 "consumes": [
@@ -733,7 +733,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/totp/{user_id}/disable": {
+        "/internal/totp/{uid}/disable": {
             "post": {
                 "description": "TOTPを無効化します。ユーザーがTOTPを無効にする際に使用します。",
                 "consumes": [
@@ -764,7 +764,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/totp/{user_id}/verify": {
+        "/internal/totp/{uid}/verify": {
             "post": {
                 "description": "TOTPコードを検証し、is_totp_enabledをtrueに設定します。ユーザーがTOTPセットアップを完了する際に使用します。",
                 "consumes": [
@@ -1017,11 +1017,13 @@ const docTemplate = `{
                 "password": {
                     "type": "string"
                 },
+                "session_jwt": {
+                    "type": "string"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
                         "password",
-                        "mfa",
                         "totp"
                     ]
                 },
@@ -1035,6 +1037,9 @@ const docTemplate = `{
         },
         "router.AuthenticationResponse": {
             "type": "object",
+            "required": [
+                "session_jwt"
+            ],
             "properties": {
                 "mfa_type": {
                     "description": "\"totp\"",
