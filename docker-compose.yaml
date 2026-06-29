@@ -76,9 +76,7 @@ services:
       db-migrate:
         condition: service_completed_successfully
     environment:
-      DB_DSN:
-        "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
-        c=Local"
+      DB_DSN: "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&loc=Local"
       CONFIG_APP_NAME: UniQUE
       CONFIG_FRONTEND_URL: "http://localhost:3000"
       CONFIG_ISSUER_URL: "http://localhost:8000"
@@ -115,20 +113,9 @@ services:
         condition: service_completed_successfully
       auth:
         condition: service_started
+    env_file:
+      - ./UniQUE-API/.env
     environment:
-      DB_DSN:
-        "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
-        c=Local"
-      CONFIG_APP_NAME: UniQUE
-      CONFIG_FRONTEND_URL: "http://localhost:3000"
-      CONFIG_ISSUER_URL: "http://localhost:8000"
-      CONFIG_ISSUER_INTERNAL_URL: "http://auth:8080"
-      CONFIG_EMAIL_SENDER_URL: "http://mailserver:8080"
-      DISCORD_CLIENT_ID: "1437220613554176294"
-      DISCORD_CLIENT_SECRET: "your-client-secret"
-      DISCORD_GUILD_ID: "your-guild-id"
-      DISCORD_BOT_TOKEN: "your-token-here"
-      DISCORD_MEMBER_ROLE_ID: "your-member-role-id-here"
       GIN_MODE: debug
     ports:
       - "8001:8080"
@@ -146,19 +133,8 @@ services:
       platforms:
         - linux/amd64
     container_name: unique-mailserver
-    environment:
-      CONFIG_APP_NAME: UniQUE
-      CONFIG_FRONTEND_URL: "http://localhost:3000"
-      CONFIG_ISSUER_URL: "http://auth:8080"
-      SMTP_HOST: unipro.sakura.ne.jp
-      SMTP_PORT: "587"
-      SMTP_USERNAME: "yuito@uniproject.jp"
-      SMTP_PASSWORD: ""
-      SMTP_FROM: "yuito@uniproject.jp"
-      SMTP_SECURE: "false"
-      FROM_NAME: "デジタル創作サークルUniProject | UniQUE"
-      COPYRIGHT_NAME: "All-Japan Digital Creative Club UniProject"
-      GIN_MODE: debug
+    env_file:
+      - ./UniQUE-MailServer/.env
     ports:
       - "8002:8080"
     networks:
