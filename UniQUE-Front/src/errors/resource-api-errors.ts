@@ -29,7 +29,7 @@ export const ResourceApiErrors = {
     },
   ),
   ExternalEmailAlreadyExists: new UniQUE_Error(
-    `このメールアドレスは既に登録されています。。`,
+    `このメールアドレスは既に登録されています。`,
     {
       code: "R1002",
       type: UniQUE_ErrorType.RESOURCE_API_ERROR,
