@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronDownIcon, InfoIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -248,6 +249,7 @@ export function SignupForm({
   ...props
 }: React.ComponentProps<"div">) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined,
   );
@@ -308,7 +310,7 @@ export function SignupForm({
         loading: `送信中...`,
         success: () => {
           setErrorMessage(undefined);
-          nexthop = `/signup/look_email`;
+          setIsSubmitted(true);
           return `メンバー登録申請を送信しました！`;
         },
         error: (error: Error) => {
@@ -327,182 +329,198 @@ export function SignupForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">メンバー登録申請</CardTitle>
-          <CardDescription>
-            メンバー登録申請を行うには必要事項を入力してください。
-          </CardDescription>
-          <Alert variant={"default"} className="mt-5">
-            <InfoIcon className="font-medium" />
-            <AlertTitle className="font-medium">
-              2026年4月以前にメンバー登録した方へ
-            </AlertTitle>
-            <AlertDescription>
-              UniQUEには登録されておりませんので、
-              <Link href={"/migrate"}>こちら</Link> から登録を移行してください。
-            </AlertDescription>
-          </Alert>
-          {(errorMessage || errors.form || errors.root) && (
-            <Alert variant={"destructive"} className="mt-5">
-              <InfoIcon className="font-medium" />
-              <AlertTitle className="font-medium">
-                エラーが発生しました
-              </AlertTitle>
-              <AlertDescription>
-                {errorMessage || errors.form?.message || errors.root?.message}
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="displayName">表示名</FieldLabel>
-                <Input
-                  autoComplete="name"
-                  id="displayName"
-                  type="text"
-                  placeholder="ゆにぷろ太郎"
-                  required
-                  {...register("displayName")}
-                />
-                <FieldDescription
-                  className={errors.displayName ? "text-red-500" : undefined}
-                >
-                  {errors.displayName
-                    ? errors.displayName.message
-                    : "ニックネーム可・他のメンバーに公開されます。"}
-                </FieldDescription>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="customId">ユーザーID</FieldLabel>
-                <Input
-                  autoComplete="username"
-                  id="customId"
-                  type="text"
-                  placeholder="unipro_tarou"
-                  required
-                  {...register("customId")}
-                />
-                <FieldDescription
-                  className={errors.customId ? "text-red-500" : undefined}
-                >
-                  {errors.customId
-                    ? errors.customId.message
-                    : "他人と被らず英数字と_-で3文字以上30文字以下で入力してください。"}
-                </FieldDescription>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="externalEmail">メールアドレス</FieldLabel>
-                <Input
-                  autoComplete="email"
-                  id="externalEmail"
-                  type="email"
-                  placeholder="hogehoge@example.com"
-                  required
-                  {...register("externalEmail")}
-                />
-                <FieldDescription
-                  className={errors.externalEmail ? "text-red-500" : undefined}
-                >
-                  {errors.externalEmail
-                    ? errors.externalEmail.message
-                    : "他のメンバーには非公開です。"}
-                </FieldDescription>
-              </Field>
-              <Field>
-                <Field className="grid grid-cols-2 gap-4">
+        {!isSubmitted ? (
+          <>
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">メンバー登録申請</CardTitle>
+              <CardDescription>
+                メンバー登録申請を行うには必要事項を入力してください。
+              </CardDescription>
+              <Alert variant={"default"} className="mt-5">
+                <InfoIcon className="font-medium" />
+                <AlertTitle className="font-medium">
+                  2026年4月以前にメンバー登録した方へ
+                </AlertTitle>
+                <AlertDescription>
+                  UniQUEには登録されておりませんので、
+                  <Link href={"/migrate"}>こちら</Link>{" "}
+                  から登録を移行してください。
+                </AlertDescription>
+              </Alert>
+              {(errorMessage || errors.form || errors.root) && (
+                <Alert variant={"destructive"} className="mt-5">
+                  <InfoIcon className="font-medium" />
+                  <AlertTitle className="font-medium">
+                    エラーが発生しました
+                  </AlertTitle>
+                  <AlertDescription>
+                    {errorMessage ||
+                      errors.form?.message ||
+                      errors.root?.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="password">パスワード</FieldLabel>
+                    <FieldLabel htmlFor="displayName">表示名</FieldLabel>
                     <Input
-                      autoComplete="new-password"
-                      id="password"
-                      placeholder="・・・・・・・・"
-                      type="password"
+                      autoComplete="name"
+                      id="displayName"
+                      type="text"
+                      placeholder="ゆにぷろ太郎"
                       required
-                      {...register("password")}
+                      {...register("displayName")}
                     />
+                    <FieldDescription
+                      className={
+                        errors.displayName ? "text-red-500" : undefined
+                      }
+                    >
+                      {errors.displayName
+                        ? errors.displayName.message
+                        : "ニックネーム可・他のメンバーに公開されます。"}
+                    </FieldDescription>
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="confirm-password">
-                      パスワードの確認
+                    <FieldLabel htmlFor="customId">ユーザーID</FieldLabel>
+                    <Input
+                      autoComplete="username"
+                      id="customId"
+                      type="text"
+                      placeholder="unipro_tarou"
+                      required
+                      {...register("customId")}
+                    />
+                    <FieldDescription
+                      className={errors.customId ? "text-red-500" : undefined}
+                    >
+                      {errors.customId
+                        ? errors.customId.message
+                        : "他人と被らず英数字と_-で3文字以上30文字以下で入力してください。"}
+                    </FieldDescription>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="externalEmail">
+                      メールアドレス
                     </FieldLabel>
                     <Input
-                      autoComplete="new-password"
-                      id="confirm-password"
-                      placeholder="・・・・・・・・"
-                      type="password"
+                      autoComplete="email"
+                      id="externalEmail"
+                      type="email"
+                      placeholder="hogehoge@example.com"
                       required
-                      {...register("confirmPassword")}
+                      {...register("externalEmail")}
                     />
+                    <FieldDescription
+                      className={
+                        errors.externalEmail ? "text-red-500" : undefined
+                      }
+                    >
+                      {errors.externalEmail
+                        ? errors.externalEmail.message
+                        : "他のメンバーには非公開です。"}
+                    </FieldDescription>
                   </Field>
-                </Field>
-                <FieldDescription
-                  className={
-                    errors.password || errors.confirmPassword
-                      ? "text-red-500"
-                      : undefined
-                  }
-                >
-                  {errors.password
-                    ? errors.password.message
-                    : errors.confirmPassword
-                      ? errors.confirmPassword.message
-                      : "8文字以上の半角英数"}
-                </FieldDescription>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="birthdate">生年月日</FieldLabel>
-                <Collapsible className="rounded-md data-open:bg-muted">
-                  <CollapsibleTrigger
-                    render={
-                      <Button
-                        variant={"outline"}
-                        className="w-full"
-                        suppressHydrationWarning
-                      >
-                        生年月日が必要な理由
-                        <ChevronDownIcon className="ml-auto group-data-panel-open/button:rotate-180" />
-                      </Button>
-                    }
-                  />
-                  <CollapsibleContent className="flex flex-col items-start gap-2 p-2.5 pt-0 text-sm">
-                    <div>
-                      当サークルではDiscordを使用しています。UniProjectサークル規約により、Discordの利用規約に記載されている年齢に達しているかどうか、また、未成年者保護の観点から確認させていただいております。
-                    </div>
-                    {/*
+                  <Field>
+                    <Field className="grid grid-cols-2 gap-4">
+                      <Field>
+                        <FieldLabel htmlFor="password">パスワード</FieldLabel>
+                        <Input
+                          autoComplete="new-password"
+                          id="password"
+                          placeholder="・・・・・・・・"
+                          type="password"
+                          required
+                          {...register("password")}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="confirm-password">
+                          パスワードの確認
+                        </FieldLabel>
+                        <Input
+                          autoComplete="new-password"
+                          id="confirm-password"
+                          placeholder="・・・・・・・・"
+                          type="password"
+                          required
+                          {...register("confirmPassword")}
+                        />
+                      </Field>
+                    </Field>
+                    <FieldDescription
+                      className={
+                        errors.password || errors.confirmPassword
+                          ? "text-red-500"
+                          : undefined
+                      }
+                    >
+                      {errors.password
+                        ? errors.password.message
+                        : errors.confirmPassword
+                          ? errors.confirmPassword.message
+                          : "8文字以上の半角英数"}
+                    </FieldDescription>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="birthdate">生年月日</FieldLabel>
+                    <Collapsible className="rounded-md data-open:bg-muted">
+                      <CollapsibleTrigger
+                        render={
+                          <Button
+                            variant={"outline"}
+                            className="w-full"
+                            suppressHydrationWarning
+                          >
+                            生年月日が必要な理由
+                            <ChevronDownIcon className="ml-auto group-data-panel-open/button:rotate-180" />
+                          </Button>
+                        }
+                      />
+                      <CollapsibleContent className="flex flex-col items-start gap-2 p-2.5 pt-0 text-sm">
+                        <div>
+                          当サークルではDiscordを使用しています。UniProjectサークル規約により、Discordの利用規約に記載されている年齢に達しているかどうか、また、未成年者保護の観点から確認させていただいております。
+                        </div>
+                        {/*
                     <Button size="xs">Learn More</Button>
                     */}
-                  </CollapsibleContent>
-                </Collapsible>
-                <Input
-                  autoComplete="bday"
-                  id="birthdate"
-                  type="date"
-                  placeholder="2000/03/04"
-                  required
-                  {...register("birthdate")}
-                />
-                <FieldDescription
-                  className={errors.birthdate ? "text-red-500" : undefined}
-                >
-                  {errors.birthdate
-                    ? errors.birthdate.message
-                    : "デフォルトで他のメンバーには非公開です。未成年かどうかのみ公開されます。"}
-                </FieldDescription>
-              </Field>
-              <Field>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "送信中..." : "メンバー登録を申請する"}
-                </Button>
-                <FieldDescription className="text-center">
-                  すでに登録済みの方は <Link href="/signin">サインイン</Link>
-                </FieldDescription>
-              </Field>
-            </FieldGroup>
-          </form>
-        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                    <Input
+                      autoComplete="bday"
+                      id="birthdate"
+                      type="date"
+                      placeholder="2000/03/04"
+                      required
+                      {...register("birthdate")}
+                    />
+                    <FieldDescription
+                      className={errors.birthdate ? "text-red-500" : undefined}
+                    >
+                      {errors.birthdate
+                        ? errors.birthdate.message
+                        : "デフォルトで他のメンバーには非公開です。未成年かどうかのみ公開されます。"}
+                    </FieldDescription>
+                  </Field>
+                  <Field>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "送信中..." : "メンバー登録を申請する"}
+                    </Button>
+                    <FieldDescription className="text-center">
+                      すでに登録済みの方は{" "}
+                      <Link href="/signin">サインイン</Link>
+                    </FieldDescription>
+                  </Field>
+                </FieldGroup>
+              </form>
+            </CardContent>
+          </>
+        ) : (
+          <SendedEmail />
+        )}
       </Card>
       <AgreeTOS />
     </div>
@@ -765,5 +783,23 @@ function AgreeTOS() {
       <span>同意したと</span>
       <span>みなします。</span>
     </FieldDescription>
+  );
+}
+
+function SendedEmail() {
+  return (
+    <CardHeader className="text-center flex flex-col justify-center items-center">
+      <Image
+        src="/assets/mail_open.png"
+        alt="mail_open"
+        width={150}
+        height={0}
+        className="mb-3"
+      />
+      <CardTitle className="text-xl">メールを送信しました</CardTitle>
+      <CardDescription>
+        ご入力いただいたメールアドレスに認証用のメールを送信しました。ご確認の上、登録を完了させてください。
+      </CardDescription>
+    </CardHeader>
   );
 }
