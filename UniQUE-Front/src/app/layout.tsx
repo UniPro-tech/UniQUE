@@ -1,14 +1,21 @@
 import type { Metadata, Viewport } from "next";
 
 import "./globals.css";
-import { BIZ_UDPGothic } from "next/font/google";
+import { BIZ_UDPGothic, Noto_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
+const notoSans = Noto_Sans({
+  weight: "400",
+  subsets: ["cyrillic", "greek-ext", "latin", "latin-ext"],
+  variable: "--font-sans",
+  fallback: ["BIZ UDPGothic"],
+});
+
 const udpbizGothic = BIZ_UDPGothic({
   weight: "400",
-  subsets: ["latin"],
+  subsets: ["cyrillic", "greek-ext", "latin", "latin-ext"],
   variable: "--font-mono",
 });
 
@@ -40,7 +47,7 @@ export default async function RootLayout({
   return (
     <html
       lang="ja"
-      className={`${cn("font-mono", udpbizGothic.variable)}`}
+      className={`${cn("font-sans", notoSans.variable)} ${cn(udpbizGothic.variable)}`}
       suppressHydrationWarning
     >
       <body className={`antialiased`}>
