@@ -249,7 +249,7 @@ export function SignupForm({
   ...props
 }: React.ComponentProps<"div">) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(true);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined,
   );
