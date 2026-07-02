@@ -33,3 +33,28 @@ export const signupAction = async (
   }
   return res;
 };
+
+export interface MigrateFormState {
+  email: string;
+  externalEmail: string;
+  displayName: string;
+  password: string;
+  confirmPassword: string;
+  birthdate: string;
+}
+
+export const migrateAction = async (
+  data: MigrateFormState,
+): Promise<Error | UniQUE_Error | UserData> => {
+  const res = await User.migrate({
+    email: data.email,
+    external_email: data.externalEmail,
+    displayName: data.displayName,
+    birthdate: data.birthdate,
+    password: data.password,
+  });
+  if (res instanceof User) {
+    return res.toJson();
+  }
+  return res;
+};

@@ -23,6 +23,7 @@ import { type UserData, UserStatus } from "../types/User";
 import {
   AuthenticationRequest,
   type AuthenticationResponse,
+  MigrateRequest,
 } from "./authentication";
 
 export type { AuthenticationResponse, Credentials } from "./authentication";
@@ -274,6 +275,13 @@ export class User {
     is_remember?: boolean;
   }): Promise<AuthenticationResponse | UniQUE_Error | Error> {
     const res = await AuthenticationRequest(param);
+    return res;
+  }
+
+  static async migrate(
+    param: MigrateRequest,
+  ): Promise<User | UniQUE_Error | Error> {
+    const res = await MigrateRequest(param);
     return res;
   }
 

@@ -12,6 +12,8 @@ import { createApiClient } from "../../libs/apiClient";
 import { ClearSessionCookie, SetCookie } from "../../libs/cookies";
 import { ParseJwt } from "../../libs/jwt";
 import { getRealIPAddress } from "../../libs/request";
+import { UserStatus } from "../types/User";
+import { User } from ".";
 
 export interface Credentials {
   username?: string;
@@ -121,4 +123,52 @@ export const Logout = async () => {
   Session.deleteById(sid);
 
   ClearSessionCookie();
+};
+
+export interface MigrateRequest {
+  displayName: string;
+  password: string;
+  birthdate: string;
+  email: string;
+  external_email: string;
+}
+
+export const MigrateRequest = async (request: MigrateRequest) => {
+  const { email, external_email, displayName, password, birthdate } = request;
+  const period = email.split("@")[0].split(".")[0];
+  const username = email.split("@")[0].split(".").slice(1).join("."); // periodを除いた部分をusernameとして使用
+  let internalEmail = email;
+  if (period) {
+    internalEmail = `${period.toUpperCase()}.${username}@uniproject.jp`;
+  }
+
+  const verifyRes = await fetch(
+    `${process.env.GAS_MIGRATE_API_URL}?external_email=${encodeURIComponent(
+      external_email,
+    )}&internal_email=${encodeURIComponent(internalEmail)}`,
+    { method: "GET" },
+  );
+  const verifyData = await verifyRes.json();
+  if (!verifyRes.ok || verifyData.status !== 200) {
+    return AuthenticationErrors.MigrationError;
+  }
+
+  const joinedAt = new Date(verifyData.joined_at);
+
+  const res = await User.create(
+    {
+      email,
+      customId: username,
+      externalEmail: external_email,
+      affiliationPeriod: period.toUpperCase(),
+      status: UserStatus.ACTIVE,
+      profile: {
+        displayName,
+        joinedAt: joinedAt.toISOString(),
+        birthdate,
+      },
+    },
+    password,
+  );
+  return res;
 };
