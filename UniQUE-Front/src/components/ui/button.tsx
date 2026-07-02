@@ -30,10 +30,18 @@ const buttonVariants = cva(
         "icon-sm": "size-7 rounded-none",
         "icon-lg": "size-9",
       },
+      cursor: {
+        pointer: "cursor-pointer",
+        disabled: "cursor-not-allowed",
+        auto: "cursor-auto",
+        progress: "cursor-progress",
+        help: "cursor-help",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      cursor: "pointer",
     },
   },
 );
@@ -42,12 +50,13 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  cursor = "pointer",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, cursor, className }))}
       {...props}
     />
   );
