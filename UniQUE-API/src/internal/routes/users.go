@@ -1810,7 +1810,7 @@ func emailCodeCheck(c *gin.Context) {
 	switch evc.RequestType {
 	case "registration":
 		if user.Status == "established" {
-			verificationType = "signup"
+			verificationType = "registration"
 		} else {
 			verificationType = "migration"
 		}
@@ -1825,7 +1825,7 @@ func emailCodeCheck(c *gin.Context) {
 		return
 	}
 
-	if verificationType == "signup" {
+	if verificationType == "registration" {
 		_, err := q.ExternalIdentity.Where(
 			query.ExternalIdentity.UserID.Eq(evc.UserID),
 			query.ExternalIdentity.Provider.Eq("discord"),

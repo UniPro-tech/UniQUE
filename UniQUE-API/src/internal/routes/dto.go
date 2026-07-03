@@ -292,7 +292,7 @@ type EmailCodeCheckRequest struct {
 // EmailCodeCheckResponse is the response for email code verification
 type EmailCodeCheckResponse struct {
 	Valid bool   `json:"valid"`
-	Type  string `json:"type"` // "signup", "change", or "migration"
+	Type  string `json:"type"` // "registration", "change", or "migration"
 }
 
 type CreateAnnouncementRequest struct {
