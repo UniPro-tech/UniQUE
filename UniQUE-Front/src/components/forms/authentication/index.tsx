@@ -32,11 +32,12 @@ import {
   // FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { GetErrorMessageClient, UniQUE_Error } from "@/errors/base";
+import { UniQUE_Error } from "@/errors/base";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "../../ui/checkbox";
 import { toastOption } from "../../ui/sonner";
 import { migrateAction, type SignupFormState, signupAction } from "./action";
+import { GetErrorMessageClient } from "@/errors/utils";
 
 export function SigninForm({
   className,
