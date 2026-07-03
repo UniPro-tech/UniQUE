@@ -1,7 +1,7 @@
 .github/ @UniPro-tech/github
 kustomizations/ @UniPro-tech/Kubernetes
 **/.dockerignore @UniPro-tech/Kubernetes
-docker-compose.yaml
+docker-compose.yaml @UniPro-tech/Kubernetes
 **/Dockerfile* @UniPro-tech/Kubernetes
 LICENSE @UniPro-tech/BoardMember
 README.md @UniPro-tech/BoardMember
