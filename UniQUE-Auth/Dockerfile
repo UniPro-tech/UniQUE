@@ -2,7 +2,7 @@
 ##  - builder: build the Go server binary
 ##  - runtime: minimal Alpine with openssl and mysql client, runs `scripts/run.sh`
 
-FROM golang:1.26.4-alpine AS builder
+FROM golang:1.26.5-alpine AS builder
 RUN apk add --no-cache git ca-certificates
 WORKDIR /src
 
