@@ -131,11 +131,16 @@ func AuthenticationPost(c *gin.Context) {
 			"timestamp":  time.Now().UTC(),
 		})
 
-		c.JSON(200, AuthenticationResponse{
+		resData := AuthenticationResponse{
 			SessionJWT: sessionJWT,
-			RequireMFA: true,
-			MFATypes:   []string{"totp"},
-		})
+			RequireMFA: user.IsTotpEnabled,
+		}
+
+		if resData.RequireMFA {
+			resData.MFATypes = []string{"totp"}
+		}
+
+		c.JSON(200, resData)
 	case "totp":
 		// Handle TOTP authentication
 		user, err := totpAuthentication(q, req.Username, req.Code)
