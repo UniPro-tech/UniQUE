@@ -55,6 +55,11 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
 
 開発環境はdocker-composeを用いて整えることができます。
 
+1. git clone
+2. `docker-compose up -d`
+   環境変数は適宜調整してください。
+3. `UniQUE-DB/manual`にあるファイルを順番通りにマイグレーションしてください
+
 ### Tag
 
 タグについては、下記のルールに従いましょう。
