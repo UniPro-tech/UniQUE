@@ -16,7 +16,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: mysql
-              image: registry.uniproject.jp/infra/unique-db:1.6.1
+              image: registry.uniproject.jp/infra/unique-db:1.7.1
               env:
                 - name: DATABASE_URL
                   valueFrom:
