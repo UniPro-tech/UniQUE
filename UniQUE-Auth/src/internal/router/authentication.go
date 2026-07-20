@@ -274,10 +274,10 @@ func totpAuthentication(q *query.Query, username string, code string) (*model.Us
 	if user == nil {
 		return nil, nil
 	}
-	if user.TotpSecret == "" || user.IsTotpEnabled == false {
+	if user.TotpSecret == nil || user.IsTotpEnabled == false {
 		return nil, nil
 	}
-	if ok := totp.Validate(code, user.TotpSecret); !ok {
+	if ok := totp.Validate(code, *user.TotpSecret); !ok {
 		return nil, nil
 	}
 	return user, nil
