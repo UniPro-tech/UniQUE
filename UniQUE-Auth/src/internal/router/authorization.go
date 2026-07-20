@@ -129,7 +129,7 @@ func AuthorizationGet(c *gin.Context) {
 			Scope:               req.Scope,
 			State:               req.State,
 			Nonce:               req.Nonce,
-			Prompt:              derefPrompt(req.Prompt),
+			Prompt:              req.Prompt,
 			CodeChallenge:       req.CodeChallenge,
 			CodeChallengeMethod: req.CodeChallengeMethod,
 			ExpiresAt:           now.Add(20 * time.Minute),
@@ -148,14 +148,6 @@ func AuthorizationGet(c *gin.Context) {
 	v := url.Values{}
 	v.Set("auth_request_id", authReq.ID) // Create によって自動セットされた ID をそのまま利用
 	c.Redirect(302, strings.TrimRight(contextConfig.FrontendURL, "/")+"/authorization?"+v.Encode())
-}
-
-// derefPrompt returns a valid enum value for prompt; default to 'none' when not provided.
-func derefPrompt(s *string) string {
-	if s == nil || *s == "" {
-		return "none"
-	}
-	return *s
 }
 
 // AuthPost godoc
@@ -422,7 +414,7 @@ func InternalAuthorizationGet(c *gin.Context) {
 		Scope:               authReq.Scope,
 		State:               authReq.State,
 		Nonce:               authReq.Nonce,
-		Prompt:              &authReq.Prompt,
+		Prompt:              authReq.Prompt,
 		CodeChallenge:       authReq.CodeChallenge,
 		CodeChallengeMethod: authReq.CodeChallengeMethod,
 	})

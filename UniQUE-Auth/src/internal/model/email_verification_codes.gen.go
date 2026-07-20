@@ -17,7 +17,7 @@ type EmailVerificationCode struct {
 	Code        string    `gorm:"column:code;not null" json:"code"`
 	ExpiresAt   time.Time `gorm:"column:expires_at;not null" json:"expires_at"`
 	RequestType string    `gorm:"column:request_type;not null" json:"request_type"`
-	NewEmail    string    `gorm:"column:new_email" json:"new_email"`
+	NewEmail    *string   `gorm:"column:new_email" json:"new_email"`
 	CreatedAt   time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 

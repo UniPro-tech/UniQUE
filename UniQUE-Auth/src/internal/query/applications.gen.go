@@ -38,6 +38,8 @@ func newApplication(db *gorm.DB, opts ...gen.DOOption) application {
 	_application.CreatedAt = field.NewTime(tableName, "created_at")
 	_application.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_application.DeletedAt = field.NewField(tableName, "deleted_at")
+	_application.PublicClient = field.NewBool(tableName, "public_client")
+	_application.TermsURL = field.NewString(tableName, "terms_url")
 
 	_application.fillFieldMap()
 
@@ -59,6 +61,8 @@ type application struct {
 	CreatedAt        field.Time
 	UpdatedAt        field.Time
 	DeletedAt        field.Field
+	PublicClient     field.Bool
+	TermsURL         field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -85,6 +89,8 @@ func (a *application) updateTableName(table string) *application {
 	a.CreatedAt = field.NewTime(table, "created_at")
 	a.UpdatedAt = field.NewTime(table, "updated_at")
 	a.DeletedAt = field.NewField(table, "deleted_at")
+	a.PublicClient = field.NewBool(table, "public_client")
+	a.TermsURL = field.NewString(table, "terms_url")
 
 	a.fillFieldMap()
 
@@ -101,7 +107,7 @@ func (a *application) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (a *application) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 10)
+	a.fieldMap = make(map[string]field.Expr, 12)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["name"] = a.Name
 	a.fieldMap["description"] = a.Description
@@ -112,6 +118,8 @@ func (a *application) fillFieldMap() {
 	a.fieldMap["created_at"] = a.CreatedAt
 	a.fieldMap["updated_at"] = a.UpdatedAt
 	a.fieldMap["deleted_at"] = a.DeletedAt
+	a.fieldMap["public_client"] = a.PublicClient
+	a.fieldMap["terms_url"] = a.TermsURL
 }
 
 func (a application) clone(db *gorm.DB) application {

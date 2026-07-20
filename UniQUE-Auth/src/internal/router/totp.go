@@ -165,7 +165,11 @@ func VerifyTOTP(c *gin.Context) {
 			return err
 		}
 
-		valid = totp.Validate(req.Code, user.TotpSecret)
+		if user.TotpSecret == nil {
+			return errors.New("totp secret is not set")
+		}
+
+		valid = totp.Validate(req.Code, *user.TotpSecret)
 		if valid {
 			_, err = tx.User.Where(tx.User.ID.Eq(user.ID)).Updates(map[string]any{
 				"is_totp_enabled": true,
@@ -179,6 +183,10 @@ func VerifyTOTP(c *gin.Context) {
 	})
 
 	if err != nil {
+		if err.Error() == "totp secret is not set" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return

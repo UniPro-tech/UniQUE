@@ -14,14 +14,14 @@ import (
 type UserInfoResponse struct {
 	Sub               string   `json:"sub"`
 	Name              string   `json:"name,omitempty"`
-	Bio               string   `json:"bio,omitempty"`
+	Bio               *string  `json:"bio,omitempty"`
 	PreferredUsername string   `json:"preferred_username,omitempty"`
 	Email             string   `json:"email,omitempty"`
 	EmailVerified     bool     `json:"email_verified,omitempty"`
-	Birthdate         string   `json:"birthdate,omitempty"`
-	Website           string   `json:"website,omitempty"`
-	Twitter           string   `json:"twitter,omitempty"`
-	AffiliationPeriod string   `json:"affiliation_period,omitempty"`
+	Birthdate         *string  `json:"birthdate,omitempty"`
+	Website           *string  `json:"website,omitempty"`
+	Twitter           *string  `json:"twitter,omitempty"`
+	AffiliationPeriod *string  `json:"affiliation_period,omitempty"`
 	Roles             []string `json:"roles,omitempty"`
 	UpdatedAt         int64    `json:"updated_at,omitempty"`
 }
@@ -117,23 +117,24 @@ func UserInfoGet(c *gin.Context) {
 			}
 			return false
 		}(),
-		Birthdate: func() string {
-			if util.ContainsScope(scope, "profile") {
-				return profile.Birthdate.Format("2006-01-02")
+		Birthdate: func() *string {
+			if util.ContainsScope(scope, "profile") && profile.Birthdate != nil {
+				dateString := profile.Birthdate.Format("2006-01-02")
+				return &dateString
 			}
-			return ""
+			return nil
 		}(),
-		Website: func() string {
+		Website: func() *string {
 			if util.ContainsScope(scope, "profile") {
 				return profile.WebsiteURL
 			}
-			return ""
+			return nil
 		}(),
-		Twitter: func() string {
+		Twitter: func() *string {
 			if util.ContainsScope(scope, "profile") {
 				return profile.TwitterHandle
 			}
-			return ""
+			return nil
 		}(),
 		AffiliationPeriod: user.AffiliationPeriod,
 		Roles:             rolesCusomIDs,

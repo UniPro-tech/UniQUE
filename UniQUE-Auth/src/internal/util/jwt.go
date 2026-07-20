@@ -80,26 +80,27 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 	refreshTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
 	entropy = ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-	IDTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+	IDTokenIDRaw := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+	IDTokenID := &IDTokenIDRaw
 	IDTokenString := ""
 
 	if ContainsScope(scopes, "openid") {
 		if !hasValidKeyPair(config) {
 			return "", "", "", errors.New("no valid keypair configured")
 		}
-		IDTokenString, err = GenerateIDToken(q, IDTokenID, consent.UserID, consent.ApplicationID, nonce, scopes, config)
+		IDTokenString, err = GenerateIDToken(q, IDTokenIDRaw, consent.UserID, consent.ApplicationID, nonce, scopes, config)
 		if err != nil {
 			logger.Error("Un error occured in idtoken gen", slog.String("error", err.Error()))
 			return "", "", "", err
 		}
 	} else {
-		IDTokenID = ""
+		IDTokenID = nil
 	}
 
 	err = q.OauthToken.Create(&model.OauthToken{
 		ConsentID:       consent.ID,
-		AccessTokenJti:  accessTokenID,
-		RefreshTokenJti: refreshTokenID,
+		AccessTokenJti:  &accessTokenID,
+		RefreshTokenJti: &refreshTokenID,
 		IDTokenJti:      IDTokenID,
 		ExpiresAt:       time.Now().Add(5 * 24 * time.Hour), // リフレッシュトークン有効期限: 5日
 		CreatedAt:       time.Now(),
@@ -179,8 +180,8 @@ type OIDCTokenClaims struct {
 	Email             string   `json:"email,omitempty"`
 	EmailVerified     bool     `json:"email_verified,omitempty"`
 	PreferredUsername string   `json:"preferred_username,omitempty"`
-	Website           string   `json:"website,omitempty"`
-	Birthdate         string   `json:"birthdate,omitempty"`
+	Website           *string  `json:"website,omitempty"`
+	Birthdate         *string  `json:"birthdate,omitempty"`
 	Roles             []string `json:"roles"`
 	UpdatedAt         int64    `json:"updated_at,omitempty"`
 }
@@ -245,17 +246,18 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 			return false
 		}(),
 		PreferredUsername: user.CustomID,
-		Website: func() string {
+		Website: func() *string {
 			if ContainsScope(scopes, "profile") {
 				return profile.WebsiteURL
 			}
-			return ""
+			return nil
 		}(),
-		Birthdate: func() string {
-			if ContainsScope(scopes, "profile") {
-				return profile.Birthdate.String()
+		Birthdate: func() *string {
+			if ContainsScope(scopes, "profile") && profile.Birthdate != nil {
+				dateString := profile.Birthdate.Format("2006-01-02")
+				return &dateString
 			}
-			return ""
+			return nil
 		}(),
 		Roles:     roleCustomID,
 		UpdatedAt: profile.UpdatedAt.Unix(),

@@ -35,12 +35,12 @@ func newUser(db *gorm.DB, opts ...gen.DOOption) user {
 	_user.EmailVerified = field.NewBool(tableName, "email_verified")
 	_user.AffiliationPeriod = field.NewString(tableName, "affiliation_period")
 	_user.PasswordHash = field.NewString(tableName, "password_hash")
+	_user.TotpSecret = field.NewString(tableName, "totp_secret")
+	_user.IsTotpEnabled = field.NewBool(tableName, "is_totp_enabled")
 	_user.Status = field.NewString(tableName, "status")
 	_user.CreatedAt = field.NewTime(tableName, "created_at")
 	_user.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_user.DeletedAt = field.NewField(tableName, "deleted_at")
-	_user.TotpSecret = field.NewString(tableName, "totp_secret")
-	_user.IsTotpEnabled = field.NewBool(tableName, "is_totp_enabled")
 
 	_user.fillFieldMap()
 
@@ -59,12 +59,12 @@ type user struct {
 	EmailVerified     field.Bool
 	AffiliationPeriod field.String
 	PasswordHash      field.String
+	TotpSecret        field.String
+	IsTotpEnabled     field.Bool
 	Status            field.String
 	CreatedAt         field.Time
 	UpdatedAt         field.Time
 	DeletedAt         field.Field
-	TotpSecret        field.String
-	IsTotpEnabled     field.Bool
 
 	fieldMap map[string]field.Expr
 }
@@ -88,12 +88,12 @@ func (u *user) updateTableName(table string) *user {
 	u.EmailVerified = field.NewBool(table, "email_verified")
 	u.AffiliationPeriod = field.NewString(table, "affiliation_period")
 	u.PasswordHash = field.NewString(table, "password_hash")
+	u.TotpSecret = field.NewString(table, "totp_secret")
+	u.IsTotpEnabled = field.NewBool(table, "is_totp_enabled")
 	u.Status = field.NewString(table, "status")
 	u.CreatedAt = field.NewTime(table, "created_at")
 	u.UpdatedAt = field.NewTime(table, "updated_at")
 	u.DeletedAt = field.NewField(table, "deleted_at")
-	u.TotpSecret = field.NewString(table, "totp_secret")
-	u.IsTotpEnabled = field.NewBool(table, "is_totp_enabled")
 
 	u.fillFieldMap()
 
@@ -118,12 +118,12 @@ func (u *user) fillFieldMap() {
 	u.fieldMap["email_verified"] = u.EmailVerified
 	u.fieldMap["affiliation_period"] = u.AffiliationPeriod
 	u.fieldMap["password_hash"] = u.PasswordHash
+	u.fieldMap["totp_secret"] = u.TotpSecret
+	u.fieldMap["is_totp_enabled"] = u.IsTotpEnabled
 	u.fieldMap["status"] = u.Status
 	u.fieldMap["created_at"] = u.CreatedAt
 	u.fieldMap["updated_at"] = u.UpdatedAt
 	u.fieldMap["deleted_at"] = u.DeletedAt
-	u.fieldMap["totp_secret"] = u.TotpSecret
-	u.fieldMap["is_totp_enabled"] = u.IsTotpEnabled
 }
 
 func (u user) clone(db *gorm.DB) user {

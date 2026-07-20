@@ -16,10 +16,11 @@ const TableNameSession = "sessions"
 type Session struct {
 	ID          string         `gorm:"column:id;primaryKey" json:"id"`
 	UserID      string         `gorm:"column:user_id;not null" json:"user_id"`
-	IPAddress   string         `gorm:"column:ip_address" json:"ip_address"`
-	UserAgent   string         `gorm:"column:user_agent" json:"user_agent"`
-	IsRemember  bool           `gorm:"column:is_remember" json:"is_remember"`
+	IPAddress   string         `gorm:"column:ip_address;not null" json:"ip_address"`
+	UserAgent   string         `gorm:"column:user_agent;not null" json:"user_agent"`
 	ExpiresAt   time.Time      `gorm:"column:expires_at;not null" json:"expires_at"`
+	IsRemember  bool           `gorm:"column:is_remember;not null" json:"is_remember"`
+	MfaStatus   string         `gorm:"column:mfa_status;not null;default:none;comment:多段階認証の通過状況" json:"mfa_status"` // 多段階認証の通過状況
 	LastLoginAt time.Time      `gorm:"column:last_login_at;not null" json:"last_login_at"`
 	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP" json:"updated_at"`

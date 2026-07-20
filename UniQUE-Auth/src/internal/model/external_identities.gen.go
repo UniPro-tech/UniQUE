@@ -18,10 +18,10 @@ type ExternalIdentity struct {
 	UserID         string         `gorm:"column:user_id;not null" json:"user_id"`
 	Provider       string         `gorm:"column:provider;not null" json:"provider"`
 	ExternalUserID string         `gorm:"column:external_user_id;not null" json:"external_user_id"`
-	IDToken        string         `gorm:"column:id_token" json:"id_token"`
+	IDToken        *string        `gorm:"column:id_token" json:"id_token"`
 	AccessToken    string         `gorm:"column:access_token;not null" json:"access_token"`
 	RefreshToken   string         `gorm:"column:refresh_token;not null" json:"refresh_token"`
-	TokenExpiresAt time.Time      `gorm:"column:token_expires_at" json:"token_expires_at"`
+	TokenExpiresAt *time.Time     `gorm:"column:token_expires_at" json:"token_expires_at"`
 	CreatedAt      time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`

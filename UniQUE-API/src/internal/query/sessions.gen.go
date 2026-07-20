@@ -32,8 +32,9 @@ func newSession(db *gorm.DB, opts ...gen.DOOption) session {
 	_session.UserID = field.NewString(tableName, "user_id")
 	_session.IPAddress = field.NewString(tableName, "ip_address")
 	_session.UserAgent = field.NewString(tableName, "user_agent")
-	_session.IsRemember = field.NewBool(tableName, "is_remember")
 	_session.ExpiresAt = field.NewTime(tableName, "expires_at")
+	_session.IsRemember = field.NewBool(tableName, "is_remember")
+	_session.MfaStatus = field.NewString(tableName, "mfa_status")
 	_session.LastLoginAt = field.NewTime(tableName, "last_login_at")
 	_session.CreatedAt = field.NewTime(tableName, "created_at")
 	_session.UpdatedAt = field.NewTime(tableName, "updated_at")
@@ -53,8 +54,9 @@ type session struct {
 	UserID      field.String
 	IPAddress   field.String
 	UserAgent   field.String
-	IsRemember  field.Bool
 	ExpiresAt   field.Time
+	IsRemember  field.Bool
+	MfaStatus   field.String // 多段階認証の通過状況
 	LastLoginAt field.Time
 	CreatedAt   field.Time
 	UpdatedAt   field.Time
@@ -79,8 +81,9 @@ func (s *session) updateTableName(table string) *session {
 	s.UserID = field.NewString(table, "user_id")
 	s.IPAddress = field.NewString(table, "ip_address")
 	s.UserAgent = field.NewString(table, "user_agent")
-	s.IsRemember = field.NewBool(table, "is_remember")
 	s.ExpiresAt = field.NewTime(table, "expires_at")
+	s.IsRemember = field.NewBool(table, "is_remember")
+	s.MfaStatus = field.NewString(table, "mfa_status")
 	s.LastLoginAt = field.NewTime(table, "last_login_at")
 	s.CreatedAt = field.NewTime(table, "created_at")
 	s.UpdatedAt = field.NewTime(table, "updated_at")
@@ -101,13 +104,14 @@ func (s *session) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (s *session) fillFieldMap() {
-	s.fieldMap = make(map[string]field.Expr, 9)
+	s.fieldMap = make(map[string]field.Expr, 11)
 	s.fieldMap["id"] = s.ID
 	s.fieldMap["user_id"] = s.UserID
 	s.fieldMap["ip_address"] = s.IPAddress
 	s.fieldMap["user_agent"] = s.UserAgent
-	s.fieldMap["is_remember"] = s.IsRemember
 	s.fieldMap["expires_at"] = s.ExpiresAt
+	s.fieldMap["is_remember"] = s.IsRemember
+	s.fieldMap["mfa_status"] = s.MfaStatus
 	s.fieldMap["last_login_at"] = s.LastLoginAt
 	s.fieldMap["created_at"] = s.CreatedAt
 	s.fieldMap["updated_at"] = s.UpdatedAt
