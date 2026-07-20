@@ -167,6 +167,7 @@ func VerifyTOTP(c *gin.Context) {
 
 		if user.TotpSecret == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "totp secret is not set"})
+			return errors.New("totp secret is not set")
 		}
 
 		valid = totp.Validate(req.Code, *user.TotpSecret)

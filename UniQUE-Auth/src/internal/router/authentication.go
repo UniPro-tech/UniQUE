@@ -20,8 +20,8 @@ type AuthenticationRequest struct {
 	Username   string `json:"username" binding:"omitempty"`
 	Password   string `json:"password" binding:"omitempty"`
 	Code       string `json:"code" binding:"omitempty"` // for MFA/TOTP
-	IPAddress  string `json:"ip_address" binding:"omitempty"`
-	UserAgent  string `json:"user_agent" binding:"omitempty"`
+	IPAddress  string `json:"ip_address"`
+	UserAgent  string `json:"user_agent"`
 	Type       string `json:"type" binding:"required,oneof=password mfa totp"`
 	IsRemember bool   `json:"is_remember" default:"false"`
 }
