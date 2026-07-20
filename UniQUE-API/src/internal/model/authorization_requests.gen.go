@@ -13,6 +13,7 @@ const TableNameAuthorizationRequest = "authorization_requests"
 // AuthorizationRequest Table to store OAuth2 authorization requests. Type: transactional
 type AuthorizationRequest struct {
 	ID                  string    `gorm:"column:id;primaryKey" json:"id"`
+	SessionID           *string   `gorm:"column:session_id" json:"session_id"`
 	ApplicationID       string    `gorm:"column:application_id;not null" json:"application_id"`
 	Scope               string    `gorm:"column:scope;not null" json:"scope"`
 	RedirectURI         string    `gorm:"column:redirect_uri;not null" json:"redirect_uri"`
@@ -26,7 +27,6 @@ type AuthorizationRequest struct {
 	Code                *string   `gorm:"column:code" json:"code"`
 	ExpiresAt           time.Time `gorm:"column:expires_at;not null" json:"expires_at"`
 	CreatedAt           time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	SessionID           *string   `gorm:"column:session_id" json:"session_id"`
 }
 
 // TableName AuthorizationRequest's table name

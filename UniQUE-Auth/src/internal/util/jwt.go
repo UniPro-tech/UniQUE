@@ -98,9 +98,9 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 
 	err = q.OauthToken.Create(&model.OauthToken{
 		ConsentID:       consent.ID,
-		AccessTokenJti:  accessTokenID,
-		RefreshTokenJti: refreshTokenID,
-		IDTokenJti:      IDTokenID,
+		AccessTokenJti:  &accessTokenID,
+		RefreshTokenJti: &refreshTokenID,
+		IDTokenJti:      &IDTokenID,
 		ExpiresAt:       time.Now().Add(5 * 24 * time.Hour), // リフレッシュトークン有効期限: 5日
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
@@ -247,7 +247,7 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 		PreferredUsername: user.CustomID,
 		Website: func() string {
 			if ContainsScope(scopes, "profile") {
-				return profile.WebsiteURL
+				return *profile.WebsiteURL
 			}
 			return ""
 		}(),

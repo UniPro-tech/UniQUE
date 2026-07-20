@@ -16,9 +16,9 @@ const TableNameOauthToken = "oauth_tokens"
 type OauthToken struct {
 	ID              string         `gorm:"column:id;primaryKey" json:"id"`
 	ConsentID       string         `gorm:"column:consent_id;not null" json:"consent_id"`
-	IDTokenJti      string         `gorm:"column:id_token_jti" json:"id_token_jti"`
-	AccessTokenJti  string         `gorm:"column:access_token_jti" json:"access_token_jti"`
-	RefreshTokenJti string         `gorm:"column:refresh_token_jti" json:"refresh_token_jti"`
+	IDTokenJti      *string        `gorm:"column:id_token_jti" json:"id_token_jti"`
+	AccessTokenJti  *string        `gorm:"column:access_token_jti" json:"access_token_jti"`
+	RefreshTokenJti *string        `gorm:"column:refresh_token_jti" json:"refresh_token_jti"`
 	ExpiresAt       time.Time      `gorm:"column:expires_at;not null" json:"expires_at"`
 	CreatedAt       time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt       time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP" json:"updated_at"`

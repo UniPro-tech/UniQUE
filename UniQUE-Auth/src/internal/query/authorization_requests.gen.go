@@ -29,6 +29,7 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 	tableName := _authorizationRequest.authorizationRequestDo.TableName()
 	_authorizationRequest.ALL = field.NewAsterisk(tableName)
 	_authorizationRequest.ID = field.NewString(tableName, "id")
+	_authorizationRequest.SessionID = field.NewString(tableName, "session_id")
 	_authorizationRequest.ApplicationID = field.NewString(tableName, "application_id")
 	_authorizationRequest.Scope = field.NewString(tableName, "scope")
 	_authorizationRequest.RedirectURI = field.NewString(tableName, "redirect_uri")
@@ -42,7 +43,6 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 	_authorizationRequest.Code = field.NewString(tableName, "code")
 	_authorizationRequest.ExpiresAt = field.NewTime(tableName, "expires_at")
 	_authorizationRequest.CreatedAt = field.NewTime(tableName, "created_at")
-	_authorizationRequest.SessionID = field.NewString(tableName, "session_id")
 
 	_authorizationRequest.fillFieldMap()
 
@@ -55,6 +55,7 @@ type authorizationRequest struct {
 
 	ALL                 field.Asterisk
 	ID                  field.String
+	SessionID           field.String
 	ApplicationID       field.String
 	Scope               field.String
 	RedirectURI         field.String
@@ -68,7 +69,6 @@ type authorizationRequest struct {
 	Code                field.String
 	ExpiresAt           field.Time
 	CreatedAt           field.Time
-	SessionID           field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -86,6 +86,7 @@ func (a authorizationRequest) As(alias string) *authorizationRequest {
 func (a *authorizationRequest) updateTableName(table string) *authorizationRequest {
 	a.ALL = field.NewAsterisk(table)
 	a.ID = field.NewString(table, "id")
+	a.SessionID = field.NewString(table, "session_id")
 	a.ApplicationID = field.NewString(table, "application_id")
 	a.Scope = field.NewString(table, "scope")
 	a.RedirectURI = field.NewString(table, "redirect_uri")
@@ -99,7 +100,6 @@ func (a *authorizationRequest) updateTableName(table string) *authorizationReque
 	a.Code = field.NewString(table, "code")
 	a.ExpiresAt = field.NewTime(table, "expires_at")
 	a.CreatedAt = field.NewTime(table, "created_at")
-	a.SessionID = field.NewString(table, "session_id")
 
 	a.fillFieldMap()
 
@@ -118,6 +118,7 @@ func (a *authorizationRequest) GetFieldByName(fieldName string) (field.OrderExpr
 func (a *authorizationRequest) fillFieldMap() {
 	a.fieldMap = make(map[string]field.Expr, 15)
 	a.fieldMap["id"] = a.ID
+	a.fieldMap["session_id"] = a.SessionID
 	a.fieldMap["application_id"] = a.ApplicationID
 	a.fieldMap["scope"] = a.Scope
 	a.fieldMap["redirect_uri"] = a.RedirectURI
@@ -131,7 +132,6 @@ func (a *authorizationRequest) fillFieldMap() {
 	a.fieldMap["code"] = a.Code
 	a.fieldMap["expires_at"] = a.ExpiresAt
 	a.fieldMap["created_at"] = a.CreatedAt
-	a.fieldMap["session_id"] = a.SessionID
 }
 
 func (a authorizationRequest) clone(db *gorm.DB) authorizationRequest {

@@ -103,7 +103,7 @@ func UserInfoGet(c *gin.Context) {
 	c.JSON(200, UserInfoResponse{
 		Sub:               user.ID,
 		Name:              profile.DisplayName,
-		Bio:               profile.Bio,
+		Bio:               *profile.Bio,
 		PreferredUsername: user.CustomID,
 		Email: func() string {
 			if util.ContainsScope(scope, "email") {
@@ -125,17 +125,17 @@ func UserInfoGet(c *gin.Context) {
 		}(),
 		Website: func() string {
 			if util.ContainsScope(scope, "profile") {
-				return profile.WebsiteURL
+				return *profile.WebsiteURL
 			}
 			return ""
 		}(),
 		Twitter: func() string {
 			if util.ContainsScope(scope, "profile") {
-				return profile.TwitterHandle
+				return *profile.TwitterHandle
 			}
 			return ""
 		}(),
-		AffiliationPeriod: user.AffiliationPeriod,
+		AffiliationPeriod: *user.AffiliationPeriod,
 		Roles:             rolesCusomIDs,
 		UpdatedAt:         profile.UpdatedAt.Unix(),
 	})
