@@ -80,27 +80,28 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 	refreshTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
 	entropy = ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-	IDTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+	IDTokenIDRaw := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+	IDTokenID := &IDTokenIDRaw
 	IDTokenString := ""
 
 	if ContainsScope(scopes, "openid") {
 		if !hasValidKeyPair(config) {
 			return "", "", "", errors.New("no valid keypair configured")
 		}
-		IDTokenString, err = GenerateIDToken(q, IDTokenID, consent.UserID, consent.ApplicationID, nonce, scopes, config)
+		IDTokenString, err = GenerateIDToken(q, IDTokenIDRaw, consent.UserID, consent.ApplicationID, nonce, scopes, config)
 		if err != nil {
 			logger.Error("Un error occured in idtoken gen", slog.String("error", err.Error()))
 			return "", "", "", err
 		}
 	} else {
-		IDTokenID = ""
+		IDTokenID = nil
 	}
 
 	err = q.OauthToken.Create(&model.OauthToken{
 		ConsentID:       consent.ID,
 		AccessTokenJti:  &accessTokenID,
 		RefreshTokenJti: &refreshTokenID,
-		IDTokenJti:      &IDTokenID,
+		IDTokenJti:      IDTokenID,
 		ExpiresAt:       time.Now().Add(5 * 24 * time.Hour), // リフレッシュトークン有効期限: 5日
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
