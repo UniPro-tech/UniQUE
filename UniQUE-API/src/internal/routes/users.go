@@ -2426,6 +2426,15 @@ func uploadAvatar(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
+	if id == "" ||
+		strings.Contains(id, "/") ||
+		strings.Contains(id, "\\") ||
+		strings.Contains(id, "..") ||
+		filepath.IsAbs(id) ||
+		filepath.Clean(id) != id {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
 	q := query.Use(db)
 	if _, err := q.User.Where(query.User.ID.Eq(id)).First(); err != nil {
 		if err == gorm.ErrRecordNotFound {
