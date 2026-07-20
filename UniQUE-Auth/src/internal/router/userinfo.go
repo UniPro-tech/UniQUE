@@ -118,7 +118,7 @@ func UserInfoGet(c *gin.Context) {
 			return false
 		}(),
 		Birthdate: func() *string {
-			if util.ContainsScope(scope, "profile") {
+			if util.ContainsScope(scope, "profile") && profile.Birthdate != nil {
 				dateString := profile.Birthdate.Format("2006-01-02")
 				return &dateString
 			}

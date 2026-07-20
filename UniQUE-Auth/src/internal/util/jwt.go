@@ -180,8 +180,8 @@ type OIDCTokenClaims struct {
 	Email             string   `json:"email,omitempty"`
 	EmailVerified     bool     `json:"email_verified,omitempty"`
 	PreferredUsername string   `json:"preferred_username,omitempty"`
-	Website           string   `json:"website,omitempty"`
-	Birthdate         string   `json:"birthdate,omitempty"`
+	Website           *string  `json:"website,omitempty"`
+	Birthdate         *string  `json:"birthdate,omitempty"`
 	Roles             []string `json:"roles"`
 	UpdatedAt         int64    `json:"updated_at,omitempty"`
 }
@@ -246,17 +246,18 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 			return false
 		}(),
 		PreferredUsername: user.CustomID,
-		Website: func() string {
+		Website: func() *string {
 			if ContainsScope(scopes, "profile") {
-				return *profile.WebsiteURL
+				return profile.WebsiteURL
 			}
-			return ""
+			return nil
 		}(),
-		Birthdate: func() string {
-			if ContainsScope(scopes, "profile") {
-				return profile.Birthdate.String()
+		Birthdate: func() *string {
+			if ContainsScope(scopes, "profile") && profile.Birthdate != nil {
+				dateString := profile.Birthdate.Format("2006-01-02")
+				return &dateString
 			}
-			return ""
+			return nil
 		}(),
 		Roles:     roleCustomID,
 		UpdatedAt: profile.UpdatedAt.Unix(),
