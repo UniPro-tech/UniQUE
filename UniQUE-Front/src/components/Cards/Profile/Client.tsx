@@ -111,6 +111,7 @@ export default function ProfileClient({
 	const hasFullData = user?.email !== undefined || user?.status !== undefined;
 	const [editMode, setEditMode] = useState(false);
 	const [passwordResetOpen, setPasswordResetOpen] = useState(false);
+	const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
 	const displayName =
 		userProfile?.displayName || user?.customId || "名称未設定";
@@ -223,11 +224,39 @@ export default function ProfileClient({
 										type="file"
 										accept="image/*"
 										hidden
-										onChange={(event) => {
+										onChange={async (event) => {
 											const file = event.target.files?.[0];
-											if (file) {
-												// ここでファイルをアップロードする処理を実装する
-												console.log("Selected file:", file);
+											if (!file) return;
+
+											const formData = new FormData();
+											formData.append("avatar", file);
+
+											try {
+												const res = await fetch(
+													`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${user.id}/avatar`,
+													{
+														method: "POST",
+														body: formData,
+														credentials: "include",
+													},
+												);
+
+												if (!res.ok) {
+													const body = await res.json().catch(() => null);
+													throw new Error(
+														body?.error ??
+															`アップロードに失敗しました (HTTP ${res.status})`,
+													);
+												}
+
+												// アップロードした画像をその場でプレビュー反映
+												setAvatarPreview(URL.createObjectURL(file));
+											} catch (err) {
+												console.error("Failed to upload avatar:", err);
+												// エラー表示処理をここに実装
+											} finally {
+												// 同じファイルを再選択できるようにvalueをリセット
+												event.target.value = "";
 											}
 										}}
 									/>

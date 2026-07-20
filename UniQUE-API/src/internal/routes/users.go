@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -94,6 +97,12 @@ func registUserRouteFromGroup(g *gin.RouterGroup) {
 
 	// メール認証の再送は自分自身 OR USER_UPDATE権限
 	g.POST(":id/resend_email_verification", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), resendEmailVerification)
+
+	// アバターのアップロードは自分自身のみ
+	g.POST(":id/avatar", middleware.RequirePermissionOrSelf(constants.USER_UPDATE), uploadAvatar)
+
+	// アバターの閲覧は誰でも可能
+	g.GET(":id/avatar", getAvatar)
 }
 
 // parseDateFlexible attempts to parse date/time strings in multiple
@@ -2400,4 +2409,97 @@ func isAdult(birthdate *time.Time) *bool {
 	}
 	isAdult := age >= 18
 	return &isAdult
+}
+
+func getAvatar(c *gin.Context) {
+	c.JSON(http.StatusNotImplemented, gin.H{"error": "avatar retrieval is not implemented yet"})
+}
+
+func uploadAvatar(c *gin.Context) {
+	if isOAuth := IsOAuth(c); isOAuth {
+		// 403
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to perform this action with an access token"})
+		return
+	}
+	db := getDB(c)
+	if db == nil {
+		return
+	}
+	id := c.Param("id")
+	q := query.Use(db)
+	if _, err := q.User.Where(query.User.ID.Eq(id)).First(); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	fileHeader, err := c.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "avatar file is required"})
+		return
+	}
+
+	if fileHeader.Size > 5*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeds 5MB limit"})
+		return
+	}
+
+	ext := filepath.Ext(fileHeader.Filename)
+	if ext == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file extension is required"})
+		return
+	} else if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported file extension"})
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to open uploaded file"})
+		return
+	}
+	defer file.Close()
+
+	if _, _, err := image.DecodeConfig(file); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid image file"})
+		return
+	}
+
+	savepath := filepath.Join("users", id, "avatar"+ext)
+
+	// 3. 保存先ディレクトリが存在しない場合に備えて作成
+	avatarDir := filepath.Dir(savepath)
+	if err := os.MkdirAll(avatarDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create upload directory"})
+		return
+	}
+
+	// 2. 拡張子が変わるケースに備えて、既存の avatar.* を削除しておく
+	oldFiles, err := filepath.Glob(filepath.Join(avatarDir, "avatar.*"))
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	for _, f := range oldFiles {
+		if err := os.Remove(f); err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	if err := c.SaveUploadedFile(fileHeader, savepath); err != nil {
+		c.String(http.StatusBadRequest, "upload file err: %s", err.Error())
+		return
+	}
+
+	if _, err := q.Profile.Where(query.Profile.UserID.Eq(id)).Updates(map[string]interface{}{
+		"avatar": "upload",
+		"updated_at":  time.Now().UTC(),
+	}); err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 }

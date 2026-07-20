@@ -39,6 +39,10 @@ spec:
               memory: 128Mi # 最大128MiBまで使用可能
       imagePullSecrets:
         - name: internal-harbor
+      volumes:
+        - name: api
+          persistentVolumeClaim:
+            claimName: api-pvc
 ---
 apiVersion: v1
 kind: Service
