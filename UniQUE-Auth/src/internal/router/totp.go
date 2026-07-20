@@ -166,7 +166,6 @@ func VerifyTOTP(c *gin.Context) {
 		}
 
 		if user.TotpSecret == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "totp secret is not set"})
 			return errors.New("totp secret is not set")
 		}
 
@@ -184,6 +183,10 @@ func VerifyTOTP(c *gin.Context) {
 	})
 
 	if err != nil {
+		if err.Error() == "totp secret is not set" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
