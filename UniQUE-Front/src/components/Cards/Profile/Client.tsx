@@ -213,6 +213,7 @@ export default function ProfileClient({
 									fontSize: "2rem",
 									bgcolor: theme.palette.primary.main,
 								}}
+								src={avatarPreview ?? undefined}
 							>
 								{displayName.charAt(0).toUpperCase()}
 							</Avatar>
@@ -250,7 +251,10 @@ export default function ProfileClient({
 												}
 
 												// アップロードした画像をその場でプレビュー反映
-												setAvatarPreview(URL.createObjectURL(file));
+												setAvatarPreview((prev) => {
+													if (prev) URL.revokeObjectURL(prev);
+													return URL.createObjectURL(file);
+												});
 											} catch (err) {
 												console.error("Failed to upload avatar:", err);
 												// エラー表示処理をここに実装

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"log"
 	"net/http"
 	"os"
@@ -2445,6 +2447,12 @@ func uploadAvatar(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(
+		c.Writer,
+		c.Request.Body,
+		6*1024*1024,
+	)
+
 	fileHeader, err := c.FormFile("avatar")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "avatar file is required"})
@@ -2456,7 +2464,7 @@ func uploadAvatar(c *gin.Context) {
 		return
 	}
 
-	ext := filepath.Ext(fileHeader.Filename)
+	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if ext == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file extension is required"})
 		return
