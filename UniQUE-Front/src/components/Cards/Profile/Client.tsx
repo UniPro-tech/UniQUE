@@ -234,7 +234,7 @@ export default function ProfileClient({
 
 											try {
 												const res = await fetch(
-													`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${user.id}/avatar`,
+													`${process.env.NEXT_PUBLIC_RESOURCE_API_URL}/users/${user.id}/avatar`,
 													{
 														method: "POST",
 														body: formData,

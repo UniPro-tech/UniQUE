@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/docs"
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
@@ -11,6 +12,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
 	"github.com/UniPro-tech/UniQUE-API/internal/routes"
+	"github.com/gin-contrib/cors"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm/logger"
@@ -79,6 +81,14 @@ func main() {
 	docs.SwaggerInfo.Title = environmentConfigs.AppName + " API"
 	docs.SwaggerInfo.Version = environmentConfigs.Version
 
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+	
 	// Add contexts (AuthMiddlewareより先にセットする必要がある)
 	r.Use(func(c *gin.Context) {
 		c.Set("config", *environmentConfigs)

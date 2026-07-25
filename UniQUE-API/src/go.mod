@@ -3,12 +3,12 @@ module github.com/UniPro-tech/UniQUE-API
 go 1.25.0
 
 require (
+	github.com/gin-contrib/cors v1.5.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/swaggo/files v1.0.1
-	github.com/swaggo/files/v2 v2.0.2
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.54.0
