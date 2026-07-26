@@ -2591,6 +2591,11 @@ func uploadAvatar(c *gin.Context) {
 		Body:   bytes.NewReader(buf.Bytes()),
 		ContentType: aws.String("image/jpeg"),
 	})
+	
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload avatar"})
+		return
+	}
 
 	if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]interface{}{
 		"avatar": "upload",
