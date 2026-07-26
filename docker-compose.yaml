@@ -129,15 +129,12 @@ services:
       CONFIG_ISSUER_URL: "http://localhost:8000"
       CONFIG_ISSUER_INTERNAL_URL: "http://auth:8080"
       CONFIG_EMAIL_SENDER_URL: "http://mailserver:8080"
+      CONFIG_S3_ENDPOINT: "http://localhost:9000"
       DISCORD_CLIENT_ID: "1437220613554176294"
       DISCORD_CLIENT_SECRET: "your-client-secret"
       DISCORD_GUILD_ID: "your-guild-id"
       DISCORD_BOT_TOKEN: "your-token-here"
       DISCORD_MEMBER_ROLE_ID: "your-member-role-id-here"
-      S3_ENDPOINT: "http://localhost:9000"
-      S3_ACCESS_KEY: "admin"
-      S3_SECRET_KEY: "mysecretpassword"
-      S3_BUCKET: "my-bucket"
       GIN_MODE: debug
     ports:
       - "8001:8080"

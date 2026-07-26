@@ -112,6 +112,7 @@ export default function ProfileClient({
 	const [editMode, setEditMode] = useState(false);
 	const [passwordResetOpen, setPasswordResetOpen] = useState(false);
 	const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+	const avatarUrl = `${process.env.NEXT_PUBLIC_RESOURCE_API_URL}/users/${user.id}/avatar`;
 
 	const displayName =
 		userProfile?.displayName || user?.customId || "名称未設定";
@@ -213,7 +214,7 @@ export default function ProfileClient({
 									fontSize: "2rem",
 									bgcolor: theme.palette.primary.main,
 								}}
-								src={avatarPreview ?? undefined}
+								src={avatarPreview ?? avatarUrl}
 							>
 								{displayName.charAt(0).toUpperCase()}
 							</Avatar>
@@ -233,15 +234,11 @@ export default function ProfileClient({
 											formData.append("avatar", file);
 
 											try {
-												const res = await fetch(
-													`${process.env.NEXT_PUBLIC_RESOURCE_API_URL}/users/${user.id}/avatar`,
-													{
-														method: "POST",
-														body: formData,
-														credentials: "include",
-													},
-												);
-
+												const res = await fetch(avatarUrl, {
+													method: "POST",
+													body: formData,
+													credentials: "include",
+												});
 												if (!res.ok) {
 													const body = await res.json().catch(() => null);
 													throw new Error(
@@ -253,7 +250,7 @@ export default function ProfileClient({
 												// アップロードした画像をその場でプレビュー反映
 												setAvatarPreview((prev) => {
 													if (prev) URL.revokeObjectURL(prev);
-													return URL.createObjectURL(file);
+													return avatarUrl;
 												});
 											} catch (err) {
 												console.error("Failed to upload avatar:", err);
