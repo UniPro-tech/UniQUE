@@ -112,7 +112,9 @@ export default function ProfileClient({
 	const [editMode, setEditMode] = useState(false);
 	const [passwordResetOpen, setPasswordResetOpen] = useState(false);
 	const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+	const [avatarCacheBuster, setAvatarCacheBuster] = useState(() => Date.now());
 	const avatarUrl = `${process.env.NEXT_PUBLIC_RESOURCE_API_URL}/users/${user.id}/avatar`;
+	const getCacheBustedAvatarUrl = () => `${avatarUrl}?t=${avatarCacheBuster}`;
 
 	const displayName =
 		userProfile?.displayName || user?.customId || "名称未設定";
@@ -214,7 +216,7 @@ export default function ProfileClient({
 									fontSize: "2rem",
 									bgcolor: theme.palette.primary.main,
 								}}
-								src={avatarPreview ?? avatarUrl}
+								src={avatarPreview ?? getCacheBustedAvatarUrl()}
 							>
 								{displayName.charAt(0).toUpperCase()}
 							</Avatar>
@@ -233,6 +235,10 @@ export default function ProfileClient({
 											const formData = new FormData();
 											formData.append("avatar", file);
 
+											// アップロード中もすぐに見た目を更新（体感速度向上のため先にプレビュー表示）
+											const objectUrl = URL.createObjectURL(file);
+											setAvatarPreview(objectUrl);
+
 											try {
 												const res = await fetch(avatarUrl, {
 													method: "POST",
@@ -247,14 +253,21 @@ export default function ProfileClient({
 													);
 												}
 
-												// アップロードした画像をその場でプレビュー反映
+												// アップロード成功: サーバー側の画像を最新として取得し直す
+												setAvatarCacheBuster(Date.now());
 												setAvatarPreview((prev) => {
 													if (prev) URL.revokeObjectURL(prev);
-													return avatarUrl;
+													return null;
 												});
 											} catch (err) {
 												console.error("Failed to upload avatar:", err);
 												console.error(err instanceof Error ? err.message : err);
+
+												// 失敗時はプレビューを元に戻す
+												setAvatarPreview((prev) => {
+													if (prev) URL.revokeObjectURL(prev);
+													return null;
+												});
 												// エラー表示処理をここに実装
 											} finally {
 												// 同じファイルを再選択できるようにvalueをリセット

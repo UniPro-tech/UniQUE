@@ -15,7 +15,13 @@ const nextConfig: NextConfig = {
 		]
 			.filter(Boolean)
 			.join(" ");
-
+		const imgSrc = [
+			"'self'",
+			process.env.NEXT_PUBLIC_RESOURCE_API_URL,
+			"https://cdn.discordapp.com",
+		]
+			.filter(Boolean)
+			.join(" ");
 		return [
 			{
 				source: "/(.*)",
@@ -36,8 +42,8 @@ const nextConfig: NextConfig = {
 						key: "Content-Security-Policy",
 						value:
 							process.env.NODE_ENV === "production"
-								? `default-src 'self'; img-src 'self' https://cdn.discordapp.com; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src ${connectSrc}`
-								: `default-src 'self'; img-src 'self' https://cdn.discordapp.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src ${connectSrc}`,
+								? `default-src 'self'; img-src ${imgSrc}; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src ${connectSrc}`
+								: `default-src 'self'; img-src ${imgSrc}; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src ${connectSrc}`,
 					},
 				],
 			},
