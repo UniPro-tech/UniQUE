@@ -121,6 +121,7 @@ services:
       auth:
         condition: service_started
     environment:
+      <<: *rustfs-environment
       DB_DSN:
         "root:Rootpassword@tcp(db:3306)/devdb?charset=utf8mb4&parseTime=True&lo\
         c=Local"
@@ -129,7 +130,7 @@ services:
       CONFIG_ISSUER_URL: "http://localhost:8000"
       CONFIG_ISSUER_INTERNAL_URL: "http://auth:8080"
       CONFIG_EMAIL_SENDER_URL: "http://mailserver:8080"
-      CONFIG_S3_ENDPOINT: "http://localhost:9000"
+      CONFIG_S3_ENDPOINT: "http://filesystem:9000"
       DISCORD_CLIENT_ID: "1437220613554176294"
       DISCORD_CLIENT_SECRET: "your-client-secret"
       DISCORD_GUILD_ID: "your-guild-id"
@@ -196,7 +197,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
+    networks:
+      - unique
   filesystem-init:
     image: rustfs/rc:latest
     depends_on:
@@ -209,7 +211,8 @@ services:
       $${RUSTFS_ACCESS_KEY} $${RUSTFS_SECRET_KEY};
       rc mb local/$${RUSTFS_BUCKET} --ignore-existing;
       rc anonymous set download local/$${RUSTFS_BUCKET};"
-
+    networks:
+      - unique
   # ──────────────────────────────────────────────
   # Dev Tools
   # ──────────────────────────────────────────────

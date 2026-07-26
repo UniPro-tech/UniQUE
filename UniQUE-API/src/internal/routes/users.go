@@ -1,13 +1,16 @@
 package routes
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
+	"image/jpeg"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -27,6 +30,8 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
 	"github.com/UniPro-tech/UniQUE-API/internal/utils"
 	discordutil "github.com/UniPro-tech/UniQUE-API/internal/utils/discord"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/oklog/ulid/v2"
@@ -2450,7 +2455,7 @@ func uploadAvatar(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(
 		c.Writer,
 		c.Request.Body,
-		6*1024*1024,
+		5*1024*1024,
 	)
 
 	fileHeader, err := c.FormFile("avatar")
@@ -2485,32 +2490,49 @@ func uploadAvatar(c *gin.Context) {
 		return
 	}
 
-	savepath := filepath.Join("users", id, "avatar"+ext)
-
-	// 3. 保存先ディレクトリが存在しない場合に備えて作成
-	avatarDir := filepath.Dir(savepath)
-	if err := os.MkdirAll(avatarDir, 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create upload directory"})
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reset image reader"})
 		return
 	}
 
-	// 2. 拡張子が変わるケースに備えて、既存の avatar.* を削除しておく
-	oldFiles, err := filepath.Glob(filepath.Join(avatarDir, "avatar.*"))
+	s3Client, exists := c.Get("s3_client")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "S3 client not found"})
+		return
+	}
+
+	client, ok := s3Client.(*s3.Client)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid S3 client type"})
+		return
+	}
+	img, _, err := image.Decode(file)
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid image file"})
 		return
 	}
-	for _, f := range oldFiles {
-		if err := os.Remove(f); err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
+	var buf bytes.Buffer
+
+	err = jpeg.Encode(&buf, img, &jpeg.Options{
+		Quality: 90,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to encode image"})
+		return
 	}
 
-	if err := c.SaveUploadedFile(fileHeader, savepath); err != nil {
-		c.String(http.StatusBadRequest, "upload file err: %s", err.Error())
-		return
-	}
+	savePath := filepath.ToSlash(filepath.Join(
+		"users",
+		id,
+		"avatar.jpg",
+	))
+
+	_, err = client.PutObject(c.Request.Context(), &s3.PutObjectInput{
+		Bucket: aws.String(os.Getenv("RUSTFS_BUCKET")),
+		Key:    aws.String(savePath),
+		Body:   bytes.NewReader(buf.Bytes()),
+		ContentType: aws.String("image/jpeg"),
+	})
 
 	if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]interface{}{
 		"avatar": "upload",
