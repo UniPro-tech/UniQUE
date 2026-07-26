@@ -2512,7 +2512,7 @@ func uploadAvatar(c *gin.Context) {
 		return
 	}
 
-	if _, err := q.Profile.Where(query.Profile.UserID.Eq(id)).Updates(map[string]interface{}{
+	if _, err := q.User.Where(query.User.ID.Eq(id)).Updates(map[string]interface{}{
 		"avatar": "upload",
 		"updated_at":  time.Now().UTC(),
 	}); err != nil {

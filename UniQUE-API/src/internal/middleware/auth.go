@@ -108,6 +108,12 @@ func AuthMiddleware() gin.HandlerFunc {
 		// AuthorizationヘッダーからJWTを取得
 		authorization := c.GetHeader("Authorization")
 		token := extractToken(authorization)
+		// Authorization ヘッダーがない場合は http-only cookie `session_jwt` を参照する
+		if token == "" {
+			if cookie, err := c.Cookie("session_jwt"); err == nil && cookie != "" {
+				token = cookie
+			}
+		}
 		if token == "" {
 			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
 			return

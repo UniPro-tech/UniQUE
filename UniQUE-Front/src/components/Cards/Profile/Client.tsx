@@ -257,6 +257,7 @@ export default function ProfileClient({
 												});
 											} catch (err) {
 												console.error("Failed to upload avatar:", err);
+												console.error(err instanceof Error ? err.message : err);
 												// エラー表示処理をここに実装
 											} finally {
 												// 同じファイルを再選択できるようにvalueをリセット
