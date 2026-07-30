@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - ./api.yaml
   - ./front.yaml
-  - ./gateway.yaml
+  - ./httproute.yaml
   - ./auth.yaml
   - ./db.yaml
   - ./pvc.yaml
