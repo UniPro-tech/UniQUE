@@ -535,9 +535,12 @@ func InternalAuthorizationDenied(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
 		return
 	}
-	authReq.DeviceFlowDenied = true
 
-	query.AuthorizationRequest.Save(authReq)
+	_, err = query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(id)).Update(query.AuthorizationRequest.DeviceFlowDenied, true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update authorization request"})
+		return
+	}
 	c.Status(http.StatusAccepted)
 }
 
