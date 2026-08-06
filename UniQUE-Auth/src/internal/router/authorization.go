@@ -530,15 +530,27 @@ func InternalConsentedPost(c *gin.Context) {
 func InternalAuthorizationDenied(c *gin.Context) {
 	id := c.Param("id")
 
-	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(id)).First()
+	authReq, err := query.AuthorizationRequest.Where(
+		query.AuthorizationRequest.ID.Eq(id),
+		query.AuthorizationRequest.IsConsented.Eq(false),
+		query.AuthorizationRequest.DeviceFlowDenied.Eq(false),
+	).First()
 	if err != nil || authReq == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
 		return
 	}
 
-	_, err = query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(id)).Update(query.AuthorizationRequest.DeviceFlowDenied, true)
+	result, err := query.AuthorizationRequest.Where(
+		query.AuthorizationRequest.ID.Eq(id),
+		query.AuthorizationRequest.IsConsented.Eq(false),
+		query.AuthorizationRequest.DeviceFlowDenied.Eq(false),
+	).Update(query.AuthorizationRequest.DeviceFlowDenied, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update authorization request"})
+		return
+	}
+	if result.RowsAffected != 1 {
+		c.JSON(http.StatusConflict, gin.H{"error": "authorization request state changed"})
 		return
 	}
 	c.Status(http.StatusAccepted)
