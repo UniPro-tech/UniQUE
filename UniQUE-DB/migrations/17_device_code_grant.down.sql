@@ -1,3 +1,7 @@
+DELETE FROM `authorization_requests`
+WHERE
+  `device_code` IS NOT NULL;
+
 ALTER TABLE `authorization_requests`
 DROP `user_code`,
 DROP `device_code`,
