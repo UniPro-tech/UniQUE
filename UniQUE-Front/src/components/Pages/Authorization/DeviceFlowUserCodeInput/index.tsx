@@ -11,6 +11,7 @@ import Stack from "@mui/material/Stack";
 import type { Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
+import { useSnackbar } from "notistack";
 import { useRef, useState } from "react";
 import { getAuthRequest } from "./action";
 
@@ -32,6 +33,7 @@ export default function DeviceFlowUserCodeInput() {
       inputRefs.current[index + 1]?.focus();
     }
   };
+  const snackbar = useSnackbar();
   // キーボード操作（BackSpaceキーで戻る処理）の制御
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLDivElement>,
@@ -136,6 +138,12 @@ export default function DeviceFlowUserCodeInput() {
             component="form"
             action={async () => {
               const authReqID = await getAuthRequest(code.join());
+              if (!authReqID) {
+                snackbar.enqueueSnackbar("認証コードが無効です。", {
+                  variant: "error",
+                });
+                return;
+              }
               router.push(`/device/consent?auth_request_id=${authReqID}`);
             }}
             method="post"
