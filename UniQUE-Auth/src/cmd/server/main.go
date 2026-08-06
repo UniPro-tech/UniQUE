@@ -91,6 +91,7 @@ func main() {
 	r.GET("/health", healthCheck)
 	r.GET("/authorization", router.AuthorizationGet)
 	r.POST("/authorization", router.AuthorizationPost)
+	r.POST("/device_authorization", router.DeviceAuthorizationGet)
 	r.GET("/.well-known/openid-configuration", router.WellKnownOpenIDConfiguration)
 	r.GET("/.well-known/jwks.json", router.WellKnownJWKS)
 	r.POST("/token", router.TokenPost)
