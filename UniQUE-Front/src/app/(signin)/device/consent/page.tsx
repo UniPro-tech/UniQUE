@@ -7,6 +7,7 @@ import TemporarySnackProvider, {
   type SnackbarData,
 } from "@/components/TemporarySnackProvider";
 import { createApiClient } from "@/libs/apiClient";
+import { deniedAction } from "./actions";
 
 export default async function Page({
   searchParams,
@@ -171,11 +172,7 @@ export default async function Page({
         auth_request_id={auth_request_id}
         action={`${resolvedAuthApiUrl}/authorization`}
         device_flow
-        deniedAction={async (auth_request_id) => {
-          await apiClientForAuthReq.delete(
-            `/internal/auth-requests/${auth_request_id}`,
-          );
-        }}
+        deniedAction={deniedAction}
       />
     </>
   );
