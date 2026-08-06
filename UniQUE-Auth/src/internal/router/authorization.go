@@ -390,7 +390,7 @@ func getUserPermissions(userID string, db *gorm.DB) (constants.Permission, error
 // @Tags internal
 // @Param id path string true "Authorization Request ID"
 // @Success 200 {object} AuthorizationResponse
-// @Router /internal/auth-requests/:id [get]
+// @Router /internal/auth-requests/{id} [get]
 func InternalAuthorizationGet(c *gin.Context) {
 	authReqID := c.Param("id")
 
@@ -430,7 +430,7 @@ func InternalAuthorizationGet(c *gin.Context) {
 // @Accept json
 // @Param id path string true "Authorization Request ID"
 // @Success 200 {string} string "Authorization request marked as consented"
-// @Router /internal/auth-requests/:id/consented [post]
+// @Router /internal/auth-requests/{id}/consented [post]
 func InternalConsentedPost(c *gin.Context) {
 	authReqID := c.Param("id")
 
@@ -526,7 +526,7 @@ func InternalConsentedPost(c *gin.Context) {
 // @Tags internal
 // @Param id path string true "authorization request id"
 // @Success 204
-// @Router /internal/auth-requests/:id [delete]
+// @Router /internal/auth-requests/{id} [delete]
 func InternalAuthorizationDenied(c *gin.Context) {
 	id := c.Param("id")
 
@@ -563,7 +563,7 @@ func InternalAuthorizationDenied(c *gin.Context) {
 // @Tags internal
 // @Param user_code path string true "User Code"
 // @Success 200 {object} AuthorizationResponse
-// @Router /internal/device-auth-requests/:id [get]
+// @Router /internal/device-auth-requests/{id} [get]
 func InternalDeviceAuthorizationGet(c *gin.Context) {
 	userCode := c.Param("id")
 

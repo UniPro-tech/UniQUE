@@ -248,7 +248,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/auth-requests/:id": {
+        "/internal/auth-requests/{id}": {
             "get": {
                 "description": "内部使用のみのエンドポイントで、認可リクエストの詳細情報を取得します。",
                 "tags": [
@@ -295,7 +295,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/auth-requests/:id/consented": {
+        "/internal/auth-requests/{id}/consented": {
             "post": {
                 "description": "内部使用のみのエンドポイントで、認可リクエストをユーザーが同意した状態に更新します。",
                 "consumes": [
@@ -466,7 +466,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/device-auth-requests/:id": {
+        "/internal/device-auth-requests/{id}": {
             "get": {
                 "description": "内部使用のみのエンドポイントで、device flowの認可リクエストの詳細情報を取得します。",
                 "tags": [
