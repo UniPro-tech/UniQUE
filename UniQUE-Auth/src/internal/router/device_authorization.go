@@ -40,7 +40,7 @@ type DeviceAuthorizationResponse struct {
 // @Param client_id formData string true "Client ID"
 // @Param scope formData string false "Scope"
 // @Success 200 {object} DeviceAuthorizationResponse "Device authorization response"
-// @Router /authorization [POST]
+// @Router /device_authorization [POST]
 func DeviceAuthorizationGet(c *gin.Context) {
 	var req DeviceAuthorizationRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
