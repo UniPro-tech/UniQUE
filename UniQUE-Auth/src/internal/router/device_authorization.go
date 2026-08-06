@@ -43,7 +43,7 @@ type DeviceAuthorizationResponse struct {
 // @Router /device_authorization [POST]
 func DeviceAuthorizationGet(c *gin.Context) {
 	var req DeviceAuthorizationRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
