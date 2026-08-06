@@ -33,9 +33,10 @@ type AuthorizationRequest struct {
 }
 
 type AuthorizationResponse struct {
+	ID                  string  `json:"id" binding:"required"`
 	ClientID            string  `json:"client_id" binding:"required"`
-	RedirectURI         string  `json:"redirect_uri" binding:"required"`
-	ResponseType        string  `json:"response_type" binding:"required,oneof=code token"`
+	RedirectURI         *string `json:"redirect_uri" binding:"required"`
+	ResponseType        *string `json:"response_type" binding:"required,oneof=code token"`
 	Scope               string  `json:"scope" binding:"required"`
 	State               *string `json:"state"`
 	Nonce               *string `json:"nonce"`
@@ -124,8 +125,8 @@ func AuthorizationGet(c *gin.Context) {
 		authReq = &model.AuthorizationRequest{
 			ID:                  ulid.Make().String(),
 			ApplicationID:       req.ClientID,
-			RedirectURI:         req.RedirectURI,
-			ResponseType:        req.ResponseType,
+			RedirectURI:         &req.RedirectURI,
+			ResponseType:        &req.ResponseType,
 			Scope:               req.Scope,
 			State:               req.State,
 			Nonce:               req.Nonce,
@@ -389,7 +390,7 @@ func getUserPermissions(userID string, db *gorm.DB) (constants.Permission, error
 // @Tags internal
 // @Param id path string true "Authorization Request ID"
 // @Success 200 {object} AuthorizationResponse
-// @Router /internal/auth-requests/:id [get]
+// @Router /internal/auth-requests/{id} [get]
 func InternalAuthorizationGet(c *gin.Context) {
 	authReqID := c.Param("id")
 
@@ -408,6 +409,7 @@ func InternalAuthorizationGet(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, AuthorizationResponse{
+		ID:                  authReq.ID,
 		ClientID:            authReq.ApplicationID,
 		RedirectURI:         authReq.RedirectURI,
 		ResponseType:        authReq.ResponseType,
@@ -428,7 +430,7 @@ func InternalAuthorizationGet(c *gin.Context) {
 // @Accept json
 // @Param id path string true "Authorization Request ID"
 // @Success 200 {string} string "Authorization request marked as consented"
-// @Router /internal/auth-requests/:id/consented [post]
+// @Router /internal/auth-requests/{id}/consented [post]
 func InternalConsentedPost(c *gin.Context) {
 	authReqID := c.Param("id")
 
@@ -484,7 +486,7 @@ func InternalConsentedPost(c *gin.Context) {
 			IsConsented: true,
 		}
 
-		if authReq.ResponseType == "code" {
+		if authReq.ResponseType != nil && *authReq.ResponseType == "code" {
 			now := time.Now().UTC()
 			e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
 			code := ulid.MustNew(ulid.Timestamp(now), e).String()
@@ -515,4 +517,65 @@ func InternalConsentedPost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "authorization request marked as consented"})
+}
+
+// InternalAuthorizationDenied godoc
+// @Summary get reject authorization request
+// @Schemes
+// @Description 内部使用のみのエンドポイントで、device flowの認可リクエストを却下します。
+// @Tags internal
+// @Param id path string true "authorization request id"
+// @Success 204
+// @Router /internal/auth-requests/{id} [delete]
+func InternalAuthorizationDenied(c *gin.Context) {
+	id := c.Param("id")
+
+	authReq, err := query.AuthorizationRequest.Where(
+		query.AuthorizationRequest.ID.Eq(id),
+		query.AuthorizationRequest.IsConsented.Eq(false),
+		query.AuthorizationRequest.DeviceFlowDenied.Eq(false),
+	).First()
+	if err != nil || authReq == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+		return
+	}
+
+	result, err := query.AuthorizationRequest.Where(
+		query.AuthorizationRequest.ID.Eq(id),
+		query.AuthorizationRequest.IsConsented.Eq(false),
+		query.AuthorizationRequest.DeviceFlowDenied.Eq(false),
+	).Update(query.AuthorizationRequest.DeviceFlowDenied, true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update authorization request"})
+		return
+	}
+	if result.RowsAffected != 1 {
+		c.JSON(http.StatusConflict, gin.H{"error": "authorization request state changed"})
+		return
+	}
+	c.Status(http.StatusAccepted)
+}
+
+// InternalDeviceAuthorizationGet godoc
+// @Summary get authorization request details (internal use only)
+// @Schemes
+// @Description 内部使用のみのエンドポイントで、device flowの認可リクエストの詳細情報を取得します。
+// @Tags internal
+// @Param user_code path string true "User Code"
+// @Success 200 {object} AuthorizationResponse
+// @Router /internal/device-auth-requests/{id} [get]
+func InternalDeviceAuthorizationGet(c *gin.Context) {
+	userCode := c.Param("id")
+
+	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.UserCode.Eq(userCode)).First()
+	if err != nil || authReq == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+		return
+	}
+
+	c.JSON(http.StatusOK, AuthorizationResponse{
+		ID:       authReq.ID,
+		ClientID: authReq.ApplicationID,
+		Scope:    authReq.Scope,
+	})
 }

@@ -22,13 +22,14 @@ import (
 )
 
 type TokenGetRequest struct {
-	GrantType    string `form:"grant_type" binding:"required,oneof=authorization_code refresh_token client_credentials"`
+	GrantType    string `form:"grant_type" binding:"required,oneof=authorization_code refresh_token client_credentials urn:ietf:params:oauth:grant-type:device_code"`
 	Code         string `form:"code"`
 	RedirectURI  string `form:"redirect_uri"`
 	ClientID     string `form:"client_id"`
 	ClientSecret string `form:"client_secret"`
 	RefreshToken string `form:"refresh_token"`
 	CodeVerifier string `form:"code_verifier"`
+	DeviceCode   string `form:"device_code"`
 }
 
 type TokenGetResponse struct {
@@ -45,12 +46,14 @@ type TokenGetResponse struct {
 // @Tags         oauth2
 // @Accept       application/x-www-form-urlencoded
 // @Produce      json
-// @Param        grant_type     formData  string  true   "Grant Type"  Enums(authorization_code, refresh_token, client_credentials)
+// @Param        grant_type     formData  string  true   "Grant Type"  Enums(authorization_code, refresh_token, client_credentials, urn:ietf:params:oauth:grant-type:device_code)
 // @Param        code           formData  string  false  "Authorization Code"
 // @Param        redirect_uri   formData  string  false  "Redirect URI"
 // @Param        client_id      formData  string  false  "Client ID"
 // @Param        client_secret  formData  string  false  "Client Secret"
 // @Param        refresh_token  formData  string  false  "Refresh Token"
+// @Param        code_verifier  formData  string  false  "Code Verifier"
+// @Param        device_code    formData  string  false  "Device Code"
 // @Success      200  {object}  TokenGetResponse
 // @Failure      400  {object}  map[string]string
 // @Router       /token [post]
@@ -63,19 +66,25 @@ func TokenPost(c *gin.Context) {
 
 	switch req.GrantType {
 	case "authorization_code":
-		clientID := checkClientAuthentication(c, &req)
+		clientID := checkClientAuthentication(c, &req, false)
 		if clientID == nil {
 			return
 		}
 		handleAuthorizationCodeGrant(c, &req, *clientID)
 	case "refresh_token":
-		clientID := checkClientAuthentication(c, &req)
+		clientID := checkClientAuthentication(c, &req, false)
 		if clientID == nil {
 			return
 		}
 		handleRefreshTokenGrant(c, &req, *clientID)
+	case "urn:ietf:params:oauth:grant-type:device_code":
+		clientID := checkClientAuthentication(c, &req, true)
+		if clientID == nil {
+			return
+		}
+		handleDeviceCodeGrant(c, &req, *clientID)
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported grant_type"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported_grant_type"})
 	}
 }
 
@@ -103,7 +112,7 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 			return gorm.ErrRecordNotFound
 		}
 
-		if authReq.RedirectURI != req.RedirectURI {
+		if authReq.RedirectURI == nil || *authReq.RedirectURI != req.RedirectURI {
 			return errors.New("redirect_uri_mismatch")
 		}
 
@@ -165,18 +174,18 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization code"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "authorization code not found"})
 			return
 		}
 		switch err.Error() {
 		case "redirect_uri_mismatch":
-			c.JSON(http.StatusBadRequest, gin.H{"error": "redirect_uri does not match"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "redirect_uri_mismatch"})
 		case "code_verifier_required":
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "error_description": "code_verifier required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "code_verifier required"})
 		case "pkce_verification_failed":
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "pkce_verification_failed"})
 		case "invalid_session":
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "invalid session"})
 		default:
 			c.AbortWithError(http.StatusInternalServerError, err)
 		}
@@ -207,7 +216,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 
 	jweObj, err := jwe.ParseEncrypted(tokenRaw)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refresh token"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 		return
 	}
 
@@ -224,7 +233,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 			}
 		}
 		if !found || decErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refresh token"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 			return
 		}
 	} else {
@@ -235,19 +244,19 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 			}
 		}
 		if decErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refresh token"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 			return
 		}
 	}
 
 	var claims util.RefreshTokenClaims
 	if err := json.Unmarshal(decryptedObj, &claims); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refresh token"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 		return
 	}
 
 	if len(claims.Audience) == 0 || claims.Audience[0] != clientID {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refresh token"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 		return
 	}
 
@@ -295,7 +304,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refresh token"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 			return
 		}
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -311,67 +320,177 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 	})
 }
 
-// クライアント認証の検査
-func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
-	logger := middleware.GetLogger(c)
+// urn:ietf:params:oauth:grant-type:device_code グラントの処理
+func handleDeviceCodeGrant(c *gin.Context, req *TokenGetRequest, clientID string) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
 		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
-		return nil
+		return
 	}
 	q := query.Use(db)
 
-	if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
-		clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
+	var accessToken, idToken, refreshToken string
+
+	err := q.Transaction(func(tx *query.Query) error {
+		deviceAuthReq, err := tx.AuthorizationRequest.Where(
+			tx.AuthorizationRequest.DeviceCode.Eq(req.DeviceCode),
+			tx.AuthorizationRequest.ApplicationID.Eq(clientID),
+		).First()
 		if err != nil {
-			logger.Warn("not valid authorization header")
-			c.JSON(http.StatusBadRequest, gin.H{"error": "not valid authorization header"})
-			return nil
+			return err
+		}
+		if deviceAuthReq == nil {
+			return gorm.ErrRecordNotFound
 		}
 
-		application, err := q.Application.Where(q.Application.ID.Eq(clientID)).First()
+		if deviceAuthReq.ExpiresAt.Before(time.Now().UTC()) {
+			return errors.New("expired_token")
+		}
+
+		if deviceAuthReq.DeviceFlowDenied {
+			return errors.New("access_denied")
+		}
+
+		if !deviceAuthReq.IsConsented {
+			return errors.New("authorization_pending")
+		}
+
+		// gen tokens
+		if deviceAuthReq.SessionID == nil || *deviceAuthReq.SessionID == "" {
+			return errors.New("access_denied")
+		}
+
+		session, err := tx.Session.Where(tx.Session.ID.Eq(*deviceAuthReq.SessionID)).First()
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid client credentials"})
+			return err
+		}
+
+		consent, err := tx.Consent.Where(
+			tx.Consent.UserID.Eq(session.UserID),
+			tx.Consent.ApplicationID.Eq(deviceAuthReq.ApplicationID),
+		).First()
+		if err != nil {
+			return err
+		}
+
+		cfg := *c.MustGet("config").(*config.Config)
+		// tx.OauthToken.UnderlyingDB() から、トランザクションコンテキストを持った *gorm.DB を安全に取得
+		accessToken, idToken, refreshToken, err = util.GenerateTokens(tx, cfg, consent, deviceAuthReq.Scope, derefPtr(deviceAuthReq.Nonce), middleware.GetLogger(c))
+		if err != nil {
+			return err
+		}
+
+		if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(deviceAuthReq.ID)).Delete(); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "error_description": "device code not found"})
+			return
+		}
+		switch err.Error() {
+		case "expired_token":
+			c.JSON(http.StatusBadRequest, gin.H{"error": "expired_token"})
+		case "authorization_pending":
+			c.JSON(http.StatusBadRequest, gin.H{"error": "authorization_pending"})
+		case "access_denied":
+			c.JSON(http.StatusBadRequest, gin.H{"error": "access_denied"})
+		default:
+			c.AbortWithError(http.StatusInternalServerError, err)
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, TokenGetResponse{
+		AccessToken:  accessToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600,
+		RefreshToken: refreshToken,
+		IDToken:      idToken,
+	})
+}
+
+// [共通] クライアント認証の検査
+func checkClientAuthentication(c *gin.Context, req *TokenGetRequest, isDeviceFlow bool) *string {
+	logger := middleware.GetLogger(c)
+
+	if !isDeviceFlow {
+		if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
+			// Basic認証ヘッダがある場合は、クライアントIDとシークレットを検証する
+			clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
+			if err != nil {
+				logger.Warn("not valid authorization header")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
 				return nil
 			}
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return nil
-		}
 
-		if application.PublicClient {
+			application, err := query.Application.Where(query.Application.ID.Eq(clientID)).First()
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
+					return nil
+				}
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return nil
+			}
+
+			if application.PublicClient {
+				return &clientID
+			}
+
+			if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(clientSecret)) != 1 {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
+				return nil
+			}
 			return &clientID
-		}
-
-		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(clientSecret)) != 1 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid client credentials"})
-			return nil
-		}
-		return &clientID
-	} else {
-		application, err := q.Application.Where(q.Application.ID.Eq(req.ClientID)).First()
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid client credentials"})
+		} else {
+			application, err := query.Application.Where(query.Application.ID.Eq(req.ClientID)).First()
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
+					return nil
+				}
+				c.AbortWithError(http.StatusInternalServerError, err)
 				return nil
 			}
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return nil
-		}
 
-		if application.PublicClient {
+			if application.PublicClient {
+				return &req.ClientID
+			}
+
+			if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(req.ClientSecret)) != 1 {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
+				return nil
+			}
 			return &req.ClientID
 		}
-
-		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(req.ClientSecret)) != 1 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid client credentials"})
+	} else {
+		// Device Flowの場合は、クライアントIDのみを検証する
+		if req.ClientID == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
+			return nil
+		}
+		authRequest, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.ApplicationID.Eq(req.ClientID), query.AuthorizationRequest.DeviceCode.Eq(req.DeviceCode)).First()
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
+				return nil
+			}
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return nil
+		}
+		if authRequest == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
 			return nil
 		}
 		return &req.ClientID
 	}
 }
 
+// [共通] Basic認証ヘッダの解析
 func parseBasicAuth(authHeader string) (string, string, error) {
 	if !strings.HasPrefix(authHeader, "Basic ") {
 		return "", "", errors.New("invalid basic auth format")
@@ -388,6 +507,7 @@ func parseBasicAuth(authHeader string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
+// [共通] ポインタの値を取得
 func derefPtr(s *string) string {
 	if s == nil {
 		return ""
