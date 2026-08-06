@@ -9,7 +9,7 @@ export const getAuthRequest = async (
   const apiClient = createApiClient(process.env.AUTH_API_URL);
   const res = await apiClient.get(`/internal/device-auth-requests/${userCode}`);
   if (!res.ok) {
-    if (res.status === 404) {
+    if (res.status === 400 || res.status === 404) {
       return null;
     }
     throw Error(AuthServerErrors.InternalServerError.message);
