@@ -385,7 +385,7 @@ func getUserPermissions(userID string, db *gorm.DB) (constants.Permission, error
 // InternalAuthorizationGet godoc
 // @Summary get authorization request details (internal use only)
 // @Schemes
-// @Description 内部使用のみのエンドポイントで、(device flow以外の)認可リクエストの詳細情報を取得します。
+// @Description 内部使用のみのエンドポイントで、認可リクエストの詳細情報を取得します。
 // @Tags internal
 // @Param id path string true "Authorization Request ID"
 // @Success 200 {object} AuthorizationResponse
@@ -404,11 +404,6 @@ func InternalAuthorizationGet(c *gin.Context) {
 	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(authReqID)).First()
 	if err != nil || authReq == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
-		return
-	}
-
-	if authReq.DeviceCode != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "device flow auth req"})
 		return
 	}
 
