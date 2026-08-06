@@ -418,11 +418,8 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest, isDeviceFlo
 	logger := middleware.GetLogger(c)
 
 	if !isDeviceFlow {
-		if req.ClientID == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
-			return nil
-		}
 		if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
+			// Basic認証ヘッダがある場合は、クライアントIDとシークレットを検証する
 			clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
 			if err != nil {
 				logger.Warn("not valid authorization header")
@@ -471,6 +468,7 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest, isDeviceFlo
 			return &req.ClientID
 		}
 	} else {
+		// Device Flowの場合は、クライアントIDのみを検証する
 		if req.ClientID == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
 			return nil
