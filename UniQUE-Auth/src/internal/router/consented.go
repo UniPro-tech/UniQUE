@@ -56,6 +56,7 @@ func ConsentedGet(c *gin.Context) {
 	// Generate authorization code or token based on response_type
 	if authReq.ResponseType == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "device flow is not supported for this endpoint"})
+		return
 	}
 	switch *authReq.ResponseType {
 	case "code":
