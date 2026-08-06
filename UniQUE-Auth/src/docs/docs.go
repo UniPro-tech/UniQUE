@@ -190,6 +190,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/device_authorization": {
+            "post": {
+                "description": "device authorization request(RFC 8628)を行うためのエンドポイントです。",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "tags": [
+                    "authorization"
+                ],
+                "summary": "device authorization request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Scope",
+                        "name": "scope",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device authorization response",
+                        "schema": {
+                            "$ref": "#/definitions/router.DeviceAuthorizationResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "システムの稼働状況を確認するためのエンドポイントです。",
@@ -235,6 +270,27 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/router.AuthorizationResponse"
                         }
+                    }
+                }
+            },
+            "delete": {
+                "description": "内部使用のみのエンドポイントで、device flowの認可リクエストを却下します。",
+                "tags": [
+                    "internal"
+                ],
+                "summary": "get reject authorization request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "authorization request id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
@@ -405,6 +461,32 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/device-auth-requests/:id": {
+            "get": {
+                "description": "内部使用のみのエンドポイントで、device flowの認可リクエストの詳細情報を取得します。",
+                "tags": [
+                    "internal"
+                ],
+                "summary": "get authorization request details (internal use only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User Code",
+                        "name": "user_code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.AuthorizationResponse"
                         }
                     }
                 }
@@ -702,7 +784,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/totp/{user_id}": {
+        "/internal/totp/{uid}": {
             "post": {
                 "description": "TOTPのシークレットとQRコード用URIを生成します。ユーザーがTOTPをセットアップする際に使用します。",
                 "consumes": [
@@ -733,7 +815,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/totp/{user_id}/disable": {
+        "/internal/totp/{uid}/disable": {
             "post": {
                 "description": "TOTPを無効化します。ユーザーがTOTPを無効にする際に使用します。",
                 "consumes": [
@@ -764,7 +846,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/totp/{user_id}/verify": {
+        "/internal/totp/{uid}/verify": {
             "post": {
                 "description": "TOTPコードを検証し、is_totp_enabledをtrueに設定します。ユーザーがTOTPセットアップを完了する際に使用します。",
                 "consumes": [
@@ -897,7 +979,8 @@ const docTemplate = `{
                         "enum": [
                             "authorization_code",
                             "refresh_token",
-                            "client_credentials"
+                            "client_credentials",
+                            "urn:ietf:params:oauth:grant-type:device_code"
                         ],
                         "type": "string",
                         "description": "Grant Type",
@@ -933,6 +1016,18 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Refresh Token",
                         "name": "refresh_token",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Code Verifier",
+                        "name": "code_verifier",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Device Code",
+                        "name": "device_code",
                         "in": "formData"
                     }
                 ],
@@ -1055,6 +1150,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "client_id",
+                "id",
                 "redirect_uri",
                 "response_type",
                 "scope"
@@ -1072,6 +1168,9 @@ const docTemplate = `{
                         "plain",
                         "S256"
                     ]
+                },
+                "id": {
+                    "type": "string"
                 },
                 "nonce": {
                     "type": "string"
@@ -1138,6 +1237,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.DeviceAuthorizationResponse": {
+            "type": "object",
+            "required": [
+                "device_code",
+                "expires_in",
+                "interval",
+                "user_code",
+                "verification_uri"
+            ],
+            "properties": {
+                "device_code": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "description": "ExpiresIn is the number of seconds the device_code and user_code are valid for.",
+                    "type": "integer"
+                },
+                "interval": {
+                    "description": "Interval is the minimum number of seconds that the client SHOULD wait between polling requests to the token endpoint.",
+                    "type": "integer"
+                },
+                "user_code": {
+                    "type": "string"
+                },
+                "verification_uri": {
                     "type": "string"
                 }
             }
@@ -1461,6 +1589,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "device_authorization_endpoint": {
+                    "type": "string"
                 },
                 "grant_types_supported": {
                     "type": "array",

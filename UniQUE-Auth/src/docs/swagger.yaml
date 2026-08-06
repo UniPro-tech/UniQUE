@@ -53,6 +53,8 @@ definitions:
         - plain
         - S256
         type: string
+      id:
+        type: string
       nonce:
         type: string
       prompt:
@@ -70,6 +72,7 @@ definitions:
         type: string
     required:
     - client_id
+    - id
     - redirect_uri
     - response_type
     - scope
@@ -103,6 +106,29 @@ definitions:
         type: string
       user_id:
         type: string
+    type: object
+  router.DeviceAuthorizationResponse:
+    properties:
+      device_code:
+        type: string
+      expires_in:
+        description: ExpiresIn is the number of seconds the device_code and user_code
+          are valid for.
+        type: integer
+      interval:
+        description: Interval is the minimum number of seconds that the client SHOULD
+          wait between polling requests to the token endpoint.
+        type: integer
+      user_code:
+        type: string
+      verification_uri:
+        type: string
+    required:
+    - device_code
+    - expires_in
+    - interval
+    - user_code
+    - verification_uri
     type: object
   router.DisableTOTPRequest:
     properties:
@@ -312,6 +338,8 @@ definitions:
         items:
           type: string
         type: array
+      device_authorization_endpoint:
+        type: string
       grant_types_supported:
         items:
           type: string
@@ -466,6 +494,29 @@ paths:
       summary: Redirect for Authorization Request
       tags:
       - authorization
+  /device_authorization:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: device authorization request(RFC 8628)を行うためのエンドポイントです。
+      parameters:
+      - description: Client ID
+        in: formData
+        name: client_id
+        required: true
+        type: string
+      - description: Scope
+        in: formData
+        name: scope
+        type: string
+      responses:
+        "200":
+          description: Device authorization response
+          schema:
+            $ref: '#/definitions/router.DeviceAuthorizationResponse'
+      summary: device authorization request
+      tags:
+      - authorization
   /health:
     get:
       consumes:
@@ -482,6 +533,20 @@ paths:
       tags:
       - system info
   /internal/auth-requests/:id:
+    delete:
+      description: 内部使用のみのエンドポイントで、device flowの認可リクエストを却下します。
+      parameters:
+      - description: authorization request id
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: get reject authorization request
+      tags:
+      - internal
     get:
       description: 内部使用のみのエンドポイントで、認可リクエストの詳細情報を取得します。
       parameters:
@@ -607,6 +672,23 @@ paths:
               type: string
             type: object
       summary: delete consent by id
+      tags:
+      - internal
+  /internal/device-auth-requests/:id:
+    get:
+      description: 内部使用のみのエンドポイントで、device flowの認可リクエストの詳細情報を取得します。
+      parameters:
+      - description: User Code
+        in: path
+        name: user_code
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.AuthorizationResponse'
+      summary: get authorization request details (internal use only)
       tags:
       - internal
   /internal/password_hash:
@@ -802,7 +884,7 @@ paths:
       summary: token verify endpoint
       tags:
       - internal
-  /internal/totp/{user_id}:
+  /internal/totp/{uid}:
     post:
       consumes:
       - application/json
@@ -822,7 +904,7 @@ paths:
       summary: Generate TOTP secret and QR code
       tags:
       - internal
-  /internal/totp/{user_id}/disable:
+  /internal/totp/{uid}/disable:
     post:
       consumes:
       - application/json
@@ -842,7 +924,7 @@ paths:
       summary: Disable TOTP
       tags:
       - internal
-  /internal/totp/{user_id}/verify:
+  /internal/totp/{uid}/verify:
     post:
       consumes:
       - application/json
@@ -928,6 +1010,7 @@ paths:
         - authorization_code
         - refresh_token
         - client_credentials
+        - urn:ietf:params:oauth:grant-type:device_code
         in: formData
         name: grant_type
         required: true
@@ -951,6 +1034,14 @@ paths:
       - description: Refresh Token
         in: formData
         name: refresh_token
+        type: string
+      - description: Code Verifier
+        in: formData
+        name: code_verifier
+        type: string
+      - description: Device Code
+        in: formData
+        name: device_code
         type: string
       produces:
       - application/json
