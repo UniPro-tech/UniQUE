@@ -111,6 +111,8 @@ func main() {
 		ig.GET("/session_verify", router.SessionVerifyGet)
 		ig.GET("/token_verify", router.TokenVerifyGet)
 		ig.GET("/auth-requests/:id", router.InternalAuthorizationGet)
+		ig.DELETE("/auth-requests/:id", router.InternalAuthorizationDenied)
+		ig.GET("/device-auth-requests/:id", router.InternalDeviceAuthorizationGet)
 		ig.POST("/auth-requests/:id/consented", router.InternalConsentedPost)
 		ig.POST("/totp/:uid", router.GenerateTOTP)
 		ig.POST("/totp/:uid/verify", router.VerifyTOTP)
