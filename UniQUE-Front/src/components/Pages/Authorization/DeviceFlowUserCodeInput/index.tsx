@@ -136,7 +136,7 @@ export default function DeviceFlowUserCodeInput() {
             component="form"
             action={async () => {
               const authReqID = await getAuthRequest(code.join());
-              router.push(`/device/consent/${authReqID}`);
+              router.push(`/device/consent?auth_request_id=${authReqID}`);
             }}
             method="post"
             sx={{ flex: 1 }}
