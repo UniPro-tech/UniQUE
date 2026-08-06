@@ -21,7 +21,7 @@ export default function DeviceFlowUserCodeInput() {
 
   const handleChange = (value: string, index: number) => {
     // 英数のみ許可
-    if (value && !/^[a-zA-Z0-9]$/.test(value)) return;
+    if (value && !/^[a-zA-Z0-9]{1}$/.test(value)) return;
 
     const newCode = [...code];
     newCode[index] = value;
@@ -47,8 +47,8 @@ export default function DeviceFlowUserCodeInput() {
     e.preventDefault(); // 通常のペースト動作をキャンセル
     const pastedData = e.clipboardData.getData("text").trim();
 
-    // 英数のみ、かつ4桁のデータかチェック
-    if (/^[a-zA-Z0-9]$/.test(pastedData)) {
+    // 英数のみ、かつ8桁のデータかチェック
+    if (/^[a-zA-Z0-9]{8}$/.test(pastedData)) {
       const newCode = pastedData.split("");
       setCode(newCode);
       // 一番最後の入力欄にフォーカスを移動
