@@ -174,18 +174,18 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "error_description": "authorization code not found"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "authorization code not found"})
 			return
 		}
 		switch err.Error() {
 		case "redirect_uri_mismatch":
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "error_description": "redirect_uri_mismatch"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "redirect_uri_mismatch"})
 		case "code_verifier_required":
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "error_description": "code_verifier required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "code_verifier required"})
 		case "pkce_verification_failed":
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "pkce_verification_failed"})
 		case "invalid_session":
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "error_description": "invalid session"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "invalid session"})
 		default:
 			c.AbortWithError(http.StatusInternalServerError, err)
 		}
