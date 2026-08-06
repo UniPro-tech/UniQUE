@@ -348,12 +348,12 @@ func handleDeviceCodeGrant(c *gin.Context, req *TokenGetRequest, clientID string
 			return errors.New("expired_token")
 		}
 
-		if !deviceAuthReq.IsConsented {
-			return errors.New("authorization_pending")
-		}
-
 		if deviceAuthReq.DeviceFlowDenied {
 			return errors.New("access_denied")
+		}
+
+		if !deviceAuthReq.IsConsented {
+			return errors.New("authorization_pending")
 		}
 
 		// gen tokens
