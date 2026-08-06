@@ -13,6 +13,7 @@ import (
 type WellKnownOpenIDConfigurationResponse struct {
 	Issuer                            string   `json:"issuer"`
 	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
+	DeviceAuthorizationEndpoint       string   `json:"device_authorization_endpoint"`
 	TokenEndpoint                     string   `json:"token_endpoint"`
 	UserinfoEndpoint                  string   `json:"userinfo_endpoint"`
 	RevocationEndpoint                string   `json:"revocation_endpoint"`
@@ -40,6 +41,7 @@ func WellKnownOpenIDConfiguration(c *gin.Context) {
 	c.JSON(200, WellKnownOpenIDConfigurationResponse{
 		Issuer:                            environmentConfigs.IssuerURL,
 		AuthorizationEndpoint:             environmentConfigs.IssuerURL + "/authorization",
+		DeviceAuthorizationEndpoint:       environmentConfigs.IssuerURL + "/device_authorization",
 		TokenEndpoint:                     environmentConfigs.IssuerURL + "/token",
 		UserinfoEndpoint:                  environmentConfigs.IssuerURL + "/userinfo",
 		RevocationEndpoint:                environmentConfigs.IssuerURL + "/revocation",
@@ -63,7 +65,11 @@ func WellKnownOpenIDConfiguration(c *gin.Context) {
 			// TODO: Impliment acr, amr, etc...
 		},
 		CodeChallengeMethodsSupported: []string{"S256"},
-		GrantTypesSupported:           []string{"authorization_code", "refresh_token"},
+		GrantTypesSupported: []string{
+			"authorization_code",
+			"refresh_token",
+			"urn:ietf:params:oauth:grant-type:device_code",
+		},
 	})
 }
 

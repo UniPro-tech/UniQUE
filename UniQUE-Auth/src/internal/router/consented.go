@@ -54,7 +54,10 @@ func ConsentedGet(c *gin.Context) {
 	}
 
 	// Generate authorization code or token based on response_type
-	switch authReq.ResponseType {
+	if authReq.ResponseType == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "device flow is not supported for this endpoint"})
+	}
+	switch *authReq.ResponseType {
 	case "code":
 		if authReq.Code == nil || *authReq.Code == "" {
 			c.JSON(400, gin.H{"error": "not check consented"})
@@ -62,7 +65,7 @@ func ConsentedGet(c *gin.Context) {
 		}
 
 		// 文字列結合ではなく、net/url を使用して安全にURLとクエリを構築する
-		parsedURL, err := url.Parse(authReq.RedirectURI)
+		parsedURL, err := url.Parse(*authReq.RedirectURI)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "invalid redirect_uri format"})
 			return
