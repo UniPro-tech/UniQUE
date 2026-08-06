@@ -84,7 +84,7 @@ func DeviceAuthorizationGet(c *gin.Context) {
 			UserCode:         &userCode,
 			DeviceCode:       &deviceCode,
 			DeviceFlowDenied: false,
-			ExpiresAt:        now.Add(20 * time.Minute),
+			ExpiresAt:        now.Add(10 * time.Minute),
 			CreatedAt:        now,
 		}
 		return tx.AuthorizationRequest.Create(authReq)
@@ -100,5 +100,6 @@ func DeviceAuthorizationGet(c *gin.Context) {
 		UserCode:      userCode,
 		ValidationURI: "https://unique.uniproject.jp/device",
 		Interval:      7,
+		ExpiresIn:     10 * 60, // 10 minutes
 	})
 }
