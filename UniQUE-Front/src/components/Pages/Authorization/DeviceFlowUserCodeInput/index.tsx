@@ -137,7 +137,19 @@ export default function DeviceFlowUserCodeInput() {
           <Box
             component="form"
             action={async () => {
-              const authReqID = await getAuthRequest(code.join());
+              // 認証コードが8桁揃っていない場合はエラー
+              if (code.some((digit) => digit === "")) {
+                snackbar.enqueueSnackbar(
+                  "認証コードをすべて入力してください。",
+                  {
+                    variant: "error",
+                  },
+                );
+                return;
+              }
+              // 認証コードを連結する
+              const userCode = code.join("");
+              const authReqID = await getAuthRequest(userCode);
               if (!authReqID) {
                 snackbar.enqueueSnackbar("認証コードが無効です。", {
                   variant: "error",
