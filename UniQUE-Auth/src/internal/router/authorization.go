@@ -33,6 +33,7 @@ type AuthorizationRequest struct {
 }
 
 type AuthorizationResponse struct {
+	ID                  string  `json:"id" binding:"required"`
 	ClientID            string  `json:"client_id" binding:"required"`
 	RedirectURI         *string `json:"redirect_uri" binding:"required"`
 	ResponseType        *string `json:"response_type" binding:"required,oneof=code token"`
@@ -408,6 +409,7 @@ func InternalAuthorizationGet(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, AuthorizationResponse{
+		ID:                  authReq.ID,
 		ClientID:            authReq.ApplicationID,
 		RedirectURI:         authReq.RedirectURI,
 		ResponseType:        authReq.ResponseType,
@@ -517,6 +519,28 @@ func InternalConsentedPost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "authorization request marked as consented"})
 }
 
+// InternalAuthorizationDenied godoc
+// @Summary get reject authorization request
+// @Schemes
+// @Description 内部使用のみのエンドポイントで、device flowの認可リクエストを却下します。
+// @Tags internal
+// @Param id path string true "authorization request id"
+// @Success 204
+// @Router /internal/auth-requests/:id [delete]
+func InternalAuthorizationDenied(c *gin.Context) {
+	id := c.Param("id")
+
+	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(id)).First()
+	if err != nil || authReq == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+		return
+	}
+	authReq.DeviceFlowDenied = true
+
+	query.AuthorizationRequest.Save(authReq)
+	c.Status(http.StatusAccepted)
+}
+
 // InternalDeviceAuthorizationGet godoc
 // @Summary get authorization request details (internal use only)
 // @Schemes
@@ -528,21 +552,14 @@ func InternalConsentedPost(c *gin.Context) {
 func InternalDeviceAuthorizationGet(c *gin.Context) {
 	userCode := c.Param("id")
 
-	dbAny := c.MustGet("db")
-	db, ok := dbAny.(*gorm.DB)
-	if !ok || db == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
-		return
-	}
-	q := query.Use(db)
-
-	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.UserCode.Eq(userCode)).First()
+	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.UserCode.Eq(userCode)).First()
 	if err != nil || authReq == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
 		return
 	}
 
 	c.JSON(http.StatusOK, AuthorizationResponse{
+		ID:       authReq.ID,
 		ClientID: authReq.ApplicationID,
 		Scope:    authReq.Scope,
 	})
