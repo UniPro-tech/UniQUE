@@ -11,6 +11,7 @@ import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import type { Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
+import { useRouter } from "next/navigation";
 import type { ApplicationData } from "@/classes/Application";
 import type { UserData } from "@/classes/types/User";
 
@@ -22,7 +23,9 @@ export default function ConsentCard(props: {
   redirect_uri: string;
   state?: string;
   action?: string;
-  auth_request_id?: string;
+  auth_request_id: string;
+  device_flow?: boolean;
+  deniedAction?: (auth_request_id: string) => Promise<void>;
 }) {
   const {
     app,
@@ -33,14 +36,20 @@ export default function ConsentCard(props: {
     state,
     action,
     auth_request_id,
+    device_flow,
+    deniedAction,
   } = props;
   const scopes = scope ? scope.split(" ") : [];
   // `action` should be provided by the server page (uses AUTH_API_URL). Fallback to relative endpoint.
   const formAction = action ?? "/auth";
 
-  const denyHref = `${redirect_uri}?error=access_denied${
-    state ? `&state=${encodeURIComponent(state)}` : ""
-  }`;
+  const denyHref = device_flow
+    ? `/device/denied`
+    : `${redirect_uri}?error=access_denied${
+        state ? `&state=${encodeURIComponent(state)}` : ""
+      }`;
+
+  const router = useRouter();
 
   return (
     <MuiCard
@@ -176,12 +185,17 @@ export default function ConsentCard(props: {
             </Button>
           </Box>
 
-          <Box sx={{ flexBasis: 200 }}>
-            <Link href={denyHref} underline="none">
-              <Button variant="outlined" color="inherit" fullWidth>
-                拒否する
-              </Button>
-            </Link>
+          <Box
+            component="form"
+            sx={{ flexBasis: 200 }}
+            action={async () => {
+              if (deniedAction) deniedAction(auth_request_id);
+              router.push(denyHref);
+            }}
+          >
+            <Button variant="outlined" color="inherit" fullWidth type="submit">
+              拒否する
+            </Button>
           </Box>
         </Box>
       </CardActions>
