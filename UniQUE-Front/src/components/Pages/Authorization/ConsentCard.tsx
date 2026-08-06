@@ -189,7 +189,7 @@ export default function ConsentCard(props: {
             component="form"
             sx={{ flexBasis: 200 }}
             action={async () => {
-              if (deniedAction) deniedAction(auth_request_id);
+              if (deniedAction) await deniedAction(auth_request_id);
               router.push(denyHref);
             }}
           >
