@@ -13,6 +13,18 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  name: api-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-retain
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
   name: auth-keys-pvc
 spec:
   accessModes:

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/docs"
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
@@ -11,6 +13,11 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
 	"github.com/UniPro-tech/UniQUE-API/internal/routes"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/gin-contrib/cors"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm/logger"
@@ -56,7 +63,33 @@ func main() {
 		slog.Error("Failed to initialize database", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+	// Initialize AWS SDK configuration
+	ctx := context.Background()
 
+	endpoint := os.Getenv("CONFIG_S3_ENDPOINT")
+	accessKey := os.Getenv("RUSTFS_ACCESS_KEY")
+	secretKey := os.Getenv("RUSTFS_SECRET_KEY")
+
+	cfg, err := awsconfig.LoadDefaultConfig(
+		ctx,
+		awsconfig.WithRegion("us-east-1"),
+		awsconfig.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(
+				accessKey,
+				secretKey,
+				"",
+			),
+		),
+	)
+	if err != nil {
+		slog.Error("Failed to initialize AWS SDK", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(endpoint)
+		o.UsePathStyle = true
+	})
 	// ログレベルの決定（環境変数などで切り替えるイメージ）
 	var gormLogLevel logger.LogLevel
 
@@ -79,10 +112,19 @@ func main() {
 	docs.SwaggerInfo.Title = environmentConfigs.AppName + " API"
 	docs.SwaggerInfo.Version = environmentConfigs.Version
 
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	// Add contexts (AuthMiddlewareより先にセットする必要がある)
 	r.Use(func(c *gin.Context) {
 		c.Set("config", *environmentConfigs)
 		c.Set("db", dbConnection)
+		c.Set("s3_client", client)
 		c.Next()
 	})
 
