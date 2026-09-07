@@ -80,6 +80,37 @@ func SendDirectMessage(userID string, content string, db *gorm.DB, config *confi
 	return nil
 }
 
+// SendChannelMessage posts a message to a Discord channel as the configured bot.
+func SendChannelMessage(channelID string, content string, config *config.Config) error {
+	if channelID == "" {
+		return fmt.Errorf("discord channel ID not configured")
+	}
+	if config.DiscordConfig.BotToken == "" {
+		return fmt.Errorf("discord bot token not configured")
+	}
+
+	body, err := json.Marshal(map[string]string{"content": content})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://discord.com/api/%s/channels/%s/messages", config.DiscordApiVersion, channelID), bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bot "+config.DiscordConfig.BotToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to send channel message, status code: %d", resp.StatusCode)
+	}
+	return nil
+}
+
 // SendWelcomeMessage は承認時に送るウェルカムメッセージを組み立てて送信するヘルパー
 func SendWelcomeMessage(userID string, email string, password string, displayName string, db *gorm.DB, config *config.Config) error {
 	if displayName == "" {
