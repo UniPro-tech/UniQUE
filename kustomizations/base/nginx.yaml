@@ -53,6 +53,13 @@ spec:
             - name: config-volume
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
       volumes:
         - name: config-volume
           configMap:

@@ -15,6 +15,7 @@ spec:
       labels:
         app: unique-discord
     spec:
+      serviceAccountName: unique-discord
       containers:
         - name: unique-discord
           image: registry.uniproject.jp/infra/unique-discord:1.0.1
