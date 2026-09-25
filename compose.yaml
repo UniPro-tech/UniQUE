@@ -114,6 +114,26 @@ services:
       - front-node-modules:/app/node_modules
     profiles:
       - frontend
+      - oidc
+    networks:
+      - unique
+
+  oidc-client:
+    image: oven/bun:1.3.14
+    container_name: unique-oidc-client
+    working_dir: /app
+    command: bun run dev
+    depends_on:
+      front:
+        condition: service_started
+    env_file:
+      - ./dev/oidc-client/.env
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./dev/oidc-client:/app
+    profiles:
+      - oidc
     networks:
       - unique
 

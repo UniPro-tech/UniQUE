@@ -1,0 +1,8 @@
+{
+  "name": "unique-oidc-client",
+  "private": true,
+  "scripts": {
+    "dev": "bun run server.ts",
+    "test:oidc": "bun run smoke.ts"
+  }
+}
