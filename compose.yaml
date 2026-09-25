@@ -1,0 +1,140 @@
+##
+## UniQUE Local Development Stack
+## Usage: docker compose up --build
+##
+
+name: unique
+
+services:
+  db:
+    image: mysql:9.7
+    container_name: unique-db
+    env_file:
+      - ./UniQUE-DB/.env
+    volumes:
+      - ./dev/mysql:/etc/mysql/conf.d
+      - db-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\""]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - unique
+
+  db-migrate:
+    build:
+      context: ./UniQUE-DB
+      dockerfile: Dockerfile.dev
+      platforms:
+        - linux/amd64
+    container_name: unique-db-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./UniQUE-DB/.env
+    networks:
+      - unique
+
+  auth:
+    build:
+      context: ./UniQUE-Auth
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    container_name: unique-auth
+    depends_on:
+      db:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    env_file:
+      - ./UniQUE-Auth/.env
+    volumes:
+      - auth-keys:/app/keys
+    ports:
+      - "8000:8080"
+    networks:
+      - unique
+
+  api:
+    build:
+      context: ./UniQUE-API
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    container_name: unique-api
+    depends_on:
+      db:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+      auth:
+        condition: service_started
+    env_file:
+      - ./UniQUE-API/.env
+    ports:
+      - "8001:8080"
+    networks:
+      - unique
+
+  mailserver:
+    build:
+      context: ./UniQUE-MailServer
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    container_name: unique-mailserver
+    env_file:
+      - ./UniQUE-MailServer/.env
+    ports:
+      - "8002:8080"
+    networks:
+      - unique
+
+  front:
+    build:
+      context: ./UniQUE-Front
+      dockerfile: Dockerfile.dev
+    container_name: unique-front
+    depends_on:
+      auth:
+        condition: service_started
+      api:
+        condition: service_started
+    env_file:
+      - ./UniQUE-Front/.env.compose
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./UniQUE-Front:/app
+      - front-node-modules:/app/node_modules
+    profiles:
+      - frontend
+    networks:
+      - unique
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: unique-phpmyadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./UniQUE-DB/.env
+    ports:
+      - "3001:80"
+    networks:
+      - unique
+
+volumes:
+  db-data:
+  auth-keys:
+  front-node-modules:
+
+networks:
+  unique:
+    driver: bridge
