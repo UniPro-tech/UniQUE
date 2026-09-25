@@ -41,6 +41,7 @@ func TestLoadConfig_DefaultValues(t *testing.T) {
 		"DISCORD_CLIENT_SECRET",
 		"DISCORD_GUILD_ID",
 		"DISCORD_MEMBER_ROLE_ID",
+		"DISCORD_MEMBER_APPLICATION_CHANNEL_ID",
 		"DISCORD_BOT_TOKEN",
 		"GITHUB_CLIENT_ID",
 		"GITHUB_CLIENT_SECRET",
@@ -52,6 +53,7 @@ func TestLoadConfig_DefaultValues(t *testing.T) {
 	os.Setenv("DISCORD_CLIENT_SECRET", "test-client-secret")
 	os.Setenv("DISCORD_GUILD_ID", "test-guild-id")
 	os.Setenv("DISCORD_MEMBER_ROLE_ID", "test-role-id")
+	os.Setenv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID", "test-channel-id")
 	os.Setenv("DISCORD_BOT_TOKEN", "test-bot-token")
 
 	cfg := config.LoadConfig()
@@ -77,6 +79,9 @@ func TestLoadConfig_DefaultValues(t *testing.T) {
 	if cfg.DiscordApiVersion != "v10" {
 		t.Errorf("DiscordApiVersion = %q, want %q", cfg.DiscordApiVersion, "v10")
 	}
+	if cfg.DiscordConfig.Guild.MemberApplicationChannelID != "test-channel-id" {
+		t.Errorf("MemberApplicationChannelID = %q, want %q", cfg.DiscordConfig.Guild.MemberApplicationChannelID, "test-channel-id")
+	}
 }
 
 func TestLoadConfig_EnvironmentVariablesOverride(t *testing.T) {
@@ -92,6 +97,7 @@ func TestLoadConfig_EnvironmentVariablesOverride(t *testing.T) {
 		"DISCORD_CLIENT_SECRET",
 		"DISCORD_GUILD_ID",
 		"DISCORD_MEMBER_ROLE_ID",
+		"DISCORD_MEMBER_APPLICATION_CHANNEL_ID",
 		"DISCORD_BOT_TOKEN",
 		"GITHUB_CLIENT_ID",
 		"GITHUB_CLIENT_SECRET",
@@ -168,6 +174,7 @@ func TestLoadConfig_DiscordConfigComplete(t *testing.T) {
 	os.Setenv("DISCORD_CLIENT_SECRET", "discord-client-secret")
 	os.Setenv("DISCORD_GUILD_ID", "discord-guild-id")
 	os.Setenv("DISCORD_MEMBER_ROLE_ID", "discord-role-id")
+	os.Setenv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID", "discord-application-channel-id")
 	os.Setenv("DISCORD_BOT_TOKEN", "discord-bot-token")
 
 	cfg := config.LoadConfig()
@@ -183,6 +190,9 @@ func TestLoadConfig_DiscordConfigComplete(t *testing.T) {
 	}
 	if cfg.DiscordConfig.Guild.MemberRoleID != "discord-role-id" {
 		t.Errorf("DiscordConfig.Guild.MemberRoleID = %q, want %q", cfg.DiscordConfig.Guild.MemberRoleID, "discord-role-id")
+	}
+	if cfg.DiscordConfig.Guild.MemberApplicationChannelID != "discord-application-channel-id" {
+		t.Errorf("DiscordConfig.Guild.MemberApplicationChannelID = %q, want %q", cfg.DiscordConfig.Guild.MemberApplicationChannelID, "discord-application-channel-id")
 	}
 	if cfg.DiscordConfig.BotToken != "discord-bot-token" {
 		t.Errorf("DiscordConfig.BotToken = %q, want %q", cfg.DiscordConfig.BotToken, "discord-bot-token")

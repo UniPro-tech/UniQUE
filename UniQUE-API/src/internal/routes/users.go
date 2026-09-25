@@ -400,6 +400,16 @@ func createUser(c *gin.Context) {
 		IsTOTPEnabled:     user.IsTotpEnabled,
 		Profile:           profileDTO,
 	}
+	if user.Status == "established" && config.DiscordConfig.Guild.MemberApplicationChannelID != "" {
+		displayName := user.CustomID
+		if profileDTO != nil && profileDTO.DisplayName != "" {
+			displayName = profileDTO.DisplayName
+		}
+		message := fmt.Sprintf("新しいメンバー申請が届きました。\n申請者: %s (`%s`)\n管理画面: %s/dashboard/requests", displayName, user.CustomID, config.FrontendURL)
+		if err := discordutil.SendChannelMessage(config.DiscordConfig.Guild.MemberApplicationChannelID, message, &config); err != nil {
+			log.Printf("failed to send member application notification: %v", err)
+		}
+	}
 	c.JSON(http.StatusCreated, dbResp)
 }
 

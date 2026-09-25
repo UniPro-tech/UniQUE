@@ -129,6 +129,7 @@ services:
       DISCORD_GUILD_ID: "your-guild-id"
       DISCORD_BOT_TOKEN: "your-token-here"
       DISCORD_MEMBER_ROLE_ID: "your-member-role-id-here"
+      DISCORD_MEMBER_APPLICATION_CHANNEL_ID: "your-member-application-channel-id-here"
       GIN_MODE: debug
     ports:
       - "8001:8080"

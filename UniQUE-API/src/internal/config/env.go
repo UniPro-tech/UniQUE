@@ -5,8 +5,9 @@ import (
 )
 
 type DiscordGuildConfig struct {
-	ID           string
-	MemberRoleID string
+	ID                         string
+	MemberRoleID               string
+	MemberApplicationChannelID string
 }
 
 type DiscordConfig struct {
@@ -81,8 +82,9 @@ func LoadConfig() *Config {
 		ClientID:     os.Getenv("DISCORD_CLIENT_ID"),
 		ClientSecret: os.Getenv("DISCORD_CLIENT_SECRET"),
 		Guild: DiscordGuildConfig{
-			ID:           os.Getenv("DISCORD_GUILD_ID"),
-			MemberRoleID: os.Getenv("DISCORD_MEMBER_ROLE_ID"),
+			ID:                         os.Getenv("DISCORD_GUILD_ID"),
+			MemberRoleID:               os.Getenv("DISCORD_MEMBER_ROLE_ID"),
+			MemberApplicationChannelID: os.Getenv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID"),
 		},
 		BotToken: os.Getenv("DISCORD_BOT_TOKEN"),
 	}
