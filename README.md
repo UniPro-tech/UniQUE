@@ -53,7 +53,7 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
 
 コントリビュートに興味をお持ちいただき、ありがとうございます！
 
-開発環境はdocker-composeを用いて整えることができます。
+開発用バックエンドはDocker Composeで起動します。本番のKustomize/SealedSecretは対象外です。
 
 1. 各サンプル環境ファイルをローカル用ファイルとしてコピーします。
 
