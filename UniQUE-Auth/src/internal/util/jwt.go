@@ -84,6 +84,9 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 	IDTokenID := &IDTokenIDRaw
 	IDTokenString := ""
 
+	entropy = ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	oauthTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+
 	if ContainsScope(scopes, "openid") {
 		if !hasValidKeyPair(config) {
 			return "", "", "", errors.New("no valid keypair configured")
@@ -98,6 +101,7 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 	}
 
 	err = q.OauthToken.Create(&model.OauthToken{
+		ID:              oauthTokenID,
 		ConsentID:       consent.ID,
 		AccessTokenJti:  &accessTokenID,
 		RefreshTokenJti: &refreshTokenID,
