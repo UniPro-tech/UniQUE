@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/subtle"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
@@ -174,6 +175,54 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 		refreshTokenString = kid + ":" + refreshTokenString
 	}
 	return accessTokenString, IDTokenString, refreshTokenString, nil
+}
+
+// ParseRefreshToken verifies that a refresh token was encrypted with one of
+// this issuer's keys and returns its claims for rotation or revocation.
+func ParseRefreshToken(tokenRaw string, config config.Config) (*RefreshTokenClaims, error) {
+	specifiedKid := ""
+	if idx := strings.Index(tokenRaw, ":"); idx > 0 {
+		maybeKid := tokenRaw[:idx]
+		if len(maybeKid) == 64 {
+			specifiedKid = maybeKid
+			tokenRaw = tokenRaw[idx+1:]
+		}
+	}
+
+	jweObj, err := jwe.ParseEncrypted(tokenRaw)
+	if err != nil {
+		return nil, err
+	}
+
+	var plaintext []byte
+	if specifiedKid != "" {
+		for _, keyPair := range config.KeyPairs {
+			if subtle.ConstantTimeCompare([]byte(KidForPublicKey(keyPair.PublicKey)), []byte(specifiedKid)) != 1 {
+				continue
+			}
+			plaintext, err = jweObj.Decrypt(&keyPair.PrivateKey)
+			break
+		}
+	} else {
+		for _, keyPair := range config.KeyPairs {
+			plaintext, err = jweObj.Decrypt(&keyPair.PrivateKey)
+			if err == nil {
+				break
+			}
+		}
+	}
+	if err != nil || plaintext == nil {
+		if err == nil {
+			err = errors.New("refresh token key not found")
+		}
+		return nil, err
+	}
+
+	claims := &RefreshTokenClaims{}
+	if err := json.Unmarshal(plaintext, claims); err != nil {
+		return nil, err
+	}
+	return claims, nil
 }
 
 type OIDCTokenClaims struct {

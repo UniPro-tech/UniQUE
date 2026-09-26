@@ -99,12 +99,15 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
    ```
 
    `http://localhost:3002` からログインを開始できます。
+   `http://localhost:3000` からセッションの削除・アプリ連携の解除などもテストできます。
 
    プロトコルの自動確認は次で実行します。
 
    ```sh
    bun --cwd dev/oidc-client run test:oidc
    ```
+
+   このテストはAuthorization Code Flow with PKCE、ID Token検証、UserInfo、Refresh Tokenローテーション、旧トークンの再利用拒否、RFC 7009のトークン失効を確認します。
 
 ### テストユーザー
 

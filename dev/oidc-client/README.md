@@ -1,7 +1,8 @@
 # UniQUE OIDC Test Client
 
 This local-only relying party verifies the Authorization Code Flow with PKCE,
-ID Token signature and claims, and UserInfo.
+ID Token signature and claims, UserInfo, Refresh Token rotation, and RFC 7009
+revocation.
 
 Copy `.env.example` to `.env`, then start the complete test stack from the
 repository root:
@@ -24,6 +25,7 @@ bun --cwd dev/oidc-client run test:oidc
 ```
 
 The smoke test performs the same Authorization Code Flow with PKCE using the
-development user, validates the returned ID Token in this client, and calls
-UserInfo. It intentionally bypasses browser rendering of the consent page;
-use the browser flow to test the Frontend UI itself.
+development user, validates the returned ID Token in this client, calls
+UserInfo, verifies that Refresh Token rotation invalidates the old token set,
+and verifies RFC 7009 revocation. It intentionally bypasses browser rendering
+of the consent page; use the browser flow to test the Frontend UI itself.

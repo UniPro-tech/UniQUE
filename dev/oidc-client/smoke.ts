@@ -45,4 +45,13 @@ const callback = await fetch(callbackUrl, {
 const body = await callback.text();
 if (!callback.ok || !body.includes("OIDC test succeeded")) throw new Error(`OIDC callback failed: ${body}`);
 
-console.log("OIDC Authorization Code Flow with PKCE passed");
+const sessionHeaders = { cookie: `oidc_test_session=${sessionCookie}` };
+const refresh = await fetch(`${client}/refresh`, { method: "POST", headers: sessionHeaders });
+const refreshBody = await refresh.text();
+if (!refresh.ok || !refreshBody.includes("Refresh rotation passed")) throw new Error(`refresh rotation failed: ${refreshBody}`);
+
+const revocation = await fetch(`${client}/revoke`, { method: "POST", headers: sessionHeaders });
+const revocationBody = await revocation.text();
+if (!revocation.ok || !revocationBody.includes("Revocation passed")) throw new Error(`revocation failed: ${revocationBody}`);
+
+console.log("OIDC authorization, refresh rotation, and revocation passed");
