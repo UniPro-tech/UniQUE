@@ -160,6 +160,14 @@ app.post("/refresh", async (c) => {
     oldAccess.response.ok ||
     reusedRefresh.response.ok
   ) {
+    if (
+      refreshed.response.ok &&
+      refreshed.tokens.access_token &&
+      refreshed.tokens.refresh_token &&
+      refreshed.tokens.id_token
+    ) {
+      session.tokens = refreshed.tokens as TokenSet;
+    }
     return c.html(
       <Page title="Refresh rotation failed" session={session}>
         <pre>{JSON.stringify({ refresh: refreshed.tokens, oldAccessStatus: oldAccess.response.status, reusedRefresh: reusedRefresh.tokens }, null, 2)}</pre>
