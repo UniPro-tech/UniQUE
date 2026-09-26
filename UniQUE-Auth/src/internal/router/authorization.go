@@ -227,6 +227,7 @@ func AuthorizationPost(c *gin.Context) {
 
 			// レコードが存在しない -> 作成を試みる
 			newConsent := &model.Consent{
+				ID:            ulid.Make().String(),
 				UserID:        userID,
 				ApplicationID: authReq.ApplicationID,
 				Scope:         authReq.Scope,

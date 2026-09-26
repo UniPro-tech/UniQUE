@@ -18,26 +18,6 @@ export default async function Page({
 }) {
   const params = await searchParams;
   const { auth_request_id, error } = params;
-  const session = await Session.getCurrent();
-
-  if (!session) {
-    const query = new URLSearchParams(params as Record<string, string>);
-    const recirectpath = `/authorization?${query.toString()}`;
-    redirect(
-      `/signin?redirect=${encodeURIComponent(recirectpath)}`,
-      RedirectType.replace,
-    );
-  }
-
-  const sessionJson = session.toJson();
-  if (!sessionJson) {
-    const query = new URLSearchParams(params as Record<string, string>);
-    const recirectpath = `/authorization?${query.toString()}`;
-    redirect(
-      `/signin?redirect=${encodeURIComponent(recirectpath)}`,
-      RedirectType.replace,
-    );
-  }
 
   if (error) {
     return (
@@ -83,6 +63,27 @@ export default async function Page({
     );
   }
   const authReqData = (await authReqRes.json()) as AuthorizationResponse;
+  const session = await Session.getCurrent();
+
+  if (!session?.toJson()) {
+    if (authReqData.prompt === "none") {
+      const redirectUrl = new URL(authReqData.redirect_uri);
+      redirectUrl.searchParams.set("error", "login_required");
+      if (authReqData.state) {
+        redirectUrl.searchParams.set("state", authReqData.state);
+      }
+      redirect(redirectUrl.toString(), RedirectType.replace);
+    }
+
+    const query = new URLSearchParams(params as Record<string, string>);
+    const recirectpath = `/authorization?${query.toString()}`;
+    redirect(
+      `/signin?redirect=${encodeURIComponent(recirectpath)}`,
+      RedirectType.replace,
+    );
+  }
+
+  const sessionJson = session.toJson();
 
   const app = await Application.getById(authReqData.client_id);
   if (!app) {
@@ -110,30 +111,48 @@ export default async function Page({
     );
   }
 
-  // 既存の同意があるかチェック – あればコンセント画面をスキップ
-  // Resolve auth API URL from public or server env, fallback to localhost
-  const resolvedAuthApiUrl =
-    process.env.NEXT_PUBLIC_AUTH_API_URL || process.env.AUTH_API_URL;
-  const authClient = createApiClient(resolvedAuthApiUrl);
+  // Server-side API calls must use the Docker-internal URL. Browser redirects
+  // and form actions use the public URL instead.
+  const authApiUrl =
+    process.env.AUTH_API_URL || process.env.NEXT_PUBLIC_AUTH_API_URL;
+  const publicAuthApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || authApiUrl;
+  const authClient = createApiClient(authApiUrl);
   let consented = false;
   const consentedQuery = new URLSearchParams();
   try {
     const query = new URLSearchParams();
     query.append("user_id", sessionJson.userId);
     query.append("application_id", authReqData.client_id);
-    query.append("scope", authReqData.scope);
     const consentsRes = await authClient.get(
       `/internal/consents?${query.toString()}`,
     );
     if (consentsRes.ok) {
       const consentsData = await consentsRes.json();
-      const consents: { client_id?: string; application_id?: string }[] =
+      const consents: { application_id?: string; scope?: string }[] =
         Array.isArray(consentsData) ? consentsData : (consentsData.data ?? []);
-      const hasConsent = consents.some(
-        (c): boolean => c.application_id === authReqData.client_id,
+      const requestedScopes = new Set(
+        authReqData.scope.split(/\s+/).filter(Boolean),
       );
+      const hasConsent = consents.some((c): boolean => {
+        if (c.application_id !== authReqData.client_id) return false;
+        const consentedScopes = new Set(c.scope?.split(/\s+/).filter(Boolean));
+        return [...requestedScopes].every((scope) =>
+          consentedScopes.has(scope),
+        );
+      });
 
-      if (hasConsent && authReqData.prompt === "none") {
+      if (!hasConsent && authReqData.prompt === "none") {
+        const redirectUrl = new URL(authReqData.redirect_uri);
+        redirectUrl.searchParams.set("error", "consent_required");
+        if (authReqData.state) {
+          redirectUrl.searchParams.set("state", authReqData.state);
+        }
+        redirect(redirectUrl.toString(), RedirectType.replace);
+      }
+
+      // Reuse a stored consent unless the client explicitly requests a new
+      // approval screen with prompt=consent.
+      if (hasConsent && authReqData.prompt !== "consent") {
         // 同意済みであればconsentedにする
         const query = new URLSearchParams();
         query.append("user_id", sessionJson.userId);
@@ -156,7 +175,7 @@ export default async function Page({
 
   if (consented) {
     redirect(
-      `${resolvedAuthApiUrl}/consented?${consentedQuery.toString()}`,
+      `${publicAuthApiUrl}/consented?${consentedQuery.toString()}`,
       RedirectType.push,
     );
   }
@@ -172,7 +191,7 @@ export default async function Page({
         redirect_uri={authReqData.redirect_uri}
         state={authReqData.state}
         auth_request_id={auth_request_id}
-        action={`${resolvedAuthApiUrl}/authorization`}
+        action={`${publicAuthApiUrl}/authorization`}
       />
     </>
   );
