@@ -95,6 +95,7 @@ func main() {
 	r.GET("/.well-known/openid-configuration", router.WellKnownOpenIDConfiguration)
 	r.GET("/.well-known/jwks.json", router.WellKnownJWKS)
 	r.POST("/token", router.TokenPost)
+	r.POST("/revocation", router.Revocation)
 	r.GET("/userinfo", router.UserInfoGet)
 	r.GET("/consented", router.ConsentedGet)
 
