@@ -14,7 +14,7 @@ RUN curl -fSL https://github.com/golang-migrate/migrate/releases/download/$versi
 	| tar -xz -C /tmp \
 	&& mv /tmp/migrate /usr/local/bin/migrate
 
-FROM mysql:9
+FROM mysql:26
 
 COPY --from=builder /usr/local/bin/migrate /usr/local/bin/migrate
 
