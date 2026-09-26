@@ -46,12 +46,12 @@ func Revocation(c *gin.Context) {
 	if !ok || db == nil {
 		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
-	}
-	q := query.Use(db)
-
 	config := *c.MustGet("config").(*config.Config)
-	tokenJTI, _, _, _ := util.ValidateAccessToken(req.Token, c)
-	if tokenJTI == "" {
+	tokenJTI := ""
+	if req.TokenTypeHint == nil || *req.TokenTypeHint == "access_token" || *req.TokenTypeHint == "refresh_token" {
+		tokenJTI, _, _, _ = util.ValidateAccessToken(req.Token, c)
+	}
+	if tokenJTI == "" && (req.TokenTypeHint == nil || *req.TokenTypeHint == "refresh_token" || *req.TokenTypeHint == "access_token") {
 		if claims, err := util.ParseRefreshToken(req.Token, config); err == nil {
 			tokenJTI = claims.ID
 		}
