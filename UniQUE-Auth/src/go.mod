@@ -7,7 +7,7 @@ require (
 	github.com/golang-jwt/jwe v0.0.0-20220815104040-b2647e820b90
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
-	github.com/oklog/ulid/v2 v2.1.1
+	github.com/oklog/ulid/v2 v2.1.2
 	github.com/pquerna/otp v1.5.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/files/v2 v2.0.2
@@ -15,7 +15,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.54.0
 	gorm.io/driver/mysql v1.6.0
-	gorm.io/gen v0.3.28
+	gorm.io/gen v0.3.29
 	gorm.io/gorm v1.31.2
 	gorm.io/plugin/dbresolver v1.6.2
 )

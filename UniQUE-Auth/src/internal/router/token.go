@@ -208,6 +208,11 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 		return
 	}
 
+	if claims.ExpiresAt.After(now) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
+		return
+	}
+
 	if len(claims.Audience) == 0 || claims.Audience[0] != clientID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 		return
