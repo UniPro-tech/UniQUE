@@ -142,12 +142,7 @@ export default async function Page({
       });
 
       if (!hasConsent && authReqData.prompt === "none") {
-        const redirectUrl = new URL(authReqData.redirect_uri);
-        redirectUrl.searchParams.set("error", "consent_required");
-        if (authReqData.state) {
-          redirectUrl.searchParams.set("state", authReqData.state);
-        }
-        redirect(redirectUrl.toString(), RedirectType.replace);
+        consentRequired = true;
       }
 
       // Reuse a stored consent unless the client explicitly requests a new
