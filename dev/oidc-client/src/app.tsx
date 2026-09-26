@@ -177,6 +177,7 @@ app.post("/refresh", async (c) => {
 
   const newAccess = await userInfo(refreshed.tokens.access_token);
   if (!newAccess.response.ok) {
+    session.tokens = refreshed.tokens as TokenSet;
     return c.html(<Page title="Refresh rotation failed" session={session}><p>The replacement access token was rejected by UserInfo.</p></Page>);
   }
 
