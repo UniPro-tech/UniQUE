@@ -15,6 +15,7 @@ spec:
       labels:
         app: unique-auth
     spec:
+      serviceAccountName: unique-auth
       containers:
         - name: unique-auth
           image: registry.uniproject.jp/infra/unique-auth:1.0.0

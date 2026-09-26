@@ -53,12 +53,65 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
 
 コントリビュートに興味をお持ちいただき、ありがとうございます！
 
-開発環境はdocker-composeを用いて整えることができます。
+開発用バックエンドはDocker Composeで起動します。本番のKustomize/SealedSecretは対象外です。
 
-1. git clone
-2. `docker-compose up -d`
-   環境変数は適宜調整してください。
-3. `UniQUE-DB/manual`にあるファイルを順番通りにマイグレーションしてください
+1. 各サンプル環境ファイルをローカル用ファイルとしてコピーします。
+
+   ```sh
+   cp UniQUE-DB/.env.example UniQUE-DB/.env
+   cp UniQUE-API/.env.example UniQUE-API/.env
+   cp UniQUE-Auth/.env.example UniQUE-Auth/.env
+   cp UniQUE-MailServer/.env.example UniQUE-MailServer/.env
+   cp UniQUE-Front/.env.example UniQUE-Front/.env
+   cp UniQUE-Front/.env.compose.example UniQUE-Front/.env.compose
+   ```
+
+2. Discord、SMTP、GAS連携を試す場合は、対応するローカル環境ファイルにテスト用の値を設定します。
+3. バックエンドを起動します。
+
+   ```sh
+   docker compose up -d --build
+   ```
+
+4. フロントエンドは通常、ホスト上でBunを使って起動します。
+
+   ```sh
+   cd UniQUE-Front
+   bun install
+   bun run dev
+   ```
+
+5. Compose上でフロントエンドも含めて確認する場合は、次を実行します。ソース変更は自動反映されます。
+
+   ```sh
+   docker compose --profile frontend up -d --build
+   ```
+
+6. phpMyAdminにアクセスしてUniQUE-DB/manual内のsqlファイルを順番に実行します。
+   phpMyAdminのURLは `http://localhost:3001` です。
+   また、デフォルトでは、DBの名前はdevdbです。
+
+7. OIDCのAuthorization Code Flowを確認する場合は、テストクライアント用の環境ファイルも作成して起動します。
+
+   ```sh
+   cp dev/oidc-client/.env.example dev/oidc-client/.env
+   docker compose --profile oidc up -d --build
+   ```
+
+   `http://localhost:3002` からログインを開始できます。
+
+   プロトコルの自動確認は次で実行します。
+
+   ```sh
+   bun --cwd dev/oidc-client run test:oidc
+   ```
+
+### テストユーザー
+
+上記の手順6により開発用ユーザーを冪等に作成します。
+
+- User: `test`
+- Password: `testpassword`
 
 ### シードデータについて
 

@@ -15,6 +15,7 @@ spec:
       labels:
         app: unique-mail
     spec:
+      serviceAccountName: unique-mail
       containers:
         - name: unique-mail
           image: registry.uniproject.jp/infra/unique-mail:1.0.0

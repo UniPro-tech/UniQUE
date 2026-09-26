@@ -1,6 +1,7 @@
 package util
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -9,7 +10,6 @@ import (
 	"errors"
 	"log"
 	"log/slog"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -73,16 +73,19 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 	scopes = AlphabeticScopeString(scopes)
 
 	t := time.Now()
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	entropy := ulid.Monotonic(rand.Reader, 0)
 	accessTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
-	entropy = ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	entropy = ulid.Monotonic(rand.Reader, 0)
 	refreshTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
-	entropy = ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	entropy = ulid.Monotonic(rand.Reader, 0)
 	IDTokenIDRaw := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 	IDTokenID := &IDTokenIDRaw
 	IDTokenString := ""
+
+	entropy = ulid.Monotonic(rand.Reader, 0)
+	oauthTokenID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
 	if ContainsScope(scopes, "openid") {
 		if !hasValidKeyPair(config) {
@@ -98,6 +101,7 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 	}
 
 	err = q.OauthToken.Create(&model.OauthToken{
+		ID:              oauthTokenID,
 		ConsentID:       consent.ID,
 		AccessTokenJti:  &accessTokenID,
 		RefreshTokenJti: &refreshTokenID,

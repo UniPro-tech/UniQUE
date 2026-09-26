@@ -15,3 +15,6 @@ resources:
   - ./mysql-conf.yaml
   - ./discord.yaml
   - ./nginx.yaml
+  - ./serviceaccounts.yaml
+  - ./internal-policy.yaml
+  - ./network-policy.yaml

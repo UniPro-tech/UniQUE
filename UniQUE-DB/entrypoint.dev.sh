@@ -29,4 +29,5 @@ until "$MIGRATE_BIN" -path "$MIGRATIONS_DIR" -database "$DATABASE_URL" "$@"; do
 done
 
 echo "migrations applied"
+
 exit 0

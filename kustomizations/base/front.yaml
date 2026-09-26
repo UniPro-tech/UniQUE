@@ -15,6 +15,7 @@ spec:
       labels:
         app: unique-front
     spec:
+      serviceAccountName: unique-front
       containers:
         - name: unique-front
           image: registry.uniproject.jp/infra/unique-front:1.0.0

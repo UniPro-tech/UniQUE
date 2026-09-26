@@ -15,6 +15,7 @@ spec:
       labels:
         app: unique-api
     spec:
+      serviceAccountName: unique-api
       containers:
         - name: unique-api
           image: registry.uniproject.jp/infra/unique-api:1.0.0
