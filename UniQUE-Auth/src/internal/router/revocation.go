@@ -50,11 +50,8 @@ func Revocation(c *gin.Context) {
 	q := query.Use(db)
 
 	config := *c.MustGet("config").(*config.Config)
-	tokenJTI := ""
-	if req.TokenTypeHint == nil || *req.TokenTypeHint == "access_token" {
-		tokenJTI, _, _, _ = util.ValidateAccessToken(req.Token, c)
-	}
-	if tokenJTI == "" && (req.TokenTypeHint == nil || *req.TokenTypeHint == "refresh_token" || *req.TokenTypeHint == "access_token") {
+	tokenJTI, _, _, _ := util.ValidateAccessToken(req.Token, c)
+	if tokenJTI == "" {
 		if claims, err := util.ParseRefreshToken(req.Token, config); err == nil {
 			tokenJTI = claims.ID
 		}
@@ -68,18 +65,24 @@ func Revocation(c *gin.Context) {
 	// Token revocation is transactional and cannot affect another client.
 	err := q.Transaction(func(tx *query.Query) error {
 		tokenset, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(tokenJTI)).Or(tx.OauthToken.RefreshTokenJti.Eq(tokenJTI)).First()
-		if errors.Is(err, gorm.ErrRecordNotFound) || tokenset == nil {
-			return nil
-		}
 		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
 			return err
+		}
+		if tokenset == nil {
+			return nil
 		}
 		consent, err := tx.Consent.Where(tx.Consent.ID.Eq(tokenset.ConsentID)).First()
-		if errors.Is(err, gorm.ErrRecordNotFound) || consent == nil || consent.ApplicationID != *clientID {
-			return nil
-		}
 		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
 			return err
+		}
+		if consent == nil || consent.ApplicationID != *clientID {
+			return nil
 		}
 		if _, err := tx.OauthToken.Where(tx.OauthToken.ID.Eq(tokenset.ID)).Delete(); err != nil {
 			return err

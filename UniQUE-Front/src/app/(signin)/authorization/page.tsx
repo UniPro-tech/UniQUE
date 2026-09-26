@@ -118,6 +118,7 @@ export default async function Page({
   const publicAuthApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || authApiUrl;
   const authClient = createApiClient(authApiUrl);
   let consented = false;
+  let consentRequired = false;
   const consentedQuery = new URLSearchParams();
   try {
     const query = new URLSearchParams();
@@ -165,7 +166,17 @@ export default async function Page({
       }
     }
   } catch {
-    // 同意チェックに失敗した場合はフォールスルーして同意画面を表示
+    // A non-interactive request cannot recover from a consent lookup failure.
+    consentRequired = authReqData.prompt === "none";
+  }
+
+  if (consentRequired) {
+    const redirectUrl = new URL(authReqData.redirect_uri);
+    redirectUrl.searchParams.set("error", "consent_required");
+    if (authReqData.state) {
+      redirectUrl.searchParams.set("state", authReqData.state);
+    }
+    redirect(redirectUrl.toString(), RedirectType.replace);
   }
 
   if (consented) {

@@ -46,6 +46,14 @@ const body = await callback.text();
 if (!callback.ok || !body.includes("OIDC test succeeded")) throw new Error(`OIDC callback failed: ${body}`);
 
 const sessionHeaders = { cookie: `oidc_test_session=${sessionCookie}` };
+const repeatedCallback = await fetch(callbackUrl, {
+  headers: sessionHeaders,
+  redirect: "manual",
+});
+if (requireRedirect(repeatedCallback) !== "/") {
+  throw new Error("repeated callback did not redirect to the completed session");
+}
+
 const refresh = await fetch(`${client}/refresh`, { method: "POST", headers: sessionHeaders });
 const refreshBody = await refresh.text();
 if (!refresh.ok || !refreshBody.includes("Refresh rotation passed")) throw new Error(`refresh rotation failed: ${refreshBody}`);
