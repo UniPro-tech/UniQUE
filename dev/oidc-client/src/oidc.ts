@@ -4,9 +4,11 @@ import type { LoginState, RequestLog, TokenSet } from "./types";
 
 const encoder = new TextEncoder();
 
+/** Decodes one Base64URL-encoded JWT segment. */
 const decodeJwtPart = (value: string) =>
   JSON.parse(Buffer.from(value, "base64url").toString());
 
+/** Builds an Authorization Code request with PKCE parameters. */
 export const authorizationRequest = async (session: LoginState) => {
   const parameters = new URLSearchParams({
     client_id: clientId,
@@ -32,6 +34,7 @@ export const authorizationRequest = async (session: LoginState) => {
   };
 };
 
+/** Verifies an ID Token signature and its issuer, audience, nonce, and expiry. */
 export const verifyIdToken = async (token: string, nonce: string) => {
   const [encodedHeader, encodedClaims, encodedSignature] = token.split(".");
   if (!encodedHeader || !encodedClaims || !encodedSignature) {
@@ -80,6 +83,7 @@ export const verifyIdToken = async (token: string, nonce: string) => {
   return claims;
 };
 
+/** Sends a token-endpoint request and records its diagnostic details. */
 export const tokenRequest = async (parameters: Record<string, string>) => {
   const body = new URLSearchParams(parameters);
   const request: RequestLog = {
@@ -99,6 +103,7 @@ export const tokenRequest = async (parameters: Record<string, string>) => {
   return { response, tokens, request };
 };
 
+/** Requests UserInfo with the supplied access token. */
 export const userInfo = async (accessToken: string) => {
   const request: RequestLog = {
     method: "GET",
@@ -109,6 +114,7 @@ export const userInfo = async (accessToken: string) => {
   return { response, body: await response.json(), request };
 };
 
+/** Revokes a refresh token through the RFC 7009 endpoint. */
 export const revokeToken = async (refreshToken: string) => {
   const body = new URLSearchParams({
     client_id: clientId,
@@ -129,6 +135,7 @@ export const revokeToken = async (refreshToken: string) => {
   return { response, request };
 };
 
+/** Creates parameters for an authorization-code token exchange. */
 export const codeExchangeParameters = (code: string, verifier: string) => ({
   grant_type: "authorization_code",
   client_id: clientId,
@@ -137,6 +144,7 @@ export const codeExchangeParameters = (code: string, verifier: string) => ({
   code_verifier: verifier,
 });
 
+/** Creates parameters for a refresh-token grant. */
 export const refreshParameters = (refreshToken: string) => ({
   grant_type: "refresh_token",
   client_id: clientId,

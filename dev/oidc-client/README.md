@@ -18,6 +18,10 @@ The client ID and redirect URI are seeded by `db-migrate` only when
 `SEED_TEST_USER=true`. The client is a Public Client and therefore uses PKCE
 without a client secret.
 
+Direct launches bind to `127.0.0.1`. The Compose profile explicitly binds the
+container to `0.0.0.0`, while publishing port `3002` only on the host's
+loopback interface.
+
 Run the automated protocol smoke test after the stack is ready:
 
 ```sh

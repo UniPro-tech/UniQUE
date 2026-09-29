@@ -23,14 +23,17 @@ import { ErrorPage, Home, Page, shortToken } from "./ui";
 
 const app = new Hono();
 
+/** Narrows supported OIDC prompt values. */
 const isPrompt = (value: string | undefined): value is Prompt =>
   value === "consent" || value === "none";
 
+/** Checks that a callback belongs to a live login session. */
 const hasValidState = (
   session: LoginState | undefined,
   state: string | undefined,
 ) => session && session.expiresAt >= Date.now() && state === session.state;
 
+/** Renders a consistent OIDC failure page. */
 const renderError = (
   message: string,
   session?: LoginState,

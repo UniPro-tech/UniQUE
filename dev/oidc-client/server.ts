@@ -1,5 +1,5 @@
 import { serve } from "bun";
 import { app } from "./src/app";
-import { port } from "./src/config";
+import { hostname, port } from "./src/config";
 
-serve({ port, fetch: app.fetch });
+serve({ hostname, port, fetch: app.fetch });

@@ -5,3 +5,4 @@ export const clientId =
 export const redirectUri =
   process.env.OIDC_REDIRECT_URI ?? "http://localhost:3002/callback";
 export const port = Number(process.env.PORT ?? 3002);
+export const hostname = process.env.OIDC_CLIENT_HOST ?? "127.0.0.1";

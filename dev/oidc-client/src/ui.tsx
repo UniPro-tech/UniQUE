@@ -34,6 +34,7 @@ const commonSteps = [
   "Verify tokens",
 ];
 
+/** Renders one numbered step in the OIDC flow chart. */
 function Step({ index, label, active }: { index: number; label: string; active: boolean }) {
   const x = 60 + index * 125;
   return (
@@ -47,6 +48,7 @@ function Step({ index, label, active }: { index: number; label: string; active: 
   );
 }
 
+/** Renders a post-verification branch in the OIDC flow chart. */
 function Branch({ active, cx, cy, label, step }: { active: boolean; cx: number; cy: number; label: string; step: string }) {
   return (
     <g class={active ? "active" : ""}>
@@ -59,6 +61,7 @@ function Branch({ active, cx, cy, label, step }: { active: boolean; cx: number; 
   );
 }
 
+/** Renders the current authorization, rotation, and revocation progress. */
 function FlowChart({ session }: { session?: LoginState }) {
   const stage = session?.stage ?? 0;
   const rotated = session?.path === "rotated";
@@ -90,6 +93,7 @@ function FlowChart({ session }: { session?: LoginState }) {
   );
 }
 
+/** Renders login prompt selection and session reset controls. */
 function PromptControls({ session }: { session?: LoginState }) {
   return (
     <>
@@ -111,6 +115,7 @@ function PromptControls({ session }: { session?: LoginState }) {
   );
 }
 
+/** Renders diagnostic events accumulated during the current flow. */
 function Milestones({ session }: { session?: LoginState }) {
   if (!session?.events.length) return null;
   return (
@@ -126,6 +131,7 @@ function Milestones({ session }: { session?: LoginState }) {
   );
 }
 
+/** Renders token rotation and revocation actions when available. */
 function TokenActions({ session }: { session?: LoginState }) {
   if (!session?.tokens || session.error || session.stage >= 6) return null;
   return (
@@ -136,6 +142,7 @@ function TokenActions({ session }: { session?: LoginState }) {
   );
 }
 
+/** Renders the shared test-client page and callback notifications. */
 export function Page({ title, session, children, callbackComplete = false, callbackError = false }: { title: string; session?: LoginState; children: unknown; callbackComplete?: boolean; callbackError?: boolean }) {
   const callbackEvents = JSON.stringify(session?.events ?? []).replace(/</g, "\\u003c");
   const callbackScript = callbackComplete
@@ -164,6 +171,7 @@ export function Page({ title, session, children, callbackComplete = false, callb
   );
 }
 
+/** Renders the test-client landing page for the current session. */
 export function Home({ session }: { session?: LoginState }) {
   return (
     <Page title="UniQUE OIDC Test Client" session={session}>
@@ -180,9 +188,11 @@ export function Home({ session }: { session?: LoginState }) {
   );
 }
 
+/** Renders a failed-flow page and optional popup error notification. */
 export const ErrorPage = ({ message, session, callbackError = false }: { message: string; session?: LoginState; callbackError?: boolean }) => (
   <Page title="OIDC test failed" session={session} callbackError={callbackError}><pre>{message}</pre></Page>
 );
 
+/** Redacts the middle of a token for display. */
 export const shortToken = (token: string) =>
   `${token.slice(0, 16)}...${token.slice(-12)}`;

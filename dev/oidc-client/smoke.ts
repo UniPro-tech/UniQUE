@@ -1,6 +1,7 @@
 const issuer = process.env.OIDC_ISSUER ?? "http://localhost:8000";
 const client = process.env.OIDC_CLIENT_URL ?? "http://localhost:3002";
 
+/** Returns the Location header from a redirect response. */
 function requireRedirect(response: Response) {
   const location = response.headers.get("location");
   if (response.status < 300 || response.status > 399 || !location) {
