@@ -127,6 +127,9 @@ export default async function Page({
     const consentsRes = await authClient.get(
       `/internal/consents?${query.toString()}`,
     );
+    if (!consentsRes.ok) {
+      consentRequired = authReqData.prompt === "none";
+    }
     if (consentsRes.ok) {
       const consentsData = await consentsRes.json();
       const consents: { application_id?: string; scope?: string }[] =

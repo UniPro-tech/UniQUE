@@ -46,6 +46,8 @@ func Revocation(c *gin.Context) {
 	if !ok || db == nil {
 		c.AbortWithError(http.StatusInternalServerError, errors.New("Database is not available"))
 		return
+	}
+	q := query.Use(db)
 	config := *c.MustGet("config").(*config.Config)
 	tokenJTI := ""
 	if req.TokenTypeHint == nil || *req.TokenTypeHint == "access_token" || *req.TokenTypeHint == "refresh_token" {
