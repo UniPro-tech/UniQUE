@@ -301,6 +301,19 @@ export default function MembersDataGrid({
               headerName: "Discordアカウント",
               width: 240,
               sortable: false,
+              valueGetter: (_value, row: UserDataGridRowType) => {
+                const account = row.discordAccount;
+                if (!account) {
+                  return "未連携";
+                }
+                return [
+                  account.displayName,
+                  account.username && `@${account.username}`,
+                  account.externalUserId,
+                ]
+                  .filter((value): value is string => Boolean(value))
+                  .join(" / ");
+              },
               renderCell: ({ row }: { row: UserDataGridRowType }) => {
                 const account = row.discordAccount;
                 if (!account) {
