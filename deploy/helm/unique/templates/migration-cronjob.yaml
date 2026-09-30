@@ -1,0 +1,31 @@
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-init-job
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: mysql-init
+spec:
+  schedule: {{ .Values.migration.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels: { app: mysql-init }
+        spec:
+          restartPolicy: OnFailure
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets: {{ toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: mysql
+              image: "{{ .Values.migration.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.migration.image.tag "Chart" .Chart) }}"
+              imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.database.existingSecret }}
+                      key: MYSQL_ACCESS_URI
+{{- end }}

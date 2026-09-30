@@ -1,5 +1,5 @@
 .github/ @UniPro-tech/github
-kustomizations/ @UniPro-tech/Kubernetes
+deploy/ @UniPro-tech/Kubernetes
 **/.dockerignore @UniPro-tech/Kubernetes
 docker-compose.yaml @UniPro-tech/Kubernetes
 **/Dockerfile* @UniPro-tech/Kubernetes

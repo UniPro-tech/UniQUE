@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-conf
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+data:
+  my.conf: |
+{{ .Values.database.config | indent 4 }}
+{{- if .Values.internalBlocker.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: internal-blocker-config
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log notice;
+    pid /var/run/nginx.pid;
+    events { worker_connections 1024; }
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/json;
+      server {
+        listen 80 default_server;
+        location / {
+          default_type application/json;
+          return 403 '{"status":403,"error":"Forbidden","message":"Access Denied: /internal/* is not accessible from outside."}';
+        }
+      }
+    }
+{{- end }}

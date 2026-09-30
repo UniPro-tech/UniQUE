@@ -1,0 +1,43 @@
+{{- if .Values.autoscaling.enabled }}
+{{- range $target := list
+  (dict "name" "front-server-hpa" "deployment" "front-server")
+  (dict "name" "auth-hpa" "deployment" "auth")
+  (dict "name" "api-hpa" "deployment" "api")
+  (dict "name" "mail-hpa" "deployment" "mail")
+}}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $target.name }}
+  labels:
+    {{- include "unique.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $target.deployment }}
+  minReplicas: {{ $.Values.autoscaling.minReplicas }}
+  maxReplicas: {{ $.Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $.Values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $.Values.autoscaling.targetMemoryUtilizationPercentage }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: {{ $.Values.autoscaling.scaleDown.stabilizationWindowSeconds }}
+      policies:
+        - type: Percent
+          value: {{ $.Values.autoscaling.scaleDown.percent }}
+          periodSeconds: {{ $.Values.autoscaling.scaleDown.periodSeconds }}
+{{- end }}
+{{- end }}

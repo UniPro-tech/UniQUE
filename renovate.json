@@ -2,7 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>UniPro-tech/renovate-config"],
   "kubernetes": {
-    "managerFilePatterns": ["/(^|/)kustomizations/.*\\.ya?ml$/"]
+    "managerFilePatterns": ["/(^|/)deploy/helm/.*\\.ya?ml$/"]
+  },
+  "helmv3": {
+    "managerFilePatterns": ["/(^|/)Chart\\.ya?ml$/"]
   },
   "docker-compose": {
     "managerFilePatterns": ["/(^|/)(?:docker-)?compose[^/]*\\.ya?ml$/"]

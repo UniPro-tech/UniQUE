@@ -1,0 +1,50 @@
+{{- if and .Values.database.persistence.enabled (not .Values.database.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+spec:
+  accessModes: {{ toYaml .Values.database.persistence.accessModes | nindent 4 }}
+  {{- with .Values.database.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.database.persistence.size }}
+{{- end }}
+{{- if and .Values.persistence.authKeys.enabled (not .Values.persistence.authKeys.existingClaim) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: auth-keys-pvc
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+spec:
+  accessModes: {{ toYaml .Values.persistence.authKeys.accessModes | nindent 4 }}
+  {{- with .Values.persistence.authKeys.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.authKeys.size }}
+{{- end }}
+{{- if and .Values.persistence.frontKeys.enabled (not .Values.persistence.frontKeys.existingClaim) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: front-keys-pvc
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+spec:
+  accessModes: {{ toYaml .Values.persistence.frontKeys.accessModes | nindent 4 }}
+  {{- with .Values.persistence.frontKeys.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.frontKeys.size }}
+{{- end }}

@@ -1,0 +1,72 @@
+{{- if .Values.ciliumNetworkPolicy.enabled }}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: unique-auth-access
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+spec:
+  endpointSelector:
+    matchLabels: { app: unique-auth }
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ .Release.Namespace }}
+            io.cilium.k8s.policy.serviceaccount: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "front") }}
+      toPorts:
+        - ports: [{ port: "8080", protocol: TCP }]
+          rules:
+            http:
+              - { path: "^/internal/authentication$" }
+              - { path: "^/internal/auth-requests/.*$" }
+              - { path: "^/internal/consents$" }
+              - { path: "^/internal/consents/.*$" }
+              - { path: "^/internal/device-auth-requests/.*$" }
+              - { path: "^/internal/password_reset/.*$" }
+              - { path: "^/internal/session_verify$" }
+              - { path: "^/internal/sessions$" }
+              - { path: "^/internal/sessions/.*$" }
+              - { path: "^/internal/totp/.*$" }
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ .Release.Namespace }}
+            io.cilium.k8s.policy.serviceaccount: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "api") }}
+      toPorts:
+        - ports: [{ port: "8080", protocol: TCP }]
+          rules:
+            http:
+              - { method: POST, path: "^/internal/password_hash$" }
+              - { method: GET, path: "^/internal/session_verify$" }
+              - { method: GET, path: "^/internal/token_verify$" }
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: unique-api-access
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+spec:
+  endpointSelector:
+    matchLabels: { app: unique-api }
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ .Release.Namespace }}
+            io.cilium.k8s.policy.serviceaccount: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "front") }}
+      toPorts:
+        - ports: [{ port: "8080", protocol: TCP }]
+          rules:
+            http:
+              - { path: "^/internal/users$" }
+              - { path: "^/internal/users/.*$" }
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ .Release.Namespace }}
+            io.cilium.k8s.policy.serviceaccount: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "discord") }}
+      toPorts:
+        - ports: [{ port: "8080", protocol: TCP }]
+          rules:
+            http:
+              - { method: GET, path: "^/internal/users/external_identities/search$" }
+              - { method: GET, path: "^/internal/users/.*$" }
+{{- end }}
