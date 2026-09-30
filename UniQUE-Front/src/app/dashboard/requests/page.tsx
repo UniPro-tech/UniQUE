@@ -20,16 +20,24 @@ export default async function Page() {
       .map((u) => u.toJson())
       .filter((u) => u.status === UserStatus.ESTABLISHED)
       .map(async (userData) => {
-        // 各ユーザーのDiscord連携状態を取得
+        // 各ユーザーのDiscord連携アカウントを取得
         const externalIdentities = await ExternalIdentity.getByUserId(
           userData.id,
         );
-        const discordLinked = externalIdentities.some(
+        const discordIdentity = externalIdentities.find(
           (id) => id.provider === "discord",
         );
         return {
           ...userData,
-          discordLinked,
+          discordLinked: discordIdentity !== undefined,
+          discordAccount: discordIdentity
+            ? {
+                externalUserId: discordIdentity.externalUserId,
+                username: discordIdentity.username,
+                displayName: discordIdentity.displayName,
+                avatarUrl: discordIdentity.avatarUrl,
+              }
+            : null,
         };
       }),
   );
