@@ -1,34 +1,32 @@
-# Application settings
+# アプリケーション設定
 
-UniQUE stores administrator-managed, non-connection configuration in the
-`settings` table. Configuration is resolved in this order:
+UniQUEでは、管理者が変更する接続情報以外の設定を `settings` テーブルに保存します。
+設定値は、次の優先順位で決定されます。
 
-1. an explicitly set environment variable;
-2. the corresponding database setting;
-3. the built-in default, when one exists.
+1. 明示的に設定された環境変数
+2. 対応するデータベース設定
+3. 組み込みのデフォルト値（存在する場合）
 
-Database and service connection values such as `DB_DSN`, frontend/API/issuer
-URLs, and key file paths remain environment variables so the services can
-connect before reading settings.
+各サービスが設定を読み込む前に接続できるよう、`DB_DSN`、フロントエンド・API・
+IssuerのURL、鍵ファイルのパスなど、データベースやサービスへの接続情報は引き続き
+環境変数で管理します。
 
-Users with the `CONFIG_UPDATE` permission can manage the allowlisted keys with:
+`CONFIG_UPDATE` 権限を持つユーザーは、許可された設定キーを次のAPIで管理できます。
 
 - `GET /settings`
 - `GET /settings/{key}`
-- `PUT /settings/{key}` with `{ "value": "..." }`
+- `PUT /settings/{key}`（リクエスト本文: `{ "value": "..." }`）
 - `DELETE /settings/{key}`
 
-Secret values such as Discord tokens, OAuth client secrets, and SMTP passwords
-are write-only: list and read responses report whether they are configured but
-never return the value. Responses also report when an environment variable is
-overriding the stored value.
+Discordトークン、OAuthクライアントシークレット、SMTPパスワードなどの機密値は
+書き込み専用です。一覧・取得APIは設定済みかどうかのみを返し、値そのものは返しません。
+保存値より環境変数が優先されている場合も、レスポンスで確認できます。
 
-The existing `/settings/discord-notifications` API now writes the notification
-channel and event switches into the same table. Migration 21 copies existing
-Issue #28 values without deleting the old compatibility table.
+既存の `/settings/discord-notifications` APIも、通知チャンネルとイベントごとの通知設定を
+同じテーブルへ保存します。マイグレーション21は、互換性維持のため従来のテーブルを
+削除せず、Issue #28で保存された値を新しいテーブルへコピーします。
 
-API settings are loaded at process startup; Discord notification settings are
-read for each notification. Restart Auth, Mail, Discord, or API pods after
-changing another setting. In Kubernetes, Mail and Discord receive
-`SETTINGS_DB_DSN` from the existing `mysql-secret`; the database URI itself is
-not stored in the settings table.
+APIの設定はプロセス起動時に読み込まれます。Discord通知設定は通知のたびに読み込まれます。
+その他の設定を変更した場合は、Auth、Mail、Discord、またはAPIのPodを再起動してください。
+Kubernetesでは、MailとDiscordが既存の `mysql-secret` から `SETTINGS_DB_DSN` を受け取ります。
+データベースURIそのものは `settings` テーブルへ保存しません。

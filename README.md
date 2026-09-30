@@ -36,7 +36,7 @@ KubernetesのCronJobにより、1日1回、GitからCloneしたマイグレー�
 
 また、DBはMySQL互換です。
 
-## Deployment
+## デプロイ
 
 Kubernetesへのデプロイには `deploy/helm/unique` のHelm Chartを使用します。
 リリース版ChartはHarborの `oci://registry.uniproject.jp/infra/unique` に公開されます。
@@ -123,7 +123,7 @@ Kubernetesへのデプロイには `deploy/helm/unique` のHelm Chartを使用�
 - User: `test`
 - PW: `testpassword`
 
-### Release and Kubernetes
+### リリースとKubernetes
 
 リリースは Conventional Commits と Release Please で管理します。Release PRを
 マージすると `vX.Y.Z` タグ、GitHub Release、全サービスのコンテナイメージ、

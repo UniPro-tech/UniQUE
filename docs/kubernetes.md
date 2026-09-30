@@ -1,9 +1,9 @@
-# Kubernetes deployment
+# Kubernetesデプロイ
 
-The official chart is located at `deploy/helm/unique`. Tagged releases are
-published to Harbor as `oci://registry.uniproject.jp/infra/unique`.
+公式Chartは `deploy/helm/unique` にあります。タグ付きリリースは、
+`oci://registry.uniproject.jp/infra/unique` としてHarborへ公開されます。
 
-Install a published release with:
+公開済みのリリースは、次のコマンドでインストールできます。
 
 ```sh
 helm upgrade --install unique oci://registry.uniproject.jp/infra/unique \
@@ -13,26 +13,26 @@ helm upgrade --install unique oci://registry.uniproject.jp/infra/unique \
   --values deploy/helm/unique/values-production.yaml
 ```
 
-Log in first when the Harbor project is private:
+Harborのプロジェクトが非公開の場合は、先にログインしてください。
 
 ```sh
 helm registry login registry.uniproject.jp
 ```
 
-Every successful `main` build publishes immutable `sha-<commit>` container
-tags and a uniquely versioned `0.0.0-main.<run>.<attempt>` development chart.
-Release tags publish semantic-version and `latest` container tags. The chart's
-`appVersion` selects the matching tag for every UniQUE image by default.
+`main` のビルドが成功するたびに、変更されない `sha-<commit>` コンテナタグと、
+一意なバージョン `0.0.0-main.<run>.<attempt>` を持つ開発用Chartが公開されます。
+リリースタグでは、セマンティックバージョンと `latest` のコンテナタグが公開されます。
+デフォルトでは、Chartの `appVersion` と一致するタグがすべてのUniQUEイメージに使用されます。
 
-The chart expects the existing application Secrets and `internal-harbor` image
-pull Secret. Apply the encrypted manifests from
-`deploy/sealed-secrets/production` before installing or upgrading the chart:
+Chartは、既存のアプリケーションSecretと、イメージ取得用の `internal-harbor` Secretを
+参照します。Chartをインストールまたは更新する前に、
+`deploy/sealed-secrets/production` の暗号化済みマニフェストを適用してください。
 
 ```sh
 kubectl apply -f deploy/sealed-secrets/production
 ```
 
-Validate local changes with:
+ローカルでの変更は、次のコマンドで検証できます。
 
 ```sh
 helm lint deploy/helm/unique
@@ -40,6 +40,6 @@ helm template unique deploy/helm/unique --namespace unique
 helm lint deploy/helm/unique --values deploy/helm/unique/values-production.yaml
 ```
 
-The production values enable the existing Gateway API routes. Disable
-`networkPolicy` or `ciliumNetworkPolicy` only when the cluster does not support
-the corresponding policy implementation.
+本番用Valuesでは、既存のGateway APIルートが有効になります。クラスタが対応する
+ポリシー実装をサポートしていない場合に限り、`networkPolicy` または
+`ciliumNetworkPolicy` を無効にしてください。
