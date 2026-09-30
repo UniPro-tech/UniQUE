@@ -4,7 +4,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import RestoreIcon from "@mui/icons-material/Restore";
 import SaveIcon from "@mui/icons-material/Save";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { Button, darken } from "@mui/material";
+import { Avatar, Button, darken, Stack, Typography } from "@mui/material";
 import {
   DataGrid,
   type DataGridProps,
@@ -32,8 +32,16 @@ import {
 } from "@/constants/UserConstants";
 import { updateUserById } from "./actions/updateAction";
 
+export interface DiscordAccountData {
+  externalUserId: string;
+  username?: string;
+  displayName?: string;
+  avatarUrl: string;
+}
+
 export interface UserDataGridRowType extends UserData {
   discordLinked?: boolean;
+  discordAccount?: DiscordAccountData | null;
 }
 
 export default function MembersDataGrid({
@@ -289,10 +297,54 @@ export default function MembersDataGrid({
               type: "boolean",
             } as GridColDef,
             {
-              field: "discordLinked",
-              headerName: "Discord連携",
-              width: 120,
-              type: "boolean",
+              field: "discordAccount",
+              headerName: "Discordアカウント",
+              width: 240,
+              sortable: false,
+              renderCell: ({ row }: { row: UserDataGridRowType }) => {
+                const account = row.discordAccount;
+                if (!account) {
+                  return (
+                    <Typography variant="body2" color="text.secondary">
+                      未連携
+                    </Typography>
+                  );
+                }
+
+                const displayName =
+                  account.displayName ||
+                  account.username ||
+                  account.externalUserId;
+                return (
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "center", height: "100%", minWidth: 0 }}
+                  >
+                    <Avatar
+                      src={account.avatarUrl}
+                      alt={displayName}
+                      sx={{ width: 32, height: 32 }}
+                    >
+                      {displayName.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Stack sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" noWrap>
+                        {displayName}
+                      </Typography>
+                      {account.username && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          noWrap
+                        >
+                          @{account.username}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Stack>
+                );
+              },
             } as GridColDef,
           ]
         : []),

@@ -1,5 +1,13 @@
 "use client";
-import { Alert, FormHelperText, TextField } from "@mui/material";
+import {
+  Alert,
+  Avatar,
+  Box,
+  FormHelperText,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -94,6 +102,49 @@ export default function ApproveRegistApplyDialog({
           <DialogContentText>
             下記の情報を入力後、承認ボタンを押してください。
           </DialogContentText>
+          {user?.discordAccount && (
+            <Box
+              sx={{
+                p: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                Discordアカウント
+              </Typography>
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{ alignItems: "center", mt: 1 }}
+              >
+                <Avatar
+                  src={user.discordAccount.avatarUrl}
+                  alt={
+                    user.discordAccount.displayName ||
+                    user.discordAccount.username ||
+                    user.discordAccount.externalUserId
+                  }
+                />
+                <Stack sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle2" noWrap>
+                    {user.discordAccount.displayName ||
+                      user.discordAccount.username ||
+                      user.discordAccount.externalUserId}
+                  </Typography>
+                  {user.discordAccount.username && (
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      @{user.discordAccount.username}
+                    </Typography>
+                  )}
+                  <Typography variant="caption" color="text.secondary" noWrap>
+                    ID: {user.discordAccount.externalUserId}
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Box>
+          )}
           <input type="hidden" name="userId" value={user?.id} />
           <PeriodSelectorOptions
             onChange={(e) => {
