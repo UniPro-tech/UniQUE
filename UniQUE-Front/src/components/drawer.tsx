@@ -8,6 +8,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import MenuIcon from "@mui/icons-material/Menu";
 import PeopleIcon from "@mui/icons-material/People";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import SettingsIcon from "@mui/icons-material/Settings";
 import { Stack } from "@mui/material";
 import MuiAppBar, {
   type AppBarProps as MuiAppBarProps,
@@ -154,6 +155,9 @@ export default function MiniDrawer({
 
   const canManageRequests = hasPermission(PermissionBitsFields.USER_CREATE);
   const canManageRoles = hasPermission(PermissionBitsFields.ROLE_MANAGE);
+  const canManageSystemSettings = hasPermission(
+    PermissionBitsFields.CONFIG_UPDATE,
+  );
 
   const NAVIGSTION_LINKS: NavLink[][] = [
     [
@@ -174,7 +178,7 @@ export default function MiniDrawer({
         icon: <AppsIcon />,
       },
     ],
-    ...(canManageRequests || canManageRoles
+    ...(canManageRequests || canManageRoles || canManageSystemSettings
       ? [
           [
             ...(canManageRequests
@@ -192,6 +196,15 @@ export default function MiniDrawer({
                     text: "ロール管理",
                     href: "/dashboard/roles",
                     icon: <AdminPanelSettingsIcon />,
+                  },
+                ]
+              : []),
+            ...(canManageSystemSettings
+              ? [
+                  {
+                    text: "全体設定",
+                    href: "/dashboard/system-settings",
+                    icon: <SettingsIcon />,
                   },
                 ]
               : []),

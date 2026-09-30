@@ -116,6 +116,7 @@ export class User {
     > & {
       status?: UserStatus;
       affiliationPeriod?: string;
+      source?: "registration" | "migration" | "admin";
       profile: Partial<
         Omit<
           ProfileData,

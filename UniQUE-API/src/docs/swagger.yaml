@@ -1,5 +1,16 @@
 basePath: /
 definitions:
+  discord.NotificationSettings:
+    properties:
+      channel_id:
+        type: string
+      notify_announcements:
+        type: boolean
+      notify_migrations:
+        type: boolean
+      notify_registration_requests:
+        type: boolean
+    type: object
   main.HealthResponse:
     properties:
       status:
@@ -155,6 +166,8 @@ definitions:
         type: string
       profile:
         $ref: '#/definitions/routes.ProfileDTO'
+      source:
+        type: string
       status:
         type: string
     required:
@@ -421,6 +434,17 @@ definitions:
         $ref: '#/definitions/routes.Nullable-string'
       website_url:
         $ref: '#/definitions/routes.Nullable-string'
+    type: object
+  routes.UpdateDiscordNotificationSettingsRequest:
+    properties:
+      channel_id:
+        type: string
+      notify_announcements:
+        type: boolean
+      notify_migrations:
+        type: boolean
+      notify_registration_requests:
+        type: boolean
     type: object
   routes.UpdateRoleRequest:
     properties:
@@ -1129,6 +1153,41 @@ paths:
       summary: Add a user to a role
       tags:
       - roles
+  /settings/discord-notifications:
+    get:
+      description: Get the global Discord channel and enabled notification events
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/discord.NotificationSettings'
+      summary: Get Discord notification settings
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Update the global Discord channel and enabled notification events.
+        An empty channel disables delivery.
+      parameters:
+      - description: Discord notification settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateDiscordNotificationSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/discord.NotificationSettings'
+      summary: Update Discord notification settings
+      tags:
+      - settings
   /users:
     get:
       description: List users with embedded profile. Returns all data if USER_READ

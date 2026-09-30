@@ -26,6 +26,7 @@ export const submitSignUp = async (formData: FormData): Promise<string> => {
         email: `temp_${Date.now()}@uniproject.jp`,
         externalEmail: external_email,
         customId: username,
+        source: "registration",
         profile: {
           displayName: name,
         },

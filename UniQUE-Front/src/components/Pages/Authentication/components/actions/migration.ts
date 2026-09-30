@@ -49,6 +49,7 @@ export const submitMigration = async (formData: FormData) => {
         externalEmail: external_email,
         affiliationPeriod: period.toUpperCase(),
         status: UserStatus.ACTIVE,
+        source: "migration",
         profile: {
           displayName: name,
           joinedAt: joinedAt.toISOString(),

@@ -5,8 +5,9 @@ import (
 )
 
 type DiscordGuildConfig struct {
-	ID           string
-	MemberRoleID string
+	ID                    string
+	MemberRoleID          string
+	NotificationChannelID string
 }
 
 type DiscordConfig struct {
@@ -81,10 +82,15 @@ func LoadConfig() *Config {
 		ClientID:     os.Getenv("DISCORD_CLIENT_ID"),
 		ClientSecret: os.Getenv("DISCORD_CLIENT_SECRET"),
 		Guild: DiscordGuildConfig{
-			ID:           os.Getenv("DISCORD_GUILD_ID"),
-			MemberRoleID: os.Getenv("DISCORD_MEMBER_ROLE_ID"),
+			ID:                    os.Getenv("DISCORD_GUILD_ID"),
+			MemberRoleID:          os.Getenv("DISCORD_MEMBER_ROLE_ID"),
+			NotificationChannelID: os.Getenv("DISCORD_NOTIFICATION_CHANNEL_ID"),
 		},
 		BotToken: os.Getenv("DISCORD_BOT_TOKEN"),
+	}
+	// 旧環境変数は移行期間中のフォールバックとして扱う。
+	if DiscordConfig.Guild.NotificationChannelID == "" {
+		DiscordConfig.Guild.NotificationChannelID = os.Getenv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID")
 	}
 	if DiscordConfig.ClientID == "" || DiscordConfig.ClientSecret == "" || DiscordConfig.Guild.ID == "" || DiscordConfig.Guild.MemberRoleID == "" || DiscordConfig.BotToken == "" {
 		panic("Discord configuration is not fully set in environment variables")
