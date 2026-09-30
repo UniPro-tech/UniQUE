@@ -128,8 +128,10 @@ services:
         condition: service_started
     env_file:
       - ./dev/oidc-client/.env
+    environment:
+      OIDC_CLIENT_HOST: "0.0.0.0"
     ports:
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     volumes:
       - ./dev/oidc-client:/app
     profiles:

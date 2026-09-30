@@ -217,6 +217,13 @@ func AuthorizationPost(c *gin.Context) {
 	if err := db.Transaction(func(txDB *gorm.DB) error {
 		tx := query.Use(txDB)
 		var consent model.Consent
+		var user model.User
+
+		// Serialize consent creation for the same user even when no consent row
+		// exists yet. The consents table has no active-row uniqueness constraint.
+		if err := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", userID).First(&user).Error; err != nil {
+			return err
+		}
 
 		// 行ロックで取得を試みる
 		err := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error
@@ -227,6 +234,7 @@ func AuthorizationPost(c *gin.Context) {
 
 			// レコードが存在しない -> 作成を試みる
 			newConsent := &model.Consent{
+				ID:            ulid.Make().String(),
 				UserID:        userID,
 				ApplicationID: authReq.ApplicationID,
 				Scope:         authReq.Scope,

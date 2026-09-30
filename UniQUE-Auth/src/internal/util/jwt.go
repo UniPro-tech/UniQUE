@@ -4,11 +4,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/subtle"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"log"
 	"log/slog"
 	"strings"
 	"time"
@@ -22,6 +22,9 @@ import (
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
+
+// ErrNoValidKeyPair indicates that the issuer cannot validate or mint tokens.
+var ErrNoValidKeyPair = errors.New("no valid keypair configured")
 
 // kidForKey computes the kid (SHA-256 thumbprint of PKIX DER) matching the JWKS endpoint.
 func kidForKey(cfg config.Config) string {
@@ -89,7 +92,7 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 
 	if ContainsScope(scopes, "openid") {
 		if !hasValidKeyPair(config) {
-			return "", "", "", errors.New("no valid keypair configured")
+			return "", "", "", ErrNoValidKeyPair
 		}
 		IDTokenString, err = GenerateIDToken(q, IDTokenIDRaw, consent.UserID, consent.ApplicationID, nonce, scopes, config)
 		if err != nil {
@@ -128,7 +131,7 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 	})
 	accessTokenClaims.Header["kid"] = kidForKey(config)
 	if !hasValidKeyPair(config) {
-		return "", "", "", errors.New("no valid keypair configured")
+		return "", "", "", ErrNoValidKeyPair
 	}
 	accessTokenString, err := accessTokenClaims.SignedString(&config.KeyPairs[0].PrivateKey)
 	if err != nil {
@@ -156,7 +159,7 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 
 	// create JWE with new signature: (alg, key, method, plaintext)
 	if !hasValidKeyPair(config) {
-		return "", "", "", errors.New("no valid keypair configured")
+		return "", "", "", ErrNoValidKeyPair
 	}
 	refreshTokenClaim, err := jwe.NewJWE(jwe.KeyAlgorithmRSAOAEP, &config.KeyPairs[0].PublicKey, jwe.EncryptionTypeA256GCM, plaintext)
 	if err != nil {
@@ -174,6 +177,54 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 		refreshTokenString = kid + ":" + refreshTokenString
 	}
 	return accessTokenString, IDTokenString, refreshTokenString, nil
+}
+
+// ParseRefreshToken verifies that a refresh token was encrypted with one of
+// this issuer's keys and returns its claims for rotation or revocation.
+func ParseRefreshToken(tokenRaw string, config config.Config) (*RefreshTokenClaims, error) {
+	specifiedKid := ""
+	if idx := strings.Index(tokenRaw, ":"); idx > 0 {
+		maybeKid := tokenRaw[:idx]
+		if len(maybeKid) == 64 {
+			specifiedKid = maybeKid
+			tokenRaw = tokenRaw[idx+1:]
+		}
+	}
+
+	jweObj, err := jwe.ParseEncrypted(tokenRaw)
+	if err != nil {
+		return nil, err
+	}
+
+	var plaintext []byte
+	if specifiedKid != "" {
+		for _, keyPair := range config.KeyPairs {
+			if subtle.ConstantTimeCompare([]byte(KidForPublicKey(keyPair.PublicKey)), []byte(specifiedKid)) != 1 {
+				continue
+			}
+			plaintext, err = jweObj.Decrypt(&keyPair.PrivateKey)
+			break
+		}
+	} else {
+		for _, keyPair := range config.KeyPairs {
+			plaintext, err = jweObj.Decrypt(&keyPair.PrivateKey)
+			if err == nil {
+				break
+			}
+		}
+	}
+	if err != nil || plaintext == nil {
+		if err == nil {
+			err = errors.New("refresh token key not found")
+		}
+		return nil, err
+	}
+
+	claims := &RefreshTokenClaims{}
+	if err := json.Unmarshal(plaintext, claims); err != nil {
+		return nil, err
+	}
+	return claims, nil
 }
 
 type OIDCTokenClaims struct {
@@ -268,26 +319,48 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 	})
 	IDTokenClaims.Header["kid"] = kidForKey(config)
 	if !hasValidKeyPair(config) {
-		return "", errors.New("no valid keypair configured")
+		return "", ErrNoValidKeyPair
 	}
 	IDTokenString, err := IDTokenClaims.SignedString(&config.KeyPairs[0].PrivateKey)
 	return IDTokenString, err
 }
 
-// ValidateAccessToken は与えられたアクセストークン文字列を検証し、
-// 成功した場合はトークンの JTI、サブジェクト（ユーザID）、スコープを返す。
-// - tokenString: 検証する JWT アクセストークン文字列
-// - c: Gin コンテキスト（中に設定された `config` と `db` を使用）
-// 戻り値は順に (jti, sub, scope, err) で、検証失敗時は err に値が入る。
-func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope string, err error) {
-	config := *c.MustGet("config").(*config.Config)
-	dbAny := c.MustGet("db")
-	db, ok := dbAny.(*gorm.DB)
-	if !ok || db == nil {
-		return "", "", "", errors.New("database not available")
-	}
-	q := query.Use(db)
+// ParseAccessToken verifies an access token's format, signature, and claims
+// without consulting token state in the database.
+func ParseAccessToken(tokenString string, config config.Config) (*AccessTokenClaims, error) {
+	return parseAccessToken(tokenString, config, false)
+}
 
+// ParseAccessTokenForRevocation verifies an access token while allowing it to
+// be expired. RFC 7009 revocation still needs the signed JTI after access-token
+// expiry so that the associated refresh token can be revoked.
+func ParseAccessTokenForRevocation(tokenString string, config config.Config) (*AccessTokenClaims, error) {
+	claims, err := parseAccessToken(tokenString, config, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims.ID == "" || claims.Subject == "" || claims.Issuer == "" || len(claims.Audience) == 0 || claims.IssuedAt == nil || claims.ExpiresAt == nil {
+		return nil, errors.New("missing required access token claims")
+	}
+	if claims.Issuer != config.IssuerURL {
+		return nil, errors.New("invalid access token issuer")
+	}
+	now := time.Now()
+	if claims.NotBefore != nil && claims.NotBefore.After(now) {
+		return nil, errors.New("access token is not valid yet")
+	}
+	if claims.IssuedAt.After(now) {
+		return nil, errors.New("access token issued in the future")
+	}
+	if !claims.ExpiresAt.After(claims.IssuedAt.Time) {
+		return nil, errors.New("invalid access token lifetime")
+	}
+
+	return claims, nil
+}
+
+func parseAccessToken(tokenString string, config config.Config, allowExpired bool) (*AccessTokenClaims, error) {
 	// 前後の空白を除去
 	tokenString = strings.TrimSpace(tokenString)
 
@@ -305,7 +378,7 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope st
 		if len(parts[0]) >= 32 && len(parts[0]) <= 128 {
 			// 先頭部分が16進文字列かどうかを簡易確認
 			if _, hexErr := hex.DecodeString(parts[0]); hexErr == nil {
-				return "", "", "", errors.New("token appears to be a refresh token or contains a kid prefix; expected access token")
+				return nil, errors.New("token appears to be a refresh token or contains a kid prefix; expected access token")
 			}
 		}
 	}
@@ -313,10 +386,15 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope st
 	// JWT (JWS) は compact serialization で header.payload.signature の
 	// 3 つのパート（ドットが2つ）を持つことを期待する。
 	if strings.Count(tokenString, ".") != 2 {
-		return "", "", "", errors.New("invalid token format: expected JWS compact serialization")
+		return nil, errors.New("invalid token format: expected JWS compact serialization")
 	}
 
-	log.Println("Validating access token:", tokenString)
+	parserOptions := []jwt.ParserOption{jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()})}
+	if allowExpired {
+		// Signature and algorithm validation remain enabled. The caller performs
+		// the claim checks explicitly so that expiration alone can be ignored.
+		parserOptions = append(parserOptions, jwt.WithoutClaimsValidation())
+	}
 
 	// トークンをパースして署名とクレームを検証する
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -324,34 +402,53 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope st
 		if token == nil {
 			return nil, errors.New("invalid token")
 		}
-		// 署名アルゴリズムが RSA 系であることを期待する
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		// アクセストークンの発行時と同じ RS256 のみを許可する
+		if token.Method != jwt.SigningMethodRS256 {
 			return nil, errors.New("unexpected signing method")
 		}
 		// 公開鍵が設定されていることを確認して返す
 		if !hasValidKeyPair(config) {
-			return nil, errors.New("no valid keypair configured")
+			return nil, ErrNoValidKeyPair
 		}
 		return &config.KeyPairs[0].PublicKey, nil
-	})
+	}, parserOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*AccessTokenClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid token claims")
+	}
+	return claims, nil
+}
+
+// ValidateAccessToken は与えられたアクセストークン文字列を検証し、
+// 成功した場合はトークンの JTI、サブジェクト（ユーザID）、スコープを返す。
+// - tokenString: 検証する JWT アクセストークン文字列
+// - c: Gin コンテキスト（中に設定された `config` と `db` を使用）
+// 戻り値は順に (jti, sub, scope, err) で、検証失敗時は err に値が入る。
+func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope string, err error) {
+	config := *c.MustGet("config").(*config.Config)
+	claims, err := ParseAccessToken(tokenString, config)
 	if err != nil {
 		return "", "", "", err
 	}
 
-	// クレームの型を確認して有効性を検査する
-	if claims, ok := token.Claims.(*AccessTokenClaims); ok && token.Valid {
-		// DB 側でトークン ID (JTI) が無効化されていないか確認する
-		tokenSet, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(claims.ID), q.OauthToken.DeletedAt.IsNull()).First()
-		if err != nil {
-			return "", "", "", err
-		}
-		if tokenSet == nil {
-			return "", "", "", errors.New("invalid token")
-		}
-		return claims.ID, claims.Subject, claims.Scope, nil
-	} else {
-		return "", "", "", errors.New("invalid token claims")
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		return "", "", "", errors.New("database not available")
 	}
+	q := query.Use(db)
+	tokenSet, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(claims.ID), q.OauthToken.DeletedAt.IsNull()).First()
+	if err != nil {
+		return "", "", "", err
+	}
+	if tokenSet == nil {
+		return "", "", "", errors.New("invalid token")
+	}
+	return claims.ID, claims.Subject, claims.Scope, nil
 }
 
 type SessionTokenClaims struct {
@@ -372,7 +469,7 @@ func GenerateSessionJWT(sessionID, userID string, expiresAt time.Time, config co
 	})
 	sessionTokenClaims.Header["kid"] = kidForKey(config)
 	if !hasValidKeyPair(config) {
-		return "", errors.New("no valid keypair configured")
+		return "", ErrNoValidKeyPair
 	}
 	sessionTokenString, err := sessionTokenClaims.SignedString(&config.KeyPairs[0].PrivateKey)
 	if err != nil {
@@ -396,7 +493,7 @@ func ValidateSessionJWT(tokenString string, c *gin.Context) (sessionID, userID s
 		}
 		// Return the public key for verification
 		if !hasValidKeyPair(config) {
-			return nil, errors.New("no valid keypair configured")
+			return nil, ErrNoValidKeyPair
 		}
 		return &config.KeyPairs[0].PublicKey, nil
 	})

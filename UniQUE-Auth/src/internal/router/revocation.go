@@ -4,14 +4,19 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type RevocationRequest struct {
 	Token         string  `form:"token" binding:"required"`
 	TokenTypeHint *string `form:"token_type_hint" binding:"omitempty"`
+	ClientID      string  `form:"client_id"`
+	ClientSecret  string  `form:"client_secret"`
 }
 
 // Revocation godoc
@@ -29,6 +34,13 @@ func Revocation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
+	clientID := checkClientAuthentication(c, &TokenGetRequest{
+		ClientID:     req.ClientID,
+		ClientSecret: req.ClientSecret,
+	}, false)
+	if clientID == nil {
+		return
+	}
 
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
@@ -37,45 +49,49 @@ func Revocation(c *gin.Context) {
 		return
 	}
 	q := query.Use(db)
+	config := *c.MustGet("config").(*config.Config)
+	tokenJTI := ""
+	if claims, err := util.ParseAccessTokenForRevocation(req.Token, config); err == nil {
+		tokenJTI = claims.ID
+	} else if errors.Is(err, util.ErrNoValidKeyPair) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+	if tokenJTI == "" {
+		if claims, err := util.ParseRefreshToken(req.Token, config); err == nil {
+			tokenJTI = claims.ID
+		}
+	}
+	if tokenJTI == "" {
+		// RFC 7009 requires a successful response for unknown or invalid tokens.
+		c.Status(http.StatusOK)
+		return
+	}
 
-	// トークンの失効処理をトランザクション化
+	// Token revocation is transactional and cannot affect another client.
 	err := q.Transaction(func(tx *query.Query) error {
-		// token_type_hint が指定されている場合はその種別を優先して探索
-		if req.TokenTypeHint != nil {
-			switch *req.TokenTypeHint {
-			case "access_token":
-				res, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Delete()
-				if err != nil {
-					return err
-				}
-				// access_token が見つからなければ refresh_token 側を試す (RFC7009 フォールバック仕様)
-				if res.RowsAffected == 0 {
-					if _, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
-						return err
-					}
-				}
-			case "refresh_token":
-				res, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete()
-				if err != nil {
-					return err
-				}
-				// refresh_token が見つからなければ access_token 側を試す (RFC7009 フォールバック仕様)
-				if res.RowsAffected == 0 {
-					if _, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Delete(); err != nil {
-						return err
-					}
-				}
-			default:
-				// 不明なヒントの場合は OR 条件を用いて1回のクエリで両方から探索・削除
-				if _, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Or(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
-					return err
-				}
+		tokenset, err := tx.OauthToken.Clauses(clause.Locking{Strength: "UPDATE"}).Where(tx.OauthToken.AccessTokenJti.Eq(tokenJTI)).Or(tx.OauthToken.RefreshTokenJti.Eq(tokenJTI)).First()
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
 			}
-		} else {
-			// ヒントがない場合は OR 条件を用いて1回のクエリで両方を探索・削除 (クエリ数を削減)
-			if _, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(req.Token)).Or(tx.OauthToken.RefreshTokenJti.Eq(req.Token)).Delete(); err != nil {
-				return err
+			return err
+		}
+		if tokenset == nil {
+			return nil
+		}
+		consent, err := tx.Consent.Where(tx.Consent.ID.Eq(tokenset.ConsentID)).First()
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
 			}
+			return err
+		}
+		if consent == nil || consent.ApplicationID != *clientID {
+			return nil
+		}
+		if _, err := tx.OauthToken.Where(tx.OauthToken.ID.Eq(tokenset.ID)).Delete(); err != nil {
+			return err
 		}
 		return nil
 	})

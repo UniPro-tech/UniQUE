@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -17,8 +16,8 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwe"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TokenGetRequest struct {
@@ -204,53 +203,8 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 // refresh_token グラントの処理
 func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID string) {
 	cfg := *c.MustGet("config").(*config.Config)
-	tokenRaw := req.RefreshToken
-	specifiedKid := ""
-	if idx := strings.Index(tokenRaw, ":"); idx > 0 {
-		maybe := tokenRaw[:idx]
-		if len(maybe) == 64 {
-			specifiedKid = maybe
-			tokenRaw = tokenRaw[idx+1:]
-		}
-	}
-
-	jweObj, err := jwe.ParseEncrypted(tokenRaw)
+	claims, err := util.ParseRefreshToken(req.RefreshToken, cfg)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
-		return
-	}
-
-	var decryptedObj []byte
-	var decErr error
-	if specifiedKid != "" {
-		found := false
-		for _, kp := range cfg.KeyPairs {
-			kpKid := util.KidForPublicKey(kp.PublicKey)
-			if subtle.ConstantTimeCompare([]byte(kpKid), []byte(specifiedKid)) == 1 {
-				decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
-				found = true
-				break
-			}
-		}
-		if !found || decErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
-			return
-		}
-	} else {
-		for _, kp := range cfg.KeyPairs {
-			decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
-			if decErr == nil {
-				break
-			}
-		}
-		if decErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
-			return
-		}
-	}
-
-	var claims util.RefreshTokenClaims
-	if err := json.Unmarshal(decryptedObj, &claims); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant"})
 		return
 	}
@@ -277,7 +231,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 
 	err = q.Transaction(func(tx *query.Query) error {
 		logger := middleware.GetLogger(c)
-		tokenset, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
+		tokenset, err := tx.OauthToken.Clauses(clause.Locking{Strength: "UPDATE"}).Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
 		if err != nil {
 			return err
 		}
@@ -300,8 +254,12 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 			return err
 		}
 
-		if _, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).Update(tx.OauthToken.DeletedAt, time.Now().UTC()); err != nil {
+		result, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).Update(tx.OauthToken.DeletedAt, time.Now().UTC())
+		if err != nil {
 			return err
+		}
+		if result.RowsAffected != 1 {
+			return gorm.ErrRecordNotFound
 		}
 
 		return nil

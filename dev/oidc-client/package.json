@@ -4,5 +4,8 @@
   "scripts": {
     "dev": "bun run server.ts",
     "test:oidc": "bun run smoke.ts"
+  },
+  "dependencies": {
+    "hono": "^4.13.9"
   }
 }

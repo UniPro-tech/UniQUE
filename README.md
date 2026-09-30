@@ -106,6 +106,8 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
    bun --cwd dev/oidc-client run test:oidc
    ```
 
+   このテストはAuthorization Code Flow with PKCE、ID Token検証、UserInfo、Refresh Tokenローテーション、旧トークンの再利用拒否、RFC 7009のトークン失効を確認します。
+
 ### テストユーザー
 
 上記の手順6により開発用ユーザーを冪等に作成します。

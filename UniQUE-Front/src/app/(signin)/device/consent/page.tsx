@@ -111,11 +111,12 @@ export default async function Page({
     );
   }
 
-  // 既存の同意があるかチェック – あればコンセント画面をスキップ
-  // Resolve auth API URL from public or server env, fallback to localhost
-  const resolvedAuthApiUrl =
-    process.env.NEXT_PUBLIC_AUTH_API_URL || process.env.AUTH_API_URL;
-  const authClient = createApiClient(resolvedAuthApiUrl);
+  // Server-side API calls must use the Docker-internal URL. Browser redirects
+  // and form actions use the public URL instead.
+  const authApiUrl =
+    process.env.AUTH_API_URL || process.env.NEXT_PUBLIC_AUTH_API_URL;
+  const publicAuthApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || authApiUrl;
+  const authClient = createApiClient(authApiUrl);
   let consented = false;
   const consentedQuery = new URLSearchParams();
   try {
@@ -170,7 +171,7 @@ export default async function Page({
         redirect_uri={authReqData.redirect_uri}
         state={authReqData.state}
         auth_request_id={auth_request_id}
-        action={`${resolvedAuthApiUrl}/authorization`}
+        action={`${publicAuthApiUrl}/authorization`}
         device_flow
         deniedAction={deniedAction}
       />
