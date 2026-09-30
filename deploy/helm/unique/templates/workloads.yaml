@@ -219,6 +219,8 @@ metadata:
 spec:
   replicas: {{ .Values.database.replicaCount }}
   revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels: { app: mysql }
   template:
