@@ -432,3 +432,34 @@ func TestLoadConfig_ConfigStructNotNil(t *testing.T) {
 		t.Errorf("LoadConfig() returned nil")
 	}
 }
+
+func TestLoadConfig_DatabaseFallback(t *testing.T) {
+	saved := saveAndClearEnv(
+		"CONFIG_APP_NAME",
+		"DISCORD_API_VERSION",
+		"DISCORD_CLIENT_ID",
+		"DISCORD_CLIENT_SECRET",
+		"DISCORD_GUILD_ID",
+		"DISCORD_MEMBER_ROLE_ID",
+		"DISCORD_BOT_TOKEN",
+		"GITHUB_CLIENT_ID",
+		"GITHUB_CLIENT_SECRET",
+	)
+	defer restoreEnv(saved)
+
+	cfg := config.LoadConfig(map[string]string{
+		"application.name":       "Database UniQUE",
+		"discord.api_version":    "v11",
+		"discord.client_id":      "db-client-id",
+		"discord.client_secret":  "db-client-secret",
+		"discord.guild_id":       "db-guild-id",
+		"discord.member_role_id": "db-role-id",
+		"discord.bot_token":      "db-bot-token",
+		"github.client_id":       "db-github-id",
+		"github.client_secret":   "db-github-secret",
+	})
+
+	if cfg.AppName != "Database UniQUE" || cfg.DiscordConfig.ClientID != "db-client-id" || cfg.GitHubClientSecret != "db-github-secret" {
+		t.Fatalf("database settings were not applied: %#v", cfg)
+	}
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
 	"github.com/UniPro-tech/UniQUE-API/internal/routes"
+	"github.com/UniPro-tech/UniQUE-API/internal/settings"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm/logger"
@@ -47,8 +48,6 @@ func main() {
 	})
 	slog.SetDefault(slog.New(handler))
 
-	environmentConfigs := config.LoadConfig()
-
 	// Initialize database
 	dbConnection, err := db.NewDB()
 	if err != nil {
@@ -56,6 +55,12 @@ func main() {
 		slog.Error("Failed to initialize database", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+	databaseSettings, err := settings.LoadValues(dbConnection)
+	if err != nil {
+		slog.Warn("Failed to load application settings; using environment values", slog.String("error", err.Error()))
+		databaseSettings = map[string]string{}
+	}
+	environmentConfigs := config.LoadConfig(databaseSettings)
 
 	// ログレベルの決定（環境変数などで切り替えるイメージ）
 	var gormLogLevel logger.LogLevel

@@ -131,6 +131,7 @@ OCI Helm Chartが自動的に作成・公開されます。サービス別タグ
 
 - [リリース手順](docs/releases.md)
 - [Helm ChartによるKubernetesデプロイ](docs/kubernetes.md)
+- [DB管理のアプリケーション設定](docs/application-settings.md)
 
 ## LICENSE
 

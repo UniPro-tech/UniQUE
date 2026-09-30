@@ -2,6 +2,8 @@ package internal
 
 import (
 	"os"
+
+	"github.com/UniPro-tech/UniQUE/Discord/internal/settings"
 )
 
 type Colors struct {
@@ -44,7 +46,11 @@ var (
 	UniqueFrontendURL = "http://localhost:3000"
 )
 
-func LoadConfig() *Config {
+func LoadConfig(databaseValues ...map[string]string) *Config {
+	values := map[string]string{}
+	if len(databaseValues) > 0 && databaseValues[0] != nil {
+		values = databaseValues[0]
+	}
 	version := Version
 
 	if Version == "latest" {
@@ -54,26 +60,11 @@ func LoadConfig() *Config {
 	}
 
 	// envから設定を読み込む
-	BotNameEnv := os.Getenv("CONFIG_BOT_NAME")
-	if BotNameEnv == "" {
-		BotNameEnv = BotName
-	}
-	DescriptionEnv := os.Getenv("CONFIG_DESCRIPTION")
-	if DescriptionEnv == "" {
-		DescriptionEnv = Description
-	}
-	AdminGuildIDEnv := os.Getenv("CONFIG_ADMIN_GUILD_ID")
-	if AdminGuildIDEnv == "" {
-		AdminGuildIDEnv = AdminGuildID
-	}
-	AdminRoleIDEnv := os.Getenv("CONFIG_ADMIN_ROLE_ID")
-	if AdminRoleIDEnv == "" {
-		AdminRoleIDEnv = AdminRoleID
-	}
-	GitHubRepoEnv := os.Getenv("CONFIG_GITHUB_REPO")
-	if GitHubRepoEnv == "" {
-		GitHubRepoEnv = GitHubRepo
-	}
+	BotNameEnv := settings.Resolve(values, "CONFIG_BOT_NAME", "discord.bot_name", BotName)
+	DescriptionEnv := settings.Resolve(values, "CONFIG_DESCRIPTION", "discord.description", Description)
+	AdminGuildIDEnv := settings.Resolve(values, "CONFIG_ADMIN_GUILD_ID", "discord.admin_guild_id", AdminGuildID)
+	AdminRoleIDEnv := settings.Resolve(values, "CONFIG_ADMIN_ROLE_ID", "discord.admin_role_id", AdminRoleID)
+	GitHubRepoEnv := settings.Resolve(values, "CONFIG_GITHUB_REPO", "discord.github_repository", GitHubRepo)
 	UniqueAPIBaseURLEnv := os.Getenv("CONFIG_UNIQUE_API_BASE_URL")
 	if UniqueAPIBaseURLEnv == "" {
 		UniqueAPIBaseURLEnv = UniqueAPIBaseURL

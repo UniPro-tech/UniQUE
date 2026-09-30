@@ -163,6 +163,11 @@ spec:
             - { name: http, containerPort: 8080 }
           env:
             - { name: ENV, value: {{ .Values.mail.environment | quote }} }
+            - name: SETTINGS_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: MYSQL_ACCESS_URI
           envFrom:
             - secretRef: { name: {{ .Values.mail.existingSecret }} }
           livenessProbe:
@@ -196,6 +201,12 @@ spec:
           imagePullPolicy: {{ .Values.discord.image.pullPolicy }}
           envFrom:
             - secretRef: { name: {{ .Values.discord.existingSecret }} }
+          env:
+            - name: SETTINGS_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: MYSQL_ACCESS_URI
           resources: {{ toYaml .Values.discord.resources | nindent 12 }}
 ---
 apiVersion: apps/v1

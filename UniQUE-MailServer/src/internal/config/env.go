@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
+
+	"github.com/UniPro-tech/UniQUE-MailServer/internal/settings"
 )
 
 type SmtpConfig struct {
@@ -37,7 +39,11 @@ var (
 	IssuerURL   = "http://localhost:8080"
 )
 
-func LoadConfig() *Config {
+func LoadConfig(databaseValues ...map[string]string) *Config {
+	values := map[string]string{}
+	if len(databaseValues) > 0 && databaseValues[0] != nil {
+		values = databaseValues[0]
+	}
 	version := Version
 
 	if Version == "latest" {
@@ -47,10 +53,7 @@ func LoadConfig() *Config {
 	}
 
 	// envから設定を読み込む
-	AppNameEnv := os.Getenv("CONFIG_APP_NAME")
-	if AppNameEnv == "" {
-		AppNameEnv = AppName
-	}
+	AppNameEnv := settings.Resolve(values, "CONFIG_APP_NAME", "application.name", AppName)
 	FrontendURLEnv := os.Getenv("CONFIG_FRONTEND_URL")
 	if FrontendURLEnv == "" {
 		FrontendURLEnv = FrontendURL
@@ -59,11 +62,11 @@ func LoadConfig() *Config {
 	if IssuerURLEnv == "" {
 		IssuerURLEnv = IssuerURL
 	}
-	SmtpHost := os.Getenv("SMTP_HOST")
+	SmtpHost := settings.Resolve(values, "SMTP_HOST", "smtp.host", "")
 	if SmtpHost == "" {
 		panic("SMTP Config not found")
 	}
-	SmtpHostPort := os.Getenv("SMTP_PORT")
+	SmtpHostPort := settings.Resolve(values, "SMTP_PORT", "smtp.port", "")
 	if SmtpHostPort == "" {
 		panic("SMTP Config not found")
 	}
@@ -73,30 +76,24 @@ func LoadConfig() *Config {
 	if err != nil {
 		panic("Invalid SMTP_PORT value")
 	}
-	SmtpUsername := os.Getenv("SMTP_USERNAME")
+	SmtpUsername := settings.Resolve(values, "SMTP_USERNAME", "smtp.username", "")
 	if SmtpUsername == "" {
 		panic("SMTP Config not found")
 	}
-	SmtpPassword := os.Getenv("SMTP_PASSWORD")
+	SmtpPassword := settings.Resolve(values, "SMTP_PASSWORD", "smtp.password", "")
 	if SmtpPassword == "" {
 		panic("SMTP Config not found")
 	}
-	SmtpFrom := os.Getenv("SMTP_FROM")
+	SmtpFrom := settings.Resolve(values, "SMTP_FROM", "smtp.from", "")
 	if SmtpFrom == "" {
 		panic("SMTP Config not found")
 	}
-	SmtpSecure := os.Getenv("SMTP_SECURE")
+	SmtpSecure := settings.Resolve(values, "SMTP_SECURE", "smtp.secure", "")
 	if SmtpSecure == "" {
 		panic("SMTP Config not found")
 	}
-	FromName := os.Getenv("FROM_NAME")
-	if FromName == "" {
-		FromName = AppNameEnv
-	}
-	CopyrightName := os.Getenv("COPYRIGHT_NAME")
-	if CopyrightName == "" {
-		CopyrightName = AppNameEnv
-	}
+	FromName := settings.Resolve(values, "FROM_NAME", "mail.from_name", AppNameEnv)
+	CopyrightName := settings.Resolve(values, "COPYRIGHT_NAME", "mail.copyright_name", AppNameEnv)
 	return &Config{
 		AppName:       AppNameEnv,
 		FrontendURL:   FrontendURLEnv,
