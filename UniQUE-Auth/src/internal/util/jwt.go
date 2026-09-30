@@ -328,6 +328,39 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 // ParseAccessToken verifies an access token's format, signature, and claims
 // without consulting token state in the database.
 func ParseAccessToken(tokenString string, config config.Config) (*AccessTokenClaims, error) {
+	return parseAccessToken(tokenString, config, false)
+}
+
+// ParseAccessTokenForRevocation verifies an access token while allowing it to
+// be expired. RFC 7009 revocation still needs the signed JTI after access-token
+// expiry so that the associated refresh token can be revoked.
+func ParseAccessTokenForRevocation(tokenString string, config config.Config) (*AccessTokenClaims, error) {
+	claims, err := parseAccessToken(tokenString, config, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims.ID == "" || claims.Subject == "" || claims.Issuer == "" || len(claims.Audience) == 0 || claims.IssuedAt == nil || claims.ExpiresAt == nil {
+		return nil, errors.New("missing required access token claims")
+	}
+	if claims.Issuer != config.IssuerURL {
+		return nil, errors.New("invalid access token issuer")
+	}
+	now := time.Now()
+	if claims.NotBefore != nil && claims.NotBefore.After(now) {
+		return nil, errors.New("access token is not valid yet")
+	}
+	if claims.IssuedAt.After(now) {
+		return nil, errors.New("access token issued in the future")
+	}
+	if !claims.ExpiresAt.After(claims.IssuedAt.Time) {
+		return nil, errors.New("invalid access token lifetime")
+	}
+
+	return claims, nil
+}
+
+func parseAccessToken(tokenString string, config config.Config, allowExpired bool) (*AccessTokenClaims, error) {
 	// 前後の空白を除去
 	tokenString = strings.TrimSpace(tokenString)
 
@@ -356,14 +389,21 @@ func ParseAccessToken(tokenString string, config config.Config) (*AccessTokenCla
 		return nil, errors.New("invalid token format: expected JWS compact serialization")
 	}
 
+	parserOptions := []jwt.ParserOption{jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()})}
+	if allowExpired {
+		// Signature and algorithm validation remain enabled. The caller performs
+		// the claim checks explicitly so that expiration alone can be ignored.
+		parserOptions = append(parserOptions, jwt.WithoutClaimsValidation())
+	}
+
 	// トークンをパースして署名とクレームを検証する
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// パースに失敗すると token が nil の可能性があるためチェックする
 		if token == nil {
 			return nil, errors.New("invalid token")
 		}
-		// 署名アルゴリズムが RSA 系であることを期待する
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		// アクセストークンの発行時と同じ RS256 のみを許可する
+		if token.Method != jwt.SigningMethodRS256 {
 			return nil, errors.New("unexpected signing method")
 		}
 		// 公開鍵が設定されていることを確認して返す
@@ -371,7 +411,7 @@ func ParseAccessToken(tokenString string, config config.Config) (*AccessTokenCla
 			return nil, ErrNoValidKeyPair
 		}
 		return &config.KeyPairs[0].PublicKey, nil
-	})
+	}, parserOptions...)
 	if err != nil {
 		return nil, err
 	}

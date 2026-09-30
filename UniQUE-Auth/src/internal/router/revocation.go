@@ -51,7 +51,7 @@ func Revocation(c *gin.Context) {
 	q := query.Use(db)
 	config := *c.MustGet("config").(*config.Config)
 	tokenJTI := ""
-	if claims, err := util.ParseAccessToken(req.Token, config); err == nil {
+	if claims, err := util.ParseAccessTokenForRevocation(req.Token, config); err == nil {
 		tokenJTI = claims.ID
 	} else if errors.Is(err, util.ErrNoValidKeyPair) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
