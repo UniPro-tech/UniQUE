@@ -26,7 +26,12 @@ export const readSession = (request: Request) => {
       .filter(([key]) => key),
   );
   const id = cookies.oidc_test_session;
-  return { id, session: id ? sessions.get(id) : undefined };
+  const session = id ? sessions.get(id) : undefined;
+  if (id && session && session.expiresAt < Date.now()) {
+    sessions.delete(id);
+    return { id, session: undefined };
+  }
+  return { id, session };
 };
 
 /** Creates and stores a short-lived login session. */

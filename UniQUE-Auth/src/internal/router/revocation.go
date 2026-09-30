@@ -9,6 +9,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type RevocationRequest struct {
@@ -69,7 +70,7 @@ func Revocation(c *gin.Context) {
 
 	// Token revocation is transactional and cannot affect another client.
 	err := q.Transaction(func(tx *query.Query) error {
-		tokenset, err := tx.OauthToken.Where(tx.OauthToken.AccessTokenJti.Eq(tokenJTI)).Or(tx.OauthToken.RefreshTokenJti.Eq(tokenJTI)).First()
+		tokenset, err := tx.OauthToken.Clauses(clause.Locking{Strength: "UPDATE"}).Where(tx.OauthToken.AccessTokenJti.Eq(tokenJTI)).Or(tx.OauthToken.RefreshTokenJti.Eq(tokenJTI)).First()
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil

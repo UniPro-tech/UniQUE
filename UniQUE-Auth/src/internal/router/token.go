@@ -17,6 +17,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TokenGetRequest struct {
@@ -230,7 +231,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 
 	err = q.Transaction(func(tx *query.Query) error {
 		logger := middleware.GetLogger(c)
-		tokenset, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
+		tokenset, err := tx.OauthToken.Clauses(clause.Locking{Strength: "UPDATE"}).Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
 		if err != nil {
 			return err
 		}
@@ -253,8 +254,12 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 			return err
 		}
 
-		if _, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).Update(tx.OauthToken.DeletedAt, time.Now().UTC()); err != nil {
+		result, err := tx.OauthToken.Where(tx.OauthToken.RefreshTokenJti.Eq(claims.ID)).Update(tx.OauthToken.DeletedAt, time.Now().UTC())
+		if err != nil {
 			return err
+		}
+		if result.RowsAffected != 1 {
+			return gorm.ErrRecordNotFound
 		}
 
 		return nil
