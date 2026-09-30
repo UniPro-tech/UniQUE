@@ -189,6 +189,38 @@ func TestLoadConfig_DiscordConfigComplete(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_DiscordNotificationChannel(t *testing.T) {
+	saved := saveAndClearEnv(
+		"DISCORD_CLIENT_ID",
+		"DISCORD_CLIENT_SECRET",
+		"DISCORD_GUILD_ID",
+		"DISCORD_MEMBER_ROLE_ID",
+		"DISCORD_BOT_TOKEN",
+		"DISCORD_NOTIFICATION_CHANNEL_ID",
+		"DISCORD_MEMBER_APPLICATION_CHANNEL_ID",
+	)
+	defer restoreEnv(saved)
+
+	os.Setenv("DISCORD_CLIENT_ID", "client-id")
+	os.Setenv("DISCORD_CLIENT_SECRET", "secret")
+	os.Setenv("DISCORD_GUILD_ID", "guild-id")
+	os.Setenv("DISCORD_MEMBER_ROLE_ID", "role-id")
+	os.Setenv("DISCORD_BOT_TOKEN", "bot-token")
+	os.Setenv("DISCORD_NOTIFICATION_CHANNEL_ID", "12345678901234567")
+	os.Setenv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID", "76543210987654321")
+
+	cfg := config.LoadConfig()
+	if cfg.DiscordConfig.Guild.NotificationChannelID != "12345678901234567" {
+		t.Errorf("NotificationChannelID = %q, want the new environment variable", cfg.DiscordConfig.Guild.NotificationChannelID)
+	}
+
+	os.Unsetenv("DISCORD_NOTIFICATION_CHANNEL_ID")
+	cfg = config.LoadConfig()
+	if cfg.DiscordConfig.Guild.NotificationChannelID != "76543210987654321" {
+		t.Errorf("NotificationChannelID = %q, want the legacy environment variable fallback", cfg.DiscordConfig.Guild.NotificationChannelID)
+	}
+}
+
 func TestLoadConfig_DiscordMissingClientID(t *testing.T) {
 	saved := saveAndClearEnv(
 		"DISCORD_CLIENT_ID",

@@ -105,6 +105,7 @@ type CreateUserRequest struct {
 	Status            string      `json:"status,omitempty"`
 	AffiliationPeriod string      `json:"affiliation_period,omitempty"`
 	Profile           *ProfileDTO `json:"profile,omitempty"`
+	Source            string      `json:"source,omitempty"`
 }
 
 // UpdateUserRequest is used for PUT /users/:id

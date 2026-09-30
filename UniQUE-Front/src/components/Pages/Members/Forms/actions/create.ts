@@ -25,6 +25,7 @@ export async function createMember(
         externalEmail: data.externalEmail || null,
         affiliationPeriod: data.affiliationPeriod,
         status: data.status,
+        source: "admin",
         profile: {
           displayName: data.displayName,
         },

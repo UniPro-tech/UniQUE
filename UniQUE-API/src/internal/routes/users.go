@@ -124,6 +124,17 @@ func getDB(c *gin.Context) *gorm.DB {
 	return dbi
 }
 
+func notificationEventForCreationSource(source string) discordutil.NotificationEvent {
+	switch source {
+	case "registration":
+		return discordutil.NotificationRegistrationRequested
+	case "migration":
+		return discordutil.NotificationMigrationCompleted
+	default:
+		return ""
+	}
+}
+
 // getPendingEmail は認証待ちのメールアドレスを取得する
 func getPendingEmail(userID string, q *query.Query) string {
 	evc, err := q.EmailVerificationCode.Where(
@@ -248,6 +259,14 @@ func createUser(c *gin.Context) {
 	var input CreateUserRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	creationSource := input.Source
+	if creationSource == "" {
+		creationSource = "registration"
+	}
+	if creationSource != "registration" && creationSource != "migration" && creationSource != "admin" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user creation source"})
 		return
 	}
 	// カスタムIDの検証
@@ -399,6 +418,13 @@ func createUser(c *gin.Context) {
 		UpdatedAt:         user.UpdatedAt,
 		IsTOTPEnabled:     user.IsTotpEnabled,
 		Profile:           profileDTO,
+	}
+
+	notificationEvent := notificationEventForCreationSource(creationSource)
+	if notificationEvent != "" {
+		if err := discordutil.SendNotification(notificationEvent, db, &config); err != nil {
+			log.Printf("failed to send user notification to Discord: %v", err)
+		}
 	}
 	c.JSON(http.StatusCreated, dbResp)
 }

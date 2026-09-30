@@ -951,6 +951,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/settings/discord-notifications": {
+            "get": {
+                "description": "Get the global Discord channel and enabled notification events",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get Discord notification settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/discord.NotificationSettings"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update the global Discord channel and enabled notification events. An empty channel disables delivery.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update Discord notification settings",
+                "parameters": [
+                    {
+                        "description": "Discord notification settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.UpdateDiscordNotificationSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/discord.NotificationSettings"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "description": "List users with embedded profile. Returns all data if USER_READ permission, otherwise basic info only",
@@ -1559,6 +1611,23 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "discord.NotificationSettings": {
+            "type": "object",
+            "properties": {
+                "channel_id": {
+                    "type": "string"
+                },
+                "notify_announcements": {
+                    "type": "boolean"
+                },
+                "notify_migrations": {
+                    "type": "boolean"
+                },
+                "notify_registration_requests": {
+                    "type": "boolean"
+                }
+            }
+        },
         "main.HealthResponse": {
             "type": "object",
             "properties": {
@@ -1797,6 +1866,9 @@ const docTemplate = `{
                 },
                 "profile": {
                     "$ref": "#/definitions/routes.ProfileDTO"
+                },
+                "source": {
+                    "type": "string"
                 },
                 "status": {
                     "type": "string"
@@ -2198,6 +2270,23 @@ const docTemplate = `{
                 },
                 "website_url": {
                     "$ref": "#/definitions/routes.Nullable-string"
+                }
+            }
+        },
+        "routes.UpdateDiscordNotificationSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "channel_id": {
+                    "type": "string"
+                },
+                "notify_announcements": {
+                    "type": "boolean"
+                },
+                "notify_migrations": {
+                    "type": "boolean"
+                },
+                "notify_registration_requests": {
+                    "type": "boolean"
                 }
             }
         },

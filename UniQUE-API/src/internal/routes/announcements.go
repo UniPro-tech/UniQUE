@@ -1,15 +1,18 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/UniPro-tech/UniQUE-API/internal/config"
 	"github.com/UniPro-tech/UniQUE-API/internal/constants"
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-API/internal/model"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
 	"github.com/UniPro-tech/UniQUE-API/internal/utils"
+	discordutil "github.com/UniPro-tech/UniQUE-API/internal/utils/discord"
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gen/field"
@@ -271,6 +274,15 @@ func createAnnouncement(c *gin.Context) {
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
+	}
+
+	cfg := c.MustGet("config").(config.Config)
+	if err := discordutil.SendNotification(
+		discordutil.NotificationAnnouncementCreated,
+		db,
+		&cfg,
+	); err != nil {
+		log.Printf("failed to send announcement notification to Discord: %v", err)
 	}
 
 	c.JSON(http.StatusCreated, dto)
