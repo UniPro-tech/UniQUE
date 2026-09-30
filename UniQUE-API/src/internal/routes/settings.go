@@ -24,7 +24,7 @@ type UpdateDiscordNotificationSettingsRequest struct {
 }
 
 type UpdateSettingRequest struct {
-	Value string `json:"value" binding:"required,max=65535"`
+	Value *string `json:"value" binding:"required,max=65535"`
 }
 
 type SettingResponse struct {
@@ -130,7 +130,7 @@ func updateSetting(c *gin.Context) {
 	if db == nil {
 		return
 	}
-	if err := appsettings.Upsert(db, definition, input.Value); err != nil {
+	if err := appsettings.Upsert(db, definition, *input.Value); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}

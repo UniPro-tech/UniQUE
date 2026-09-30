@@ -1,10 +1,13 @@
 package routes
 
 import (
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	appsettings "github.com/UniPro-tech/UniQUE-API/internal/settings"
+	"github.com/gin-gonic/gin"
 )
 
 func TestSettingResponseMasksSecrets(t *testing.T) {
@@ -12,6 +15,35 @@ func TestSettingResponseMasksSecrets(t *testing.T) {
 	response := settingResponse(definition, appsettings.Setting{Value: "database-secret"}, true)
 	if response.Value != "" || !response.Configured || !response.Sensitive || response.Source != "database" {
 		t.Fatalf("unexpected secret response: %#v", response)
+	}
+}
+
+func TestUpdateSettingRequestAcceptsEmptyValue(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	request := httptest.NewRequest("PUT", "/settings/application.name", strings.NewReader(`{"value":""}`))
+	request.Header.Set("Content-Type", "application/json")
+	context, _ := gin.CreateTestContext(httptest.NewRecorder())
+	context.Request = request
+
+	var input UpdateSettingRequest
+	if err := context.ShouldBindJSON(&input); err != nil {
+		t.Fatalf("empty value must be accepted: %v", err)
+	}
+	if input.Value == nil || *input.Value != "" {
+		t.Fatalf("unexpected value: %#v", input.Value)
+	}
+}
+
+func TestUpdateSettingRequestRequiresValueField(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	request := httptest.NewRequest("PUT", "/settings/application.name", strings.NewReader(`{}`))
+	request.Header.Set("Content-Type", "application/json")
+	context, _ := gin.CreateTestContext(httptest.NewRecorder())
+	context.Request = request
+
+	var input UpdateSettingRequest
+	if err := context.ShouldBindJSON(&input); err == nil {
+		t.Fatal("missing value field must be rejected")
 	}
 }
 
