@@ -12,7 +12,7 @@ serviceAccount:
 api:
   replicaCount: 1
   image:
-    repository: registry.uniproject.jp/infra/unique-api
+    repository: ghcr.io/unipro-tech/unique-api
     tag: ""
     pullPolicy: IfNotPresent
   existingSecret: unique-api-secrets
@@ -24,7 +24,7 @@ api:
 auth:
   replicaCount: 1
   image:
-    repository: registry.uniproject.jp/infra/unique-auth
+    repository: ghcr.io/unipro-tech/unique-auth
     tag: ""
     pullPolicy: IfNotPresent
   existingSecret: unique-auth-secrets
@@ -36,7 +36,7 @@ auth:
 front:
   replicaCount: 1
   image:
-    repository: registry.uniproject.jp/infra/unique-front
+    repository: ghcr.io/unipro-tech/unique-front
     tag: ""
     pullPolicy: IfNotPresent
   existingSecret: unique-frontend-secrets
@@ -47,7 +47,7 @@ front:
 mail:
   replicaCount: 1
   image:
-    repository: registry.uniproject.jp/infra/unique-mail
+    repository: ghcr.io/unipro-tech/unique-mail
     tag: ""
     pullPolicy: IfNotPresent
   existingSecret: unique-mail-secrets
@@ -59,7 +59,7 @@ mail:
 discord:
   replicaCount: 1
   image:
-    repository: registry.uniproject.jp/infra/unique-discord
+    repository: ghcr.io/unipro-tech/unique-discord
     tag: ""
     pullPolicy: IfNotPresent
   existingSecret: unique-discord-secrets
@@ -89,7 +89,7 @@ database:
 
 migration:
   image:
-    repository: registry.uniproject.jp/infra/unique-db
+    repository: ghcr.io/unipro-tech/unique-db
     tag: ""
     pullPolicy: IfNotPresent
 
