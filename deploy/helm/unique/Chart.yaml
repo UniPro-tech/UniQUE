@@ -2,8 +2,8 @@ apiVersion: v2
 name: unique
 description: UniQUE identity and account platform
 type: application
-version: 1.17.2 # x-release-please-version
-appVersion: "1.17.2" # x-release-please-version
+version: 1.17.3 # x-release-please-version
+appVersion: "1.17.3" # x-release-please-version
 home: https://github.com/UniPro-tech/UniQUE
 icon: https://raw.githubusercontent.com/UniPro-tech/UniQUE/main/UniQUE-Front/public/unique_logotype.png
 sources:
