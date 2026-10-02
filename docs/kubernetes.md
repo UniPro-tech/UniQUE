@@ -32,14 +32,6 @@ helm registry login registry.uniproject.jp
 リリースタグでは、セマンティックバージョンと `latest` のコンテナタグが公開されます。
 デフォルトでは、Chartの `appVersion` と一致するタグがすべてのUniQUEイメージに使用されます。
 
-Chartは、既存のアプリケーションSecretと、イメージ取得用の `internal-harbor` Secretを
-参照します。Chartをインストールまたは更新する前に、
-`deploy/sealed-secrets/production` の暗号化済みマニフェストを適用してください。
-
-```sh
-kubectl apply -f deploy/sealed-secrets/production
-```
-
 ローカルでの変更は、次のコマンドで検証できます。
 
 ```sh
