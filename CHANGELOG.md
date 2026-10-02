@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.3](https://github.com/UniPro-tech/UniQUE/compare/v1.17.2...v1.17.3) (2026-10-02)
+
+
+### Bug Fixes
+
+* スクリプトの初期化処理でディレクトリ作成を追加 ([73c13e0](https://github.com/UniPro-tech/UniQUE/commit/73c13e0c7c97a2fb8df0c4b529f125aac706a09c))
+
 ## [1.17.2](https://github.com/UniPro-tech/UniQUE/compare/v1.17.1...v1.17.2) (2026-10-02)
 
 
