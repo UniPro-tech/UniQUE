@@ -100,7 +100,7 @@ persistence:
     enabled: true
     existingClaim: ""
     storageClass: nfs-retain
-    accessModes: [ReadWriteOnce]
+    accessModes: [ReadWriteMany]
     size: 1Gi
   frontKeys:
     enabled: true

@@ -167,7 +167,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.database.existingSecret }}
-                  key: MYSQL_ACCESS_URI
+                  key: MYSQL_NATIVE_DSN
           envFrom:
             - secretRef: { name: {{ .Values.mail.existingSecret }} }
           livenessProbe:
@@ -206,7 +206,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.database.existingSecret }}
-                  key: MYSQL_ACCESS_URI
+                  key: MYSQL_NATIVE_DSN
           resources: {{ toYaml .Values.discord.resources | nindent 12 }}
 ---
 apiVersion: apps/v1

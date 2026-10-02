@@ -1,8 +1,10 @@
 package settings
 
 import (
+	"context"
 	"database/sql"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -21,7 +23,9 @@ func LoadValues() (map[string]string, error) {
 		return nil, err
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT `key`, `value` FROM settings")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT `key`, `value` FROM settings")
 	if err != nil {
 		return nil, err
 	}

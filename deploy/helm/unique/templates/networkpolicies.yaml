@@ -11,8 +11,10 @@ spec:
   policyTypes: [Ingress]
   ingress:
     - from:
+        {{- if not .Values.ciliumNetworkPolicy.enabled }}
         - podSelector: { matchLabels: { app: unique-front } }
         - podSelector: { matchLabels: { app: unique-api } }
+        {{- end }}
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: proxy
@@ -35,8 +37,10 @@ spec:
   policyTypes: [Ingress]
   ingress:
     - from:
+        {{- if not .Values.ciliumNetworkPolicy.enabled }}
         - podSelector: { matchLabels: { app: unique-front } }
         - podSelector: { matchLabels: { app: unique-discord } }
+        {{- end }}
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: proxy

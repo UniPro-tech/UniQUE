@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -97,6 +98,11 @@ func GetNotificationSettings(db *gorm.DB, cfg *config.Config) (NotificationSetti
 	}
 	result := defaults
 	result.ChannelID = appsettings.Resolve(values, "discord.notification_channel_id", defaults.ChannelID)
+	if _, exists := os.LookupEnv("DISCORD_NOTIFICATION_CHANNEL_ID"); !exists {
+		if channelID, exists := os.LookupEnv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID"); exists {
+			result.ChannelID = channelID
+		}
+	}
 	if result.NotifyAnnouncements, err = resolveNotificationBool(values, "discord.notify_announcements", true); err != nil {
 		return NotificationSettings{}, err
 	}
