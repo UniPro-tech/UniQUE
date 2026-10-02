@@ -1,5 +1,6 @@
 #!/bin/sh
 
+mkdir -p /app/keys/private && mkdir -p /app/keys/public && \
 if [ ! -f /app/keys/private/rsa_private.pem ] || [ ! -f /app/keys/public/rsa_public.pem ]; then \
     openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /app/keys/private/rsa_private.pem && \
     openssl rsa -pubout -in /app/keys/private/rsa_private.pem -out /app/keys/public/rsa_public.pem && \
