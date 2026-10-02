@@ -140,11 +140,19 @@ func getPendingEmail(userID string, q *query.Query) string {
 	evc, err := q.EmailVerificationCode.Where(
 		query.EmailVerificationCode.UserID.Eq(userID),
 		query.EmailVerificationCode.RequestType.Eq("email_change"),
+		query.EmailVerificationCode.ExpiresAt.Gt(time.Now().UTC()),
 	).Order(query.EmailVerificationCode.CreatedAt.Desc()).First()
 	if err != nil {
 		return ""
 	}
 	return ptrToString(evc.NewEmail)
+}
+
+// shouldRequestExternalEmailChange reports whether a new verification request
+// is needed. Re-submitting the pending address must not replace its existing
+// verification code.
+func shouldRequestExternalEmailChange(currentEmail, pendingEmail, requestedEmail string) bool {
+	return requestedEmail != currentEmail && requestedEmail != pendingEmail
 }
 
 // listUsers godoc
@@ -606,6 +614,12 @@ func updateUser(c *gin.Context) {
 	}
 
 	now := time.Now().UTC()
+	pendingEmail := getPendingEmail(id, q)
+	externalEmailChangeRequested := input.ExternalEmail != nil && shouldRequestExternalEmailChange(
+		user.ExternalEmail,
+		pendingEmail,
+		*input.ExternalEmail,
+	)
 
 	// ユーザー更新用モデルの構築（構造体 + Select方式）
 	updatesUser := model.User{
@@ -628,7 +642,7 @@ func updateUser(c *gin.Context) {
 		selectUserColumns = append(selectUserColumns, query.User.Email)
 	}
 
-	if input.ExternalEmail != nil && *input.ExternalEmail != user.ExternalEmail {
+	if externalEmailChangeRequested {
 		updatesUser.EmailVerified = false
 		selectUserColumns = append(selectUserColumns, query.User.EmailVerified)
 	}
@@ -691,7 +705,7 @@ func updateUser(c *gin.Context) {
 	err = db.Transaction(func(tx *gorm.DB) error {
 		q := query.Use(tx)
 
-		if input.ExternalEmail != nil && *input.ExternalEmail != user.ExternalEmail {
+		if externalEmailChangeRequested {
 			// 既存の未使用コードを削除
 			_, err := q.EmailVerificationCode.Where(
 				query.EmailVerificationCode.UserID.Eq(id),
@@ -896,15 +910,14 @@ func patchUser(c *gin.Context) {
 		}
 
 		if body.ExternalEmail.Set {
-			// 既存の未使用コードを削除
-			_, err = tx.EmailVerificationCode.Where(
-				tx.EmailVerificationCode.UserID.Eq(id),
-				tx.EmailVerificationCode.RequestType.Eq("email_change"),
-			).Delete()
-			if err != nil {
-				return err
-			}
 			if body.ExternalEmail.Value == nil {
+				// 既存の未使用コードを削除
+				if _, err = tx.EmailVerificationCode.Where(
+					tx.EmailVerificationCode.UserID.Eq(id),
+					tx.EmailVerificationCode.RequestType.Eq("email_change"),
+				).Delete(); err != nil {
+					return err
+				}
 				// 明示的に null を送られた -> external_email を NULL に
 				// ★ if を追加して修正
 				if _, err = tx.User.Where(tx.User.ID.Eq(id)).Updates(map[string]interface{}{
@@ -914,7 +927,18 @@ func patchUser(c *gin.Context) {
 				}); err != nil {
 					return err
 				}
-			} else if *body.ExternalEmail.Value != user.ExternalEmail {
+			} else if shouldRequestExternalEmailChange(
+				user.ExternalEmail,
+				getPendingEmail(id, tx),
+				*body.ExternalEmail.Value,
+			) {
+				// 既存の未使用コードを削除
+				if _, err = tx.EmailVerificationCode.Where(
+					tx.EmailVerificationCode.UserID.Eq(id),
+					tx.EmailVerificationCode.RequestType.Eq("email_change"),
+				).Delete(); err != nil {
+					return err
+				}
 				// external_emailは直接更新せず、認証コードのnew_emailに保存
 				if err := sendEmailChangeVerification(id, *body.ExternalEmail.Value, "", tx, config.LoadConfig()); err != nil {
 					return err
