@@ -129,6 +129,7 @@ func getPendingEmail(userID string, q *query.Query) string {
 	evc, err := q.EmailVerificationCode.Where(
 		query.EmailVerificationCode.UserID.Eq(userID),
 		query.EmailVerificationCode.RequestType.Eq("email_change"),
+		query.EmailVerificationCode.ExpiresAt.Gt(time.Now().UTC()),
 	).Order(query.EmailVerificationCode.CreatedAt.Desc()).First()
 	if err != nil {
 		return ""
