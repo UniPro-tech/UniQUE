@@ -14,7 +14,7 @@ cd UniQUE
 公開済みのリリースは、次のコマンドでインストールできます。
 
 ```sh
-helm upgrade --install unique oci://registry.uniproject.jp/infra/unique \
+helm upgrade --install unique oci://ghcr.io/unipro-tech/charts/unique \
   --version 0.1.0 \
   --namespace unique \
   --create-namespace \

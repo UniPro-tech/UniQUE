@@ -45,17 +45,21 @@ jobs:
       - id: image
         name: Resolve image name
         shell: bash
-        run: echo "name=registry.uniproject.jp/infra/unique-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repository="${GITHUB_REPOSITORY#*/}"
+          repository="${repository,,}"
+          echo "name=ghcr.io/${owner}/${repository}-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
 
       - if: github.event_name != 'pull_request'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
-          registry: registry.uniproject.jp
-          username: robot$github-publisher
-          password: ${{ secrets.HARBOR_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: metadata
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ${{ steps.image.outputs.name }}
           flavor: latest=false
@@ -69,7 +73,7 @@ jobs:
             org.opencontainers.image.title=UniQUE ${{ matrix.name }}
             org.opencontainers.image.description=UniQUE ${{ matrix.name }} container image
             org.opencontainers.image.vendor=All-Japan Digital Creative Club UniProject
-            org.opencontainers.image.licenses=AGPL-3.0
+            org.opencontainers.image.licenses=Apache-2.0
 
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
@@ -149,6 +153,7 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "app-version=$app_version" >> "$GITHUB_OUTPUT"
+          echo "registry=oci://ghcr.io/${owner}/charts" >> "$GITHUB_OUTPUT"
       - name: Package chart
         run: |
           helm package deploy/helm/unique \
@@ -156,6 +161,6 @@ jobs:
             --version "${{ steps.release.outputs.version }}" \
             --app-version "${{ steps.release.outputs.app-version }}"
       - name: Sign in to Harbor
-        run: echo "${{ secrets.HARBOR_TOKEN }}" | helm registry login registry.uniproject.jp --username 'robot$github-publisher' --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
       - name: Publish chart
-        run: helm push "dist/unique-${{ steps.release.outputs.version }}.tgz" oci://registry.uniproject.jp/infra
+        run: helm push "dist/unique-${{ steps.release.outputs.version }}.tgz" "${{ steps.release.outputs.registry }}"
