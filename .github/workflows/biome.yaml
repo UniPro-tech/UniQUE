@@ -8,10 +8,7 @@ on:
       - "!.github/**"
       - ".github/workflows/biome.yaml"
     tags-ignore:
-      - "api/v*"
-      - "auth/v*"
-      - "mail/v*"
-      - "db/v*"
+      - "v*"
 jobs:
   quality:
     runs-on: ubuntu-latest

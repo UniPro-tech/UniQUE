@@ -1,0 +1,145 @@
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets:
+  - name: internal-harbor
+
+serviceAccount:
+  create: true
+  automount: false
+  annotations: {}
+
+api:
+  replicaCount: 1
+  image:
+    repository: registry.uniproject.jp/infra/unique-api
+    tag: ""
+    pullPolicy: IfNotPresent
+  existingSecret: unique-api-secrets
+  ginMode: debug
+  resources:
+    requests: { cpu: 500m, memory: 64Mi }
+    limits: { cpu: "1", memory: 128Mi }
+
+auth:
+  replicaCount: 1
+  image:
+    repository: registry.uniproject.jp/infra/unique-auth
+    tag: ""
+    pullPolicy: IfNotPresent
+  existingSecret: unique-auth-secrets
+  environment: production
+  resources:
+    requests: { cpu: 500m, memory: 64Mi }
+    limits: { cpu: "1", memory: 128Mi }
+
+front:
+  replicaCount: 1
+  image:
+    repository: registry.uniproject.jp/infra/unique-front
+    tag: ""
+    pullPolicy: IfNotPresent
+  existingSecret: unique-frontend-secrets
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits: { cpu: "1", memory: 1Gi }
+
+mail:
+  replicaCount: 1
+  image:
+    repository: registry.uniproject.jp/infra/unique-mail
+    tag: ""
+    pullPolicy: IfNotPresent
+  existingSecret: unique-mail-secrets
+  environment: production
+  resources:
+    requests: { cpu: 250m, memory: 64Mi }
+    limits: { cpu: 500m, memory: 128Mi }
+
+discord:
+  replicaCount: 1
+  image:
+    repository: registry.uniproject.jp/infra/unique-discord
+    tag: ""
+    pullPolicy: IfNotPresent
+  existingSecret: unique-discord-secrets
+  resources:
+    requests: { cpu: 500m, memory: 64Mi }
+    limits: { cpu: "1", memory: 128Mi }
+
+database:
+  replicaCount: 1
+  image:
+    repository: mysql
+    tag: "26.7.0"
+    pullPolicy: IfNotPresent
+  existingSecret: mysql-secret
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits: { cpu: "1", memory: 768Mi }
+  config: |
+    [mysqld]
+    default-time-zone = 'UTC'
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: nfs-retain
+    accessModes: [ReadWriteOnce]
+    size: 10Gi
+
+migration:
+  image:
+    repository: registry.uniproject.jp/infra/unique-db
+    tag: ""
+    pullPolicy: IfNotPresent
+
+persistence:
+  authKeys:
+    enabled: true
+    existingClaim: ""
+    storageClass: nfs-retain
+    accessModes: [ReadWriteMany]
+    size: 1Gi
+  frontKeys:
+    enabled: true
+    existingClaim: ""
+    storageClass: nfs-retain
+    accessModes: [ReadWriteMany]
+    size: 1Gi
+
+gateway:
+  enabled: false
+  parentRef:
+    name: uniproject-jp-gateway
+    namespace: infra-gateway
+    sectionName: https-wildcard
+  apiHost: api.uniproject.jp
+  authHost: auth.uniproject.jp
+  frontHost: unique.uniproject.jp
+
+internalBlocker:
+  enabled: true
+  image:
+    repository: nginx
+    tag: alpine
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 200m, memory: 256Mi }
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 170
+  targetMemoryUtilizationPercentage: 170
+  scaleDown:
+    stabilizationWindowSeconds: 60
+    percent: 20
+    periodSeconds: 30
+
+networkPolicy:
+  enabled: true
+
+ciliumNetworkPolicy:
+  enabled: true

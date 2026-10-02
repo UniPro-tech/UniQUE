@@ -1,18 +1,42 @@
-#!/bin/bash
-set -e
+#!/bin/sh
+set -eu
 
-# 1. git clone
-git clone https://github.com/UniPro-tech/UniQUE.git
-cd UniQUE
+: "${DATABASE_URL:?DATABASE_URL is required}"
+MIGRATIONS_DIR=${MIGRATIONS_DIR:-/migrations}
+MAX_RETRIES=${MAX_RETRIES:-60}
+SLEEP=${SLEEP:-2}
 
-# 2. 最新タグ取得
-latest_tag=$(git describe --tags --abbrev=0)
-git checkout "$latest_tag"
+if [ "$#" -eq 0 ]; then
+  set -- up
+fi
 
-echo "Checked out to latest tag: $latest_tag"
+if [ "$1" = wait ]; then
+  # Use the same schema target as the migration Job, including on upgrades.
+  target=$(find "$MIGRATIONS_DIR" -name '*.up.sql' -exec basename {} \; | cut -d_ -f1 | sort -n | tail -1)
+  if [ -z "$target" ]; then
+    echo "No migrations found" >&2
+    exit 1
+  fi
+fi
 
-cd UniQUE-DB
+i=0
+while [ "$i" -lt "$MAX_RETRIES" ]; do
+  if [ "$1" = wait ]; then
+    # migrate prints the version to stderr and appends '(dirty)' on failure.
+    # Only a clean version at or beyond this image's target can start the app.
+    if version=$(migrate -path "$MIGRATIONS_DIR" -database "$DATABASE_URL" version 2>&1); then
+      case "$version" in
+        ''|*[!0-9]*) ;;
+        *) if [ "$version" -ge "$target" ]; then exit 0; fi ;;
+      esac
+    fi
+  elif migrate -path "$MIGRATIONS_DIR" -database "$DATABASE_URL" "$@"; then
+    exit 0
+  fi
+  i=$((i + 1))
+  echo "Waiting for database migration ($i/$MAX_RETRIES)" >&2
+  sleep "$SLEEP"
+done
 
-# 3. migration up
-export MIGRATIONS_DIR="./migrations"
-migrate -path "$MIGRATIONS_DIR" -database "$DATABASE_URL" up
+echo "Database migration did not become ready" >&2
+exit 1

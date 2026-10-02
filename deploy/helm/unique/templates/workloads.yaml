@@ -1,0 +1,287 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: unique-api
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels: { app: unique-api }
+  template:
+    metadata:
+      labels: { app: unique-api }
+    spec:
+      serviceAccountName: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "api") }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
+      containers:
+        - name: unique-api
+          image: "{{ .Values.api.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.api.image.tag "Chart" .Chart) }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          envFrom:
+            - secretRef: { name: {{ .Values.api.existingSecret }} }
+          env:
+            - { name: GIN_MODE, value: {{ .Values.api.ginMode | quote }} }
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+          resources: {{ toYaml .Values.api.resources | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: unique-auth
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.auth.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels: { app: unique-auth }
+  template:
+    metadata:
+      labels: { app: unique-auth }
+    spec:
+      serviceAccountName: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "auth") }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
+      containers:
+        - name: unique-auth
+          image: "{{ .Values.auth.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.auth.image.tag "Chart" .Chart) }}"
+          imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - { name: ENV, value: {{ .Values.auth.environment | quote }} }
+          envFrom:
+            - secretRef: { name: {{ .Values.auth.existingSecret }} }
+          volumeMounts:
+            - { name: auth-keys, mountPath: /app/keys }
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+          resources: {{ toYaml .Values.auth.resources | nindent 12 }}
+      volumes:
+        - name: auth-keys
+          {{- if .Values.persistence.authKeys.enabled }}
+          persistentVolumeClaim: { claimName: {{ include "unique.authKeysClaim" . }} }
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-server
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: unique-front
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.front.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels: { app: unique-front }
+  template:
+    metadata:
+      labels: { app: unique-front }
+    spec:
+      serviceAccountName: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "front") }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: unique-front
+          image: "{{ .Values.front.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.front.image.tag "Chart" .Chart) }}"
+          imagePullPolicy: {{ .Values.front.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 3000 }
+          env:
+            - { name: NODE_ENV, value: production }
+            - { name: NODE_OPTIONS, value: --max-old-space-size=4096 }
+          envFrom:
+            - secretRef: { name: {{ .Values.front.existingSecret }} }
+          readinessProbe:
+            httpGet: { path: /signin, port: http }
+          volumeMounts:
+            - { name: front-keys, mountPath: /app/keys }
+          resources: {{ toYaml .Values.front.resources | nindent 12 }}
+      volumes:
+        - name: front-keys
+          {{- if .Values.persistence.frontKeys.enabled }}
+          persistentVolumeClaim: { claimName: {{ include "unique.frontKeysClaim" . }} }
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: unique-mail
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.mail.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels: { app: unique-mail }
+  template:
+    metadata:
+      labels: { app: unique-mail }
+    spec:
+      serviceAccountName: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "mail") }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
+      containers:
+        - name: unique-mail
+          image: "{{ .Values.mail.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.mail.image.tag "Chart" .Chart) }}"
+          imagePullPolicy: {{ .Values.mail.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - { name: ENV, value: {{ .Values.mail.environment | quote }} }
+            - name: SETTINGS_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: MYSQL_NATIVE_DSN
+          envFrom:
+            - secretRef: { name: {{ .Values.mail.existingSecret }} }
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+          resources: {{ toYaml .Values.mail.resources | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: unique-discord
+spec:
+  replicas: {{ .Values.discord.replicaCount }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels: { app: unique-discord }
+  template:
+    metadata:
+      labels: { app: unique-discord }
+    spec:
+      serviceAccountName: {{ include "unique.serviceAccountName" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "discord") }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
+      containers:
+        - name: unique-discord
+          image: "{{ .Values.discord.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.discord.image.tag "Chart" .Chart) }}"
+          imagePullPolicy: {{ .Values.discord.image.pullPolicy }}
+          envFrom:
+            - secretRef: { name: {{ .Values.discord.existingSecret }} }
+          env:
+            - name: SETTINGS_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: MYSQL_NATIVE_DSN
+          resources: {{ toYaml .Values.discord.resources | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: mysql
+spec:
+  replicas: {{ .Values.database.replicaCount }}
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: mysql }
+  template:
+    metadata:
+      labels: { app: mysql }
+    spec:
+      containers:
+        - name: mysql
+          image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+          imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+          ports:
+            - { name: mysql, containerPort: 3306 }
+          envFrom:
+            - secretRef: { name: {{ .Values.database.existingSecret }} }
+          resources: {{ toYaml .Values.database.resources | nindent 12 }}
+          volumeMounts:
+            - { name: mysql-storage, mountPath: /var/lib/mysql }
+            - { name: mysql-conf, mountPath: /etc/mysql/conf.d, readOnly: true }
+      volumes:
+        - name: mysql-storage
+          {{- if .Values.database.persistence.enabled }}
+          persistentVolumeClaim: { claimName: {{ include "unique.mysqlClaim" . }} }
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: mysql-conf
+          configMap:
+            name: mysql-conf
+            items:
+              - { key: my.conf, path: my.cnf }
+{{- if .Values.internalBlocker.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: internal-blocker
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: internal-blocker
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: internal-blocker }
+  template:
+    metadata:
+      labels: { app: internal-blocker }
+    spec:
+      containers:
+        - name: nginx
+          image: "{{ .Values.internalBlocker.image.repository }}:{{ .Values.internalBlocker.image.tag }}"
+          imagePullPolicy: {{ .Values.internalBlocker.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 80 }
+          resources: {{ toYaml .Values.internalBlocker.resources | nindent 12 }}
+          volumeMounts:
+            - { name: config, mountPath: /etc/nginx/nginx.conf, subPath: nginx.conf }
+      volumes:
+        - name: config
+          configMap: { name: internal-blocker-config }
+{{- end }}

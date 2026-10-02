@@ -1,0 +1,21 @@
+{{- if and .Values.gateway.enabled (not .Values.internalBlocker.enabled) -}}
+{{- fail "internalBlocker.enabled must be true when gateway.enabled is true" -}}
+{{- end -}}
+{{- if not .Values.api.existingSecret -}}
+{{- fail "api.existingSecret is required" -}}
+{{- end -}}
+{{- if not .Values.auth.existingSecret -}}
+{{- fail "auth.existingSecret is required" -}}
+{{- end -}}
+{{- if not .Values.front.existingSecret -}}
+{{- fail "front.existingSecret is required" -}}
+{{- end -}}
+{{- if not .Values.mail.existingSecret -}}
+{{- fail "mail.existingSecret is required" -}}
+{{- end -}}
+{{- if not .Values.discord.existingSecret -}}
+{{- fail "discord.existingSecret is required" -}}
+{{- end -}}
+{{- if not .Values.database.existingSecret -}}
+{{- fail "database.existingSecret is required" -}}
+{{- end -}}

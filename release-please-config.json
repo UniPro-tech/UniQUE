@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "include-v-in-tag": true,
+  "initial-version": "1.17.0",
+  "pull-request-title-pattern": "chore: release ${version}",
+  "always-update": true,
+  "packages": {
+    ".": {
+      "package-name": "unique",
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "deploy/helm/unique/Chart.yaml"
+        }
+      ]
+    }
+  }
+}

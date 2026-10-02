@@ -1,0 +1,17 @@
+apiVersion: v2
+name: unique
+description: UniQUE identity and account platform
+type: application
+version: 0.1.0 # x-release-please-version
+appVersion: "0.1.0" # x-release-please-version
+home: https://github.com/UniPro-tech/UniQUE
+icon: https://raw.githubusercontent.com/UniPro-tech/UniQUE/main/UniQUE-Front/public/unique_logotype.png
+sources:
+  - https://github.com/UniPro-tech/UniQUE
+keywords:
+  - identity
+  - oauth2
+  - oidc
+annotations:
+  artifacthub.io/license: AGPL-3.0
+  org.opencontainers.image.source: https://github.com/UniPro-tech/UniQUE

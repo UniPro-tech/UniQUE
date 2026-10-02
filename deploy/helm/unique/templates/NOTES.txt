@@ -1,0 +1,8 @@
+UniQUE has been installed in namespace {{ .Release.Namespace }}.
+
+The workloads expect the configured application Secrets and image pull Secret
+to exist before they start. For production, apply the existing SealedSecrets,
+then install with deploy/helm/unique/values-production.yaml.
+
+OCI chart:
+  oci://registry.uniproject.jp/infra/unique

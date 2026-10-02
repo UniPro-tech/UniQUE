@@ -1,0 +1,53 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: auth-ingress
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: { app: unique-auth }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        {{- if not .Values.ciliumNetworkPolicy.enabled }}
+        - podSelector: { matchLabels: { app: unique-front } }
+        - podSelector: { matchLabels: { app: unique-api } }
+        {{- end }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: envoy
+              app.kubernetes.io/managed-by: envoy-gateway
+          namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: envoy-gateway-system }
+      ports:
+        - { protocol: TCP, port: 8080 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-ingress
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: { app: unique-api }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        {{- if not .Values.ciliumNetworkPolicy.enabled }}
+        - podSelector: { matchLabels: { app: unique-front } }
+        - podSelector: { matchLabels: { app: unique-discord } }
+        {{- end }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: envoy
+              app.kubernetes.io/managed-by: envoy-gateway
+          namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: envoy-gateway-system }
+      ports:
+        - { protocol: TCP, port: 8080 }
+{{- end }}

@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "unique.fullname" . }}-migration-{{ .Release.Revision }}
+  labels:
+    {{- include "unique.labels" . | nindent 4 }}
+    app: mysql-init
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels: { app: mysql-init }
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          {{- include "unique.migrationContainer" . | nindent 10 }}
+          args: ["up"]

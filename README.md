@@ -36,10 +36,11 @@ KubernetesのCronJobにより、1日1回、GitからCloneしたマイグレー�
 
 また、DBはMySQL互換です。
 
-## Deployment
+## デプロイ
 
-デプロイにはKustomizationを用いています。
-kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロイしています。
+Kubernetesへのデプロイには `deploy/helm/unique` のHelm Chartを使用します。
+リリース版ChartはHarborの `oci://registry.uniproject.jp/infra/unique` に公開されます。
+詳しい手順は[デプロイガイド](docs/kubernetes.md)を参照してください。
 
 ### Sealed Secretについて
 
@@ -47,13 +48,13 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
 
 - mode - strict
 - namespace - unique
-- public key - cert.pem
+- public key - `deploy/sealed-secrets/cert.pem`
 
 ## Contributing & Development
 
 コントリビュートに興味をお持ちいただき、ありがとうございます！
 
-開発用バックエンドはDocker Composeで起動します。本番のKustomize/SealedSecretは対象外です。
+開発用バックエンドはDocker Composeで起動します。本番のHelm/SealedSecretは対象外です。
 
 1. 各サンプル環境ファイルをローカル用ファイルとしてコピーします。
 
@@ -122,17 +123,15 @@ kuatomizationsディレクトリ内のファイルをArgoCDを用いてデプロ
 - User: `test`
 - PW: `testpassword`
 
-### Tag
+### リリースとKubernetes
 
-タグについては、下記のルールに従いましょう。
+リリースは Conventional Commits と Release Please で管理します。Release PRを
+マージすると `vX.Y.Z` タグ、GitHub Release、全サービスのコンテナイメージ、
+OCI Helm Chartが自動的に作成・公開されます。サービス別タグは手動作成しません。
 
-- [semver 2.0](https://semver.org/lang/ja/)を採用しています。
-- 下記のprefixを必ずつけましょう
-  - front/v
-  - auth/v
-  - api/v
-  - mail/v
-  - db/v
+- [リリース手順](docs/releases.md)
+- [Helm ChartによるKubernetesデプロイ](docs/kubernetes.md)
+- [DB管理のアプリケーション設定](docs/application-settings.md)
 
 ## LICENSE
 

@@ -21,16 +21,22 @@ import (
 	interaction_handler "github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction"
 	"github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction/command"
 	contextmenu "github.com/UniPro-tech/UniQUE/Discord/internal/bot/handlers/interaction/contextMenu"
+	"github.com/UniPro-tech/UniQUE/Discord/internal/settings"
 )
 
 func main() {
-	token := os.Getenv("DISCORD_TOKEN")
+	databaseSettings, err := settings.LoadValues()
+	if err != nil {
+		log.Printf("failed to load application settings; using environment values: %v", err)
+		databaseSettings = map[string]string{}
+	}
+	token := settings.Resolve(databaseSettings, "DISCORD_TOKEN", "discord.service_token", "")
 	if token == "" {
-		log.Fatal("DISCORD_TOKEN is not set")
+		log.Fatal("Discord token is not configured")
 	}
 
 	ctxData := &internal.BotContext{
-		Config: internal.LoadConfig(),
+		Config: internal.LoadConfig(databaseSettings),
 	}
 
 	r := handler.New()

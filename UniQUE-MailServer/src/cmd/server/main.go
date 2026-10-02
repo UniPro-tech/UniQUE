@@ -1,9 +1,12 @@
 package main
 
 import (
+	"log"
+
 	"github.com/UniPro-tech/UniQUE-MailServer/docs"
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/config"
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/routes"
+	"github.com/UniPro-tech/UniQUE-MailServer/internal/settings"
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/utils"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -27,7 +30,12 @@ func healthCheck(c *gin.Context) {
 }
 
 func main() {
-	environmentConfigs := config.LoadConfig()
+	databaseSettings, err := settings.LoadValues()
+	if err != nil {
+		log.Printf("failed to load application settings; using environment values: %v", err)
+		databaseSettings = map[string]string{}
+	}
+	environmentConfigs := config.LoadConfig(databaseSettings)
 
 	// SMTPメーラーの初期化
 	utils.InitMailer(&environmentConfigs.SmtpConfig)

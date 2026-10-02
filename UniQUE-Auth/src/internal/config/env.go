@@ -3,6 +3,8 @@ package config
 import (
 	"crypto/rsa"
 	"os"
+
+	"github.com/UniPro-tech/UniQUE-Auth/internal/settings"
 )
 
 type Config struct {
@@ -45,7 +47,11 @@ var (
 	}
 )
 
-func LoadConfig() *Config {
+func LoadConfig(databaseValues ...map[string]string) *Config {
+	values := map[string]string{}
+	if len(databaseValues) > 0 && databaseValues[0] != nil {
+		values = databaseValues[0]
+	}
 	version := Version
 
 	if Version == "latest" {
@@ -55,10 +61,7 @@ func LoadConfig() *Config {
 	}
 
 	// envから設定を読み込む
-	AppNameEnv := os.Getenv("CONFIG_APP_NAME")
-	if AppNameEnv == "" {
-		AppNameEnv = AppName
-	}
+	AppNameEnv := settings.Resolve(values, "CONFIG_APP_NAME", "application.name", AppName)
 	FrontendURLEnv := os.Getenv("CONFIG_FRONTEND_URL")
 	if FrontendURLEnv == "" {
 		FrontendURLEnv = FrontendURL

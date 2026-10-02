@@ -2,6 +2,8 @@ package config
 
 import (
 	"os"
+
+	"github.com/UniPro-tech/UniQUE-API/internal/settings"
 )
 
 type DiscordGuildConfig struct {
@@ -48,7 +50,11 @@ var (
 	DiscordApiVersion = "v10"
 )
 
-func LoadConfig() *Config {
+func LoadConfig(databaseValues ...map[string]string) *Config {
+	values := map[string]string{}
+	if len(databaseValues) > 0 && databaseValues[0] != nil {
+		values = databaseValues[0]
+	}
 	version := Version
 
 	if Version == "latest" {
@@ -58,10 +64,7 @@ func LoadConfig() *Config {
 	}
 
 	// envから設定を読み込む
-	AppNameEnv := os.Getenv("CONFIG_APP_NAME")
-	if AppNameEnv == "" {
-		AppNameEnv = AppName
-	}
+	AppNameEnv := settings.Resolve(values, "application.name", AppName)
 	FrontendURLEnv := os.Getenv("CONFIG_FRONTEND_URL")
 	if FrontendURLEnv == "" {
 		FrontendURLEnv = FrontendURL
@@ -79,30 +82,30 @@ func LoadConfig() *Config {
 		EmailSenderURLEnv = EmailSenderURL
 	}
 	DiscordConfig := DiscordConfig{
-		ClientID:     os.Getenv("DISCORD_CLIENT_ID"),
-		ClientSecret: os.Getenv("DISCORD_CLIENT_SECRET"),
+		ClientID:     settings.Resolve(values, "discord.client_id", ""),
+		ClientSecret: settings.Resolve(values, "discord.client_secret", ""),
 		Guild: DiscordGuildConfig{
-			ID:                    os.Getenv("DISCORD_GUILD_ID"),
-			MemberRoleID:          os.Getenv("DISCORD_MEMBER_ROLE_ID"),
-			NotificationChannelID: os.Getenv("DISCORD_NOTIFICATION_CHANNEL_ID"),
+			ID:           settings.Resolve(values, "discord.guild_id", ""),
+			MemberRoleID: settings.Resolve(values, "discord.member_role_id", ""),
 		},
-		BotToken: os.Getenv("DISCORD_BOT_TOKEN"),
+		BotToken: settings.Resolve(values, "discord.bot_token", ""),
 	}
-	// 旧環境変数は移行期間中のフォールバックとして扱う。
-	if DiscordConfig.Guild.NotificationChannelID == "" {
-		DiscordConfig.Guild.NotificationChannelID = os.Getenv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID")
+	if channelID, exists := os.LookupEnv("DISCORD_NOTIFICATION_CHANNEL_ID"); exists {
+		DiscordConfig.Guild.NotificationChannelID = channelID
+	} else if channelID, exists := os.LookupEnv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID"); exists {
+		// 旧環境変数は移行期間中のフォールバックとして扱う。
+		DiscordConfig.Guild.NotificationChannelID = channelID
+	} else {
+		DiscordConfig.Guild.NotificationChannelID = values["discord.notification_channel_id"]
 	}
 	if DiscordConfig.ClientID == "" || DiscordConfig.ClientSecret == "" || DiscordConfig.Guild.ID == "" || DiscordConfig.Guild.MemberRoleID == "" || DiscordConfig.BotToken == "" {
-		panic("Discord configuration is not fully set in environment variables")
+		panic("Discord configuration is not fully set in environment variables or database settings")
 	}
 	EnvEnv := os.Getenv("ENV")
 	if EnvEnv == "" {
 		EnvEnv = Env
 	}
-	DiscordApiVersionEnv := os.Getenv("DISCORD_API_VERSION")
-	if DiscordApiVersionEnv == "" {
-		DiscordApiVersionEnv = DiscordApiVersion
-	}
+	DiscordApiVersionEnv := settings.Resolve(values, "discord.api_version", DiscordApiVersion)
 	return &Config{
 		Env:                EnvEnv,
 		AppName:            AppNameEnv,
@@ -113,7 +116,7 @@ func LoadConfig() *Config {
 		Version:            version,
 		DiscordConfig:      DiscordConfig,
 		DiscordApiVersion:  DiscordApiVersionEnv,
-		GitHubClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-		GitHubClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+		GitHubClientID:     settings.Resolve(values, "github.client_id", ""),
+		GitHubClientSecret: settings.Resolve(values, "github.client_secret", ""),
 	}
 }

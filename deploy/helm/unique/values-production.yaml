@@ -1,0 +1,19 @@
+gateway:
+  enabled: true
+
+# These Secret and image-pull Secret names match the existing production
+# SealedSecrets. Apply those resources before installing this chart.
+imagePullSecrets:
+  - name: internal-harbor
+api:
+  existingSecret: unique-api-secrets
+auth:
+  existingSecret: unique-auth-secrets
+front:
+  existingSecret: unique-frontend-secrets
+mail:
+  existingSecret: unique-mail-secrets
+discord:
+  existingSecret: unique-discord-secrets
+database:
+  existingSecret: mysql-secret

@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
+	appsettings "github.com/UniPro-tech/UniQUE-API/internal/settings"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const discordNotificationSettingsID uint8 = 1
@@ -28,13 +30,18 @@ const (
 // NotificationSettings is the singleton, administrator-managed Discord
 // notification configuration.
 type NotificationSettings struct {
-	ID                         uint8     `json:"-" gorm:"primaryKey"`
-	ChannelID                  string    `json:"channel_id"`
-	NotifyAnnouncements        bool      `json:"notify_announcements"`
-	NotifyRegistrationRequests bool      `json:"notify_registration_requests"`
-	NotifyMigrations           bool      `json:"notify_migrations"`
-	CreatedAt                  time.Time `json:"-"`
-	UpdatedAt                  time.Time `json:"-"`
+	ChannelID                  string `json:"channel_id"`
+	NotifyAnnouncements        bool   `json:"notify_announcements"`
+	NotifyRegistrationRequests bool   `json:"notify_registration_requests"`
+	NotifyMigrations           bool   `json:"notify_migrations"`
+}
+
+type legacyNotificationSettings struct {
+	ID                         uint8 `gorm:"primaryKey"`
+	ChannelID                  string
+	NotifyAnnouncements        bool
+	NotifyRegistrationRequests bool
+	NotifyMigrations           bool
 }
 
 type channelMessageRequest struct {
@@ -46,13 +53,12 @@ type allowedMentions struct {
 	Parse []string `json:"parse"`
 }
 
-func (NotificationSettings) TableName() string {
+func (legacyNotificationSettings) TableName() string {
 	return "discord_notification_settings"
 }
 
 func defaultNotificationSettings(cfg *config.Config) NotificationSettings {
 	return NotificationSettings{
-		ID:                         discordNotificationSettingsID,
 		ChannelID:                  cfg.DiscordConfig.Guild.NotificationChannelID,
 		NotifyAnnouncements:        true,
 		NotifyRegistrationRequests: true,
@@ -60,37 +66,81 @@ func defaultNotificationSettings(cfg *config.Config) NotificationSettings {
 	}
 }
 
-// GetNotificationSettings returns the saved setting. Until an administrator
-// saves it for the first time, the environment variable is used as a fallback.
-func GetNotificationSettings(db *gorm.DB, cfg *config.Config) (NotificationSettings, error) {
-	settings := NotificationSettings{}
-	err := db.First(&settings, discordNotificationSettingsID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return defaultNotificationSettings(cfg), nil
+func resolveNotificationBool(values map[string]string, key string, fallback bool) (bool, error) {
+	value := appsettings.Resolve(values, key, strconv.FormatBool(fallback))
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("invalid boolean setting %s: %w", key, err)
 	}
-	return settings, err
+	return parsed, nil
 }
 
-// SaveNotificationSettings creates or replaces the singleton setting.
-func SaveNotificationSettings(db *gorm.DB, settings NotificationSettings) (NotificationSettings, error) {
-	now := time.Now().UTC()
-	settings.ID = discordNotificationSettingsID
-	settings.UpdatedAt = now
-	if settings.CreatedAt.IsZero() {
-		settings.CreatedAt = now
+// GetNotificationSettings applies environment-over-database precedence. The
+// Issue #28 table remains a fallback during rolling upgrades.
+func GetNotificationSettings(db *gorm.DB, cfg *config.Config) (NotificationSettings, error) {
+	defaults := defaultNotificationSettings(cfg)
+	values, err := appsettings.LoadValues(db)
+	if err != nil {
+		legacy := legacyNotificationSettings{}
+		legacyErr := db.First(&legacy, discordNotificationSettingsID).Error
+		if errors.Is(legacyErr, gorm.ErrRecordNotFound) {
+			return defaults, nil
+		}
+		if legacyErr != nil {
+			return NotificationSettings{}, err
+		}
+		return NotificationSettings{
+			ChannelID:                  legacy.ChannelID,
+			NotifyAnnouncements:        legacy.NotifyAnnouncements,
+			NotifyRegistrationRequests: legacy.NotifyRegistrationRequests,
+			NotifyMigrations:           legacy.NotifyMigrations,
+		}, nil
 	}
+	result := defaults
+	result.ChannelID = appsettings.Resolve(values, "discord.notification_channel_id", defaults.ChannelID)
+	if _, exists := os.LookupEnv("DISCORD_NOTIFICATION_CHANNEL_ID"); !exists {
+		if channelID, exists := os.LookupEnv("DISCORD_MEMBER_APPLICATION_CHANNEL_ID"); exists {
+			result.ChannelID = channelID
+		}
+	}
+	if result.NotifyAnnouncements, err = resolveNotificationBool(values, "discord.notify_announcements", true); err != nil {
+		return NotificationSettings{}, err
+	}
+	if result.NotifyRegistrationRequests, err = resolveNotificationBool(values, "discord.notify_registration_requests", true); err != nil {
+		return NotificationSettings{}, err
+	}
+	if result.NotifyMigrations, err = resolveNotificationBool(values, "discord.notify_migrations", true); err != nil {
+		return NotificationSettings{}, err
+	}
+	return result, nil
+}
 
-	err := db.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "id"}},
-		DoUpdates: clause.Assignments(map[string]any{
-			"channel_id":                   settings.ChannelID,
-			"notify_announcements":         settings.NotifyAnnouncements,
-			"notify_registration_requests": settings.NotifyRegistrationRequests,
-			"notify_migrations":            settings.NotifyMigrations,
-			"updated_at":                   settings.UpdatedAt,
-		}),
-	}).Create(&settings).Error
-	return settings, err
+// SaveNotificationSettings writes the related keys atomically to the general
+// settings store.
+func SaveNotificationSettings(db *gorm.DB, notificationSettings NotificationSettings) (NotificationSettings, error) {
+	values := map[string]string{
+		"discord.notification_channel_id":      notificationSettings.ChannelID,
+		"discord.notify_announcements":         strconv.FormatBool(notificationSettings.NotifyAnnouncements),
+		"discord.notify_registration_requests": strconv.FormatBool(notificationSettings.NotifyRegistrationRequests),
+		"discord.notify_migrations":            strconv.FormatBool(notificationSettings.NotifyMigrations),
+	}
+	err := db.Transaction(func(tx *gorm.DB) error {
+		for key, value := range values {
+			definition, _ := appsettings.Lookup(key)
+			if err := appsettings.Upsert(tx, definition, value); err != nil {
+				return err
+			}
+		}
+		legacy := legacyNotificationSettings{
+			ID:                         discordNotificationSettingsID,
+			ChannelID:                  notificationSettings.ChannelID,
+			NotifyAnnouncements:        notificationSettings.NotifyAnnouncements,
+			NotifyRegistrationRequests: notificationSettings.NotifyRegistrationRequests,
+			NotifyMigrations:           notificationSettings.NotifyMigrations,
+		}
+		return tx.Where("id = ?", discordNotificationSettingsID).Assign(legacy).FirstOrCreate(&legacy).Error
+	})
+	return notificationSettings, err
 }
 
 func notificationEnabled(settings NotificationSettings, event NotificationEvent) bool {

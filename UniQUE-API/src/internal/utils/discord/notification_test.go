@@ -4,8 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/UniPro-tech/UniQUE-API/internal/config"
+	appsettings "github.com/UniPro-tech/UniQUE-API/internal/settings"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 func TestNotificationContent(t *testing.T) {
@@ -102,3 +108,60 @@ func TestSendChannelMessageRejectsDiscordError(t *testing.T) {
 		t.Fatal("sendChannelMessage should return an error for a Discord error response")
 	}
 }
+
+func TestGetNotificationSettingsChannelPrecedence(t *testing.T) {
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DSN:                       "test:test@tcp(localhost:3306)/test",
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{DisableAutomaticPing: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	if err := db.Callback().Query().Replace("gorm:query", func(tx *gorm.DB) {
+		rows := tx.Statement.Dest.(*[]appsettings.Setting)
+		*rows = []appsettings.Setting{{Key: "discord.notification_channel_id", Value: "database"}}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name            string
+		current, legacy *string
+		want            string
+	}{
+		{name: "database", want: "database"},
+		{name: "legacy overrides database", legacy: stringPointer("legacy"), want: "legacy"},
+		{name: "current overrides legacy", current: stringPointer("current"), legacy: stringPointer("legacy"), want: "current"},
+		{name: "empty current is explicit", current: stringPointer(""), legacy: stringPointer("legacy"), want: ""},
+		{name: "empty legacy is explicit", legacy: stringPointer(""), want: ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for key, value := range map[string]*string{
+				"DISCORD_NOTIFICATION_CHANNEL_ID":       test.current,
+				"DISCORD_MEMBER_APPLICATION_CHANNEL_ID": test.legacy,
+			} {
+				t.Setenv(key, "")
+				if value == nil {
+					if err := os.Unsetenv(key); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					t.Setenv(key, *value)
+				}
+			}
+			got, err := GetNotificationSettings(db, &config.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.ChannelID != test.want {
+				t.Fatalf("channel = %q, want %q", got.ChannelID, test.want)
+			}
+		})
+	}
+}
+
+func stringPointer(value string) *string { return &value }
