@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.17.1](https://github.com/UniPro-tech/UniQUE/compare/v1.17.0...v1.17.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **chore:** ciの権限の設定ミスを修正 ([00452f3](https://github.com/UniPro-tech/UniQUE/commit/00452f306e053ef514738287f26861aac55179f9))
+* レジストリをghcr.ioに変更 ([77c30a2](https://github.com/UniPro-tech/UniQUE/commit/77c30a2464ae608a0f1df08d37f5a102a50ca7d7))
+
 ## [1.17.0](https://github.com/UniPro-tech/UniQUE/compare/v1.17.0...v1.17.0) (2026-10-02)
 
 
