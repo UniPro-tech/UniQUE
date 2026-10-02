@@ -18,6 +18,7 @@ helm upgrade --install unique oci://registry.uniproject.jp/infra/unique \
   --version 0.1.0 \
   --namespace unique \
   --create-namespace \
+  --wait-for-jobs --timeout 600 \
   --values deploy/helm/unique/values-production.yaml
 ```
 
