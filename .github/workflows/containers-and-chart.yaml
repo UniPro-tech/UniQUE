@@ -156,6 +156,7 @@ jobs:
             version="0.0.0-main.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
             app_version="sha-${GITHUB_SHA}"
           fi
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "app-version=$app_version" >> "$GITHUB_OUTPUT"
           echo "registry=oci://ghcr.io/${owner}/charts" >> "$GITHUB_OUTPUT"
