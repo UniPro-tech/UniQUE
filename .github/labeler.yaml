@@ -23,12 +23,12 @@
           - changed-files:
                 - any-glob-to-any-file:
                       - UniQUE-Discord/**/*
-"scope/infra":
+"scope/deploy":
     - any:
           - changed-files:
                 - any-glob-to-any-file:
                       - kustomizations/**/*
-"scope/dev":
+"kind/dev":
     - any:
           - changed-files:
                 - any-glob-to-any-file:
