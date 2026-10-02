@@ -21,6 +21,7 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
       containers:
         - name: unique-api
           image: "{{ .Values.api.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.api.image.tag "Chart" .Chart) }}"
@@ -58,6 +59,7 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
       containers:
         - name: unique-auth
           image: "{{ .Values.auth.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.auth.image.tag "Chart" .Chart) }}"
@@ -155,6 +157,7 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
       containers:
         - name: unique-mail
           image: "{{ .Values.mail.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.mail.image.tag "Chart" .Chart) }}"
@@ -195,6 +198,7 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- include "unique.waitForMigration" . | nindent 6 }}
       containers:
         - name: unique-discord
           image: "{{ .Values.discord.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.discord.image.tag "Chart" .Chart) }}"

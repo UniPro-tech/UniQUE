@@ -88,8 +88,6 @@ database:
     size: 10Gi
 
 migration:
-  enabled: true
-  schedule: "0 0 * * *"
   image:
     repository: registry.uniproject.jp/infra/unique-db
     tag: ""

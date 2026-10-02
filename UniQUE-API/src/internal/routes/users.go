@@ -715,7 +715,8 @@ func updateUser(c *gin.Context) {
 				return err
 			}
 			// 認証コードの生成と送信
-			if err := sendEmailChangeVerification(id, *input.ExternalEmail, "", q, config.LoadConfig()); err != nil {
+			cfg := c.MustGet("config").(config.Config)
+			if err := sendEmailChangeVerification(id, *input.ExternalEmail, "", q, &cfg); err != nil {
 				return err
 			}
 		}
@@ -940,7 +941,8 @@ func patchUser(c *gin.Context) {
 					return err
 				}
 				// external_emailは直接更新せず、認証コードのnew_emailに保存
-				if err := sendEmailChangeVerification(id, *body.ExternalEmail.Value, "", tx, config.LoadConfig()); err != nil {
+				cfg := c.MustGet("config").(config.Config)
+				if err := sendEmailChangeVerification(id, *body.ExternalEmail.Value, "", tx, &cfg); err != nil {
 					return err
 				}
 				// ★ if を追加して修正
@@ -2175,7 +2177,7 @@ func resendEmailVerification(c *gin.Context) {
 	if p, err := q.Profile.Where(query.Profile.UserID.Eq(id)).First(); err == nil {
 		name = p.DisplayName
 	}
-	cfg := config.LoadConfig()
+	cfg := c.MustGet("config").(config.Config)
 
 	// 既存コードの削除と新しいコードの生成を同一トランザクションで行う
 	err = q.Transaction(func(tx *query.Query) error {
@@ -2188,11 +2190,11 @@ func resendEmailVerification(c *gin.Context) {
 		}
 
 		if requestType == "email_change" {
-			if err = sendEmailChangeVerification(id, *externalEmail, name, tx, cfg); err != nil {
+			if err = sendEmailChangeVerification(id, *externalEmail, name, tx, &cfg); err != nil {
 				return err
 			}
 		} else {
-			if err = sendRegistrationEmailVerification(id, user.ExternalEmail, name, tx, cfg); err != nil {
+			if err = sendRegistrationEmailVerification(id, user.ExternalEmail, name, tx, &cfg); err != nil {
 				return err
 			}
 		}

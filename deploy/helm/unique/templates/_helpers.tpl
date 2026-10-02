@@ -37,3 +37,21 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- define "unique.mysqlClaim" -}}
 {{- default "mysql-pvc" .Values.database.persistence.existingClaim }}
 {{- end }}
+
+{{- define "unique.migrationContainer" -}}
+image: "{{ .Values.migration.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.migration.image.tag "Chart" .Chart) }}"
+imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+env:
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.database.existingSecret }}
+        key: MYSQL_ACCESS_URI
+{{- end }}
+
+{{- define "unique.waitForMigration" -}}
+initContainers:
+  - name: wait-for-migration
+    {{- include "unique.migrationContainer" . | nindent 4 }}
+    args: ["wait"]
+{{- end }}
