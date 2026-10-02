@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.2](https://github.com/UniPro-tech/UniQUE/compare/v1.17.1...v1.17.2) (2026-10-02)
+
+
+### Bug Fixes
+
+* レジストリをregistry.uniproject.jpからghcr.ioに変更 ([1bb3c59](https://github.com/UniPro-tech/UniQUE/commit/1bb3c599a1a29283503104ec5fdd4f5d766ebb48))
+
 ## [1.17.1](https://github.com/UniPro-tech/UniQUE/compare/v1.17.0...v1.17.1) (2026-10-02)
 
 
