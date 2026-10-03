@@ -157,7 +157,6 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- include "unique.waitForMigration" . | nindent 6 }}
       containers:
         - name: unique-mail
           image: "{{ .Values.mail.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.mail.image.tag "Chart" .Chart) }}"
@@ -166,11 +165,6 @@ spec:
             - { name: http, containerPort: 8080 }
           env:
             - { name: ENV, value: {{ .Values.mail.environment | quote }} }
-            - name: SETTINGS_DB_DSN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.existingSecret }}
-                  key: MYSQL_NATIVE_DSN
           envFrom:
             - secretRef: { name: {{ .Values.mail.existingSecret }} }
           livenessProbe:
@@ -198,19 +192,12 @@ spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- include "unique.waitForMigration" . | nindent 6 }}
       containers:
         - name: unique-discord
           image: "{{ .Values.discord.image.repository }}:{{ include "unique.imageTag" (dict "tag" .Values.discord.image.tag "Chart" .Chart) }}"
           imagePullPolicy: {{ .Values.discord.image.pullPolicy }}
           envFrom:
             - secretRef: { name: {{ .Values.discord.existingSecret }} }
-          env:
-            - name: SETTINGS_DB_DSN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.existingSecret }}
-                  key: MYSQL_NATIVE_DSN
           resources: {{ toYaml .Values.discord.resources | nindent 12 }}
 ---
 apiVersion: apps/v1
