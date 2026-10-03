@@ -13,7 +13,7 @@ metadata:
   labels:
     {{- include "unique.labels" $ | nindent 4 }}
     app: {{ $service.app }}
-  {{- if $service.name == "mysql" }}
+  {{- if $service.name | eq "mysql" }}
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
   {{- end }}
