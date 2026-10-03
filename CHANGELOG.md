@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.17.5](https://github.com/UniPro-tech/UniQUE/compare/v1.17.4...v1.17.5) (2026-10-03)
+
+
+### Bug Fixes
+
+* migration-job.yamlとworkloads.yamlにargocdのsync-waveアノテーションを追加 ([a4e2bdb](https://github.com/UniPro-tech/UniQUE/commit/a4e2bdb7072d88598623f05ab11cd221b0d22de0))
+* services.yamlでmysqlサービスの条件式を修正 ([b988b62](https://github.com/UniPro-tech/UniQUE/commit/b988b6245689d53e844c0b27c797e2d827d9e8a9))
+
 ## [1.17.4](https://github.com/UniPro-tech/UniQUE/compare/v1.17.3...v1.17.4) (2026-10-03)
 
 
