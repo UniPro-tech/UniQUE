@@ -15,8 +15,12 @@ ARG VERSION=dev
 ARG COMMIT=none
 ARG BRANCH=none
 
+ARG TARGETOS
+ARG TARGETARCH
+
 ENV CGO_ENABLED=0
-RUN cd src && go build -ldflags "-s -w -X github.com/UniPro-tech/UniQUE-API/internal/config.Version=${VERSION} -X github.com/UniPro-tech/UniQUE-API/internal/config.GitCommit=${COMMIT} -X github.com/UniPro-tech/UniQUE-API/internal/config.GitBranch=${BRANCH}" ./cmd/server/main.go
+#RUN cd src && go build -ldflags "-s -w -X github.com/UniPro-tech/UniQUE-API/internal/config.Version=${VERSION} -X github.com/UniPro-tech/UniQUE-API/internal/config.GitCommit=${COMMIT} -X github.com/UniPro-tech/UniQUE-API/internal/config.GitBranch=${BRANCH}" GOOS=${TARGETOS} GOARCH=${TARGETARCH} ./cmd/server/main.go
+RUN cd src && go build GOOS=${TARGETOS} GOARCH=${TARGETARCH} ./cmd/server/main.go
 
 FROM alpine:latest
 

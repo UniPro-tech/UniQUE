@@ -12,12 +12,14 @@ RUN cd src && go mod download
 
 COPY . .
 
-RUN export COMMIT=$(git rev-parse --short HEAD)
-RUN export BRANCH=$(git branch --show-current)
+#RUN export COMMIT=$(git rev-parse --short HEAD)
+#RUN export BRANCH=$(git branch --show-current)
 
+ARG TARGETOS
+ARG TARGETARCH
 
 # Build the Go server (static, no cgo)
-RUN cd src && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/server ./cmd/server
+RUN cd src && CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /app/server ./cmd/server
 
 FROM alpine:3.24 AS runtime
 RUN apk add --no-cache openssl mysql-client ca-certificates
