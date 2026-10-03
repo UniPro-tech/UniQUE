@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.17.4](https://github.com/UniPro-tech/UniQUE/compare/v1.17.3...v1.17.4) (2026-10-03)
+
+
+### Bug Fixes
+
+* DockerfileでCGO_ENABLEDを環境変数として設定 ([c259010](https://github.com/UniPro-tech/UniQUE/commit/c259010a5cb81b3e2b226572478a5b642d68690c))
+* Dockerfileでのビルド環境変数をARGに変更 ([f03f2d2](https://github.com/UniPro-tech/UniQUE/commit/f03f2d22ec3713fca9529f9d7e0e12edbb867bbf))
+* 不要な環境変数設定を削除 ([273a91c](https://github.com/UniPro-tech/UniQUE/commit/273a91cdef7bc8941025bd8924e6bf1f9fb567f8))
+
 ## [1.17.3](https://github.com/UniPro-tech/UniQUE/compare/v1.17.2...v1.17.3) (2026-10-02)
 
 
