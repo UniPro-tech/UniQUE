@@ -13,6 +13,10 @@ metadata:
   labels:
     {{- include "unique.labels" $ | nindent 4 }}
     app: {{ $service.app }}
+  {{- if $service.name == "mysql" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  {{- end }}
 spec:
   type: ClusterIP
   selector: { app: {{ $service.app }} }

@@ -207,6 +207,8 @@ metadata:
   labels:
     {{- include "unique.labels" . | nindent 4 }}
     app: mysql
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
   replicas: {{ .Values.database.replicaCount }}
   revisionHistoryLimit: 1
