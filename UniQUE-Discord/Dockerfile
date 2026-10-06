@@ -10,7 +10,7 @@ WORKDIR /app/src
 RUN --mount=type=cache,target=/go/pkg/mod/,sharing=locked \
     go mod download -x
 
-RUN ../scripts/_build.sh
+RUN ../scripts/build.sh
 
 FROM alpine:3.24.2
 WORKDIR /root/
