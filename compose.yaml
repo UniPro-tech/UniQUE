@@ -119,7 +119,7 @@ services:
       - unique
 
   oidc-client:
-    image: oven/bun:1.4.2
+    image: oven/bun:1.4.3
     container_name: unique-oidc-client
     working_dir: /app
     command: bun run dev
