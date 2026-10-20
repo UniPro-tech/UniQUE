@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: cd UniQUE-Front && bun install && cd ../
       - name: Run reviewdog with biome
-        uses: mongolyy/reviewdog-action-biome@fbaff9a1982d038b6c068d55c609c1d20b4abeef # v2
+        uses: mongolyy/reviewdog-action-biome@4449276b58c4687dd64f64a50415486110dc9285 # v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review
