@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -58,6 +59,12 @@ func AuthenticationPost(c *gin.Context) {
 
 	switch req.Type {
 	case "password":
+		strings.TrimSpace(req.Username)
+		strings.TrimSpace(req.Password)
+		if req.Password == "" || req.Username == "" {
+			c.JSON(401, gin.H{"error": "Invalid credentials", "reason": "invalid_credentials"})
+			return
+		}
 		// Handle password authentication
 		user, err, reason := passwordAuthentication(q, req.Username, req.Password)
 		if err != nil {
@@ -142,6 +149,12 @@ func AuthenticationPost(c *gin.Context) {
 			SessionJWT: sessionJWT,
 		})
 	case "totp":
+		strings.TrimSpace(req.Username)
+		strings.TrimSpace(req.Code)
+		if req.Username == "" && req.Code == "" {
+			c.JSON(401, gin.H{"error": "Invalid TOTP code", "reason": "invalid_credentials"})
+			return
+		}
 		// Handle TOTP authentication
 		user, err := totpAuthentication(q, req.Username, req.Code)
 		if err != nil {
