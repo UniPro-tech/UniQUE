@@ -10,23 +10,21 @@ import { ParseJwt } from "./jwt";
 import { getRealIPAddress } from "./request";
 
 export interface Credentials {
+  type: "password" | "totp";
+  mfaChallenge?: string;
   username?: string;
   password?: string;
   code?: string;
   is_remember?: boolean;
 }
 
-enum AuthenticationType {
-  Password = "password",
-  TOTP = "totp",
-}
-
 interface AuthenticationRequest {
+  mfaChallenge?: string;
   code?: string;
   ipAddress: string;
   password?: string;
   is_remember: boolean;
-  type: AuthenticationType;
+  type: Credentials["type"];
   userAgent: string;
   username: string;
 }
@@ -36,6 +34,7 @@ enum MultifactorAuthenticationType {
 }
 
 export interface AuthenticationResponse {
+  mfaChallenge?: string;
   mfaType?: MultifactorAuthenticationType[];
   requireMfa?: boolean;
   sessionJwt?: string;
@@ -50,7 +49,8 @@ export const AuthenticationRequest = async (
   const userAgent = (await headers()).get("user-agent") || "Unknown";
 
   const requestBody: AuthenticationRequest = {
-    type: password ? AuthenticationType.Password : AuthenticationType.TOTP,
+    type: credentials.type,
+    mfaChallenge: credentials.mfaChallenge,
     username: username || "",
     password,
     code,

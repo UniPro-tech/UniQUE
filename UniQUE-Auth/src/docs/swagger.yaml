@@ -15,6 +15,8 @@ definitions:
       is_remember:
         default: false
         type: boolean
+      mfa_challenge:
+        type: string
       password:
         type: string
       type:
@@ -32,6 +34,8 @@ definitions:
     type: object
   router.AuthenticationResponse:
     properties:
+      mfa_challenge:
+        type: string
       mfa_type:
         description: '"totp"'
         items:

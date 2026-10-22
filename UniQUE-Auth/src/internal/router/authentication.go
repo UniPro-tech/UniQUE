@@ -13,24 +13,25 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid/v2"
-	"github.com/pquerna/otp/totp"
 	"gorm.io/gorm"
 )
 
 type AuthenticationRequest struct {
-	Username   string `json:"username" binding:"omitempty"`
-	Password   string `json:"password" binding:"omitempty"`
-	Code       string `json:"code" binding:"omitempty"` // for MFA/TOTP
-	IPAddress  string `json:"ip_address"`
-	UserAgent  string `json:"user_agent"`
-	Type       string `json:"type" binding:"required,oneof=password mfa totp"`
-	IsRemember bool   `json:"is_remember" default:"false"`
+	Username     string `json:"username" binding:"omitempty"`
+	Password     string `json:"password" binding:"omitempty"`
+	Code         string `json:"code" binding:"omitempty"` // for MFA/TOTP
+	MFAChallenge string `json:"mfa_challenge"`
+	IPAddress    string `json:"ip_address"`
+	UserAgent    string `json:"user_agent"`
+	Type         string `json:"type" binding:"required,oneof=password mfa totp"`
+	IsRemember   bool   `json:"is_remember" default:"false"`
 }
 
 type AuthenticationResponse struct {
-	SessionJWT string   `json:"session_jwt" binding:"omitempty"`
-	RequireMFA bool     `json:"require_mfa" binding:"omitempty"`
-	MFATypes   []string `json:"mfa_type" binding:"omitempty"` // "totp"
+	MFAChallenge string   `json:"mfa_challenge,omitempty"`
+	SessionJWT   string   `json:"session_jwt" binding:"omitempty"`
+	RequireMFA   bool     `json:"require_mfa" binding:"omitempty"`
+	MFATypes     []string `json:"mfa_type" binding:"omitempty"` // "totp"
 }
 
 // AuthenticationPost godoc
@@ -77,9 +78,15 @@ func AuthenticationPost(c *gin.Context) {
 		}
 
 		if user.IsTotpEnabled {
+			challenge, err := issueMFAChallenge(q, user.ID, req.IsRemember)
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return
+			}
 			c.JSON(200, AuthenticationResponse{
-				RequireMFA: true,
-				MFATypes:   []string{"totp"},
+				MFAChallenge: challenge,
+				RequireMFA:   true,
+				MFATypes:     []string{"totp"},
 			})
 			return
 		}
@@ -149,60 +156,16 @@ func AuthenticationPost(c *gin.Context) {
 			SessionJWT: sessionJWT,
 		})
 	case "totp":
-		strings.TrimSpace(req.Username)
-		strings.TrimSpace(req.Code)
-		if req.Username == "" && req.Code == "" {
-			c.JSON(401, gin.H{"error": "Invalid TOTP code", "reason": "invalid_credentials"})
-			return
-		}
-		// Handle TOTP authentication
-		user, err := totpAuthentication(q, req.Username, req.Code)
+		session, user, sessionJWT, err := completeMFA(db, req, *c.MustGet("config").(*config.Config))
 		if err != nil {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
-		if user == nil {
-			c.JSON(401, gin.H{"error": "Invalid TOTP code", "reason": "invalid_credentials"})
+		if session == nil {
+			c.JSON(401, gin.H{"error": "Invalid credentials", "reason": "invalid_credentials"})
 			return
 		}
-
-		var session *model.Session
-		// トランザクション処理の開始
-		err = q.Transaction(func(tx *query.Query) error {
-			now := time.Now().UTC()
-			session = &model.Session{
-				ID:          ulid.Make().String(),
-				UserID:      user.ID,
-				IPAddress:   req.IPAddress,
-				UserAgent:   req.UserAgent,
-				IsRemember:  req.IsRemember,
-				ExpiresAt:   CalculateSessionExpiry(req.IsRemember),
-				LastLoginAt: now,
-				CreatedAt:   now,
-				UpdatedAt:   now,
-			}
-			// セッションの作成（GORMモデルを使用）
-			if err := tx.Session.Create(session); err != nil {
-				return err
-			}
-			return nil
-		})
-
-		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-
-		if session == nil || session.ID == "" {
-			c.AbortWithError(http.StatusInternalServerError, errors.New("Failed to create session"))
-			return
-		}
-
-		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
-		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
+		req.IsRemember = session.IsRemember
 
 		ip := req.IPAddress
 		if ip == "" {
@@ -277,21 +240,4 @@ func CalculateSessionExpiry(remember bool) (expiryTime time.Time) {
 		return now.Add(30 * 24 * time.Hour) // 30 days
 	}
 	return now.Add(7 * 24 * time.Hour) // 7 days
-}
-
-func totpAuthentication(q *query.Query, username string, code string) (*model.User, error) {
-	user, err := q.User.Where(q.User.CustomID.Eq(username), q.User.DeletedAt.IsNull(), q.User.Status.Eq("active")).First()
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, nil
-	}
-	if user.TotpSecret == nil || user.IsTotpEnabled == false {
-		return nil, nil
-	}
-	if ok := totp.Validate(code, *user.TotpSecret); !ok {
-		return nil, nil
-	}
-	return user, nil
 }

@@ -8,7 +8,7 @@ import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useInitialFormState, useRedirectTo } from "../../../Client";
-import { submitSignIn } from "../../actions/signIn";
+import { submitMfa } from "../../actions/signIn";
 import { SitemarkIcon } from "../../CustomIcons";
 import { Card } from "../Base";
 
@@ -38,7 +38,7 @@ export default function MultiFactorCard() {
         sx={{ display: "flex", flexDirection: "column", width: "100%", gap: 2 }}
         action={async (data: FormData) => {
           setInProgress(true);
-          const result = await submitSignIn(data);
+          const result = await submitMfa(data);
           if (result.redirectTo) {
             router.push(result.redirectTo);
           }

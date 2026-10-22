@@ -16,15 +16,18 @@ type AuthorizationRequest struct {
 	SessionID           *string   `gorm:"column:session_id" json:"session_id"`
 	ApplicationID       string    `gorm:"column:application_id;not null" json:"application_id"`
 	Scope               string    `gorm:"column:scope;not null" json:"scope"`
-	RedirectURI         string    `gorm:"column:redirect_uri;not null" json:"redirect_uri"`
+	RedirectURI         *string   `gorm:"column:redirect_uri" json:"redirect_uri"`
 	State               *string   `gorm:"column:state" json:"state"`
 	Nonce               *string   `gorm:"column:nonce" json:"nonce"`
 	Prompt              *string   `gorm:"column:prompt" json:"prompt"`
 	CodeChallenge       *string   `gorm:"column:code_challenge" json:"code_challenge"`
 	CodeChallengeMethod *string   `gorm:"column:code_challenge_method" json:"code_challenge_method"`
-	ResponseType        string    `gorm:"column:response_type;not null;default:code" json:"response_type"`
+	ResponseType        *string   `gorm:"column:response_type" json:"response_type"`
 	IsConsented         bool      `gorm:"column:is_consented;not null;comment:Consentが作られており、ユーザーが許可したかどうか" json:"is_consented"` // Consentが作られており、ユーザーが許可したかどうか
+	DeviceFlowDenied    bool      `gorm:"column:device_flow_denied;not null;comment:device flow" json:"device_flow_denied"`      // device flow
 	Code                *string   `gorm:"column:code" json:"code"`
+	UserCode            *string   `gorm:"column:user_code;comment:device flow" json:"user_code"`     // device flow
+	DeviceCode          *string   `gorm:"column:device_code;comment:device flow" json:"device_code"` // device flow
 	ExpiresAt           time.Time `gorm:"column:expires_at;not null" json:"expires_at"`
 	CreatedAt           time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }

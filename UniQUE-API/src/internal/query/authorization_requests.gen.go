@@ -40,7 +40,10 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 	_authorizationRequest.CodeChallengeMethod = field.NewString(tableName, "code_challenge_method")
 	_authorizationRequest.ResponseType = field.NewString(tableName, "response_type")
 	_authorizationRequest.IsConsented = field.NewBool(tableName, "is_consented")
+	_authorizationRequest.DeviceFlowDenied = field.NewBool(tableName, "device_flow_denied")
 	_authorizationRequest.Code = field.NewString(tableName, "code")
+	_authorizationRequest.UserCode = field.NewString(tableName, "user_code")
+	_authorizationRequest.DeviceCode = field.NewString(tableName, "device_code")
 	_authorizationRequest.ExpiresAt = field.NewTime(tableName, "expires_at")
 	_authorizationRequest.CreatedAt = field.NewTime(tableName, "created_at")
 
@@ -66,7 +69,10 @@ type authorizationRequest struct {
 	CodeChallengeMethod field.String
 	ResponseType        field.String
 	IsConsented         field.Bool // Consentが作られており、ユーザーが許可したかどうか
+	DeviceFlowDenied    field.Bool // device flow
 	Code                field.String
+	UserCode            field.String // device flow
+	DeviceCode          field.String // device flow
 	ExpiresAt           field.Time
 	CreatedAt           field.Time
 
@@ -97,7 +103,10 @@ func (a *authorizationRequest) updateTableName(table string) *authorizationReque
 	a.CodeChallengeMethod = field.NewString(table, "code_challenge_method")
 	a.ResponseType = field.NewString(table, "response_type")
 	a.IsConsented = field.NewBool(table, "is_consented")
+	a.DeviceFlowDenied = field.NewBool(table, "device_flow_denied")
 	a.Code = field.NewString(table, "code")
+	a.UserCode = field.NewString(table, "user_code")
+	a.DeviceCode = field.NewString(table, "device_code")
 	a.ExpiresAt = field.NewTime(table, "expires_at")
 	a.CreatedAt = field.NewTime(table, "created_at")
 
@@ -116,7 +125,7 @@ func (a *authorizationRequest) GetFieldByName(fieldName string) (field.OrderExpr
 }
 
 func (a *authorizationRequest) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 15)
+	a.fieldMap = make(map[string]field.Expr, 18)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["session_id"] = a.SessionID
 	a.fieldMap["application_id"] = a.ApplicationID
@@ -129,7 +138,10 @@ func (a *authorizationRequest) fillFieldMap() {
 	a.fieldMap["code_challenge_method"] = a.CodeChallengeMethod
 	a.fieldMap["response_type"] = a.ResponseType
 	a.fieldMap["is_consented"] = a.IsConsented
+	a.fieldMap["device_flow_denied"] = a.DeviceFlowDenied
 	a.fieldMap["code"] = a.Code
+	a.fieldMap["user_code"] = a.UserCode
+	a.fieldMap["device_code"] = a.DeviceCode
 	a.fieldMap["expires_at"] = a.ExpiresAt
 	a.fieldMap["created_at"] = a.CreatedAt
 }

@@ -16,22 +16,25 @@ import (
 )
 
 var (
-	Q                     = new(Query)
-	Announcement          *announcement
-	Application           *application
-	AuditLog              *auditLog
-	AuthorizationRequest  *authorizationRequest
-	Consent               *consent
-	EmailVerificationCode *emailVerificationCode
-	ExternalIdentity      *externalIdentity
-	OauthToken            *oauthToken
-	Profile               *profile
-	RedirectURI           *redirectURI
-	Role                  *role
-	SchemaMigration       *schemaMigration
-	Session               *session
-	User                  *user
-	UserRole              *userRole
+	Q                          = new(Query)
+	Announcement               *announcement
+	Application                *application
+	AuditLog                   *auditLog
+	AuthorizationRequest       *authorizationRequest
+	Consent                    *consent
+	DiscordNotificationSetting *discordNotificationSetting
+	EmailVerificationCode      *emailVerificationCode
+	ExternalIdentity           *externalIdentity
+	MfaChallenge               *mfaChallenge
+	OauthToken                 *oauthToken
+	Profile                    *profile
+	RedirectURI                *redirectURI
+	Role                       *role
+	SchemaMigration            *schemaMigration
+	Session                    *session
+	Setting                    *setting
+	User                       *user
+	UserRole                   *userRole
 )
 
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
@@ -41,57 +44,66 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	AuditLog = &Q.AuditLog
 	AuthorizationRequest = &Q.AuthorizationRequest
 	Consent = &Q.Consent
+	DiscordNotificationSetting = &Q.DiscordNotificationSetting
 	EmailVerificationCode = &Q.EmailVerificationCode
 	ExternalIdentity = &Q.ExternalIdentity
+	MfaChallenge = &Q.MfaChallenge
 	OauthToken = &Q.OauthToken
 	Profile = &Q.Profile
 	RedirectURI = &Q.RedirectURI
 	Role = &Q.Role
 	SchemaMigration = &Q.SchemaMigration
 	Session = &Q.Session
+	Setting = &Q.Setting
 	User = &Q.User
 	UserRole = &Q.UserRole
 }
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
-		db:                    db,
-		Announcement:          newAnnouncement(db, opts...),
-		Application:           newApplication(db, opts...),
-		AuditLog:              newAuditLog(db, opts...),
-		AuthorizationRequest:  newAuthorizationRequest(db, opts...),
-		Consent:               newConsent(db, opts...),
-		EmailVerificationCode: newEmailVerificationCode(db, opts...),
-		ExternalIdentity:      newExternalIdentity(db, opts...),
-		OauthToken:            newOauthToken(db, opts...),
-		Profile:               newProfile(db, opts...),
-		RedirectURI:           newRedirectURI(db, opts...),
-		Role:                  newRole(db, opts...),
-		SchemaMigration:       newSchemaMigration(db, opts...),
-		Session:               newSession(db, opts...),
-		User:                  newUser(db, opts...),
-		UserRole:              newUserRole(db, opts...),
+		db:                         db,
+		Announcement:               newAnnouncement(db, opts...),
+		Application:                newApplication(db, opts...),
+		AuditLog:                   newAuditLog(db, opts...),
+		AuthorizationRequest:       newAuthorizationRequest(db, opts...),
+		Consent:                    newConsent(db, opts...),
+		DiscordNotificationSetting: newDiscordNotificationSetting(db, opts...),
+		EmailVerificationCode:      newEmailVerificationCode(db, opts...),
+		ExternalIdentity:           newExternalIdentity(db, opts...),
+		MfaChallenge:               newMfaChallenge(db, opts...),
+		OauthToken:                 newOauthToken(db, opts...),
+		Profile:                    newProfile(db, opts...),
+		RedirectURI:                newRedirectURI(db, opts...),
+		Role:                       newRole(db, opts...),
+		SchemaMigration:            newSchemaMigration(db, opts...),
+		Session:                    newSession(db, opts...),
+		Setting:                    newSetting(db, opts...),
+		User:                       newUser(db, opts...),
+		UserRole:                   newUserRole(db, opts...),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	Announcement          announcement
-	Application           application
-	AuditLog              auditLog
-	AuthorizationRequest  authorizationRequest
-	Consent               consent
-	EmailVerificationCode emailVerificationCode
-	ExternalIdentity      externalIdentity
-	OauthToken            oauthToken
-	Profile               profile
-	RedirectURI           redirectURI
-	Role                  role
-	SchemaMigration       schemaMigration
-	Session               session
-	User                  user
-	UserRole              userRole
+	Announcement               announcement
+	Application                application
+	AuditLog                   auditLog
+	AuthorizationRequest       authorizationRequest
+	Consent                    consent
+	DiscordNotificationSetting discordNotificationSetting
+	EmailVerificationCode      emailVerificationCode
+	ExternalIdentity           externalIdentity
+	MfaChallenge               mfaChallenge
+	OauthToken                 oauthToken
+	Profile                    profile
+	RedirectURI                redirectURI
+	Role                       role
+	SchemaMigration            schemaMigration
+	Session                    session
+	Setting                    setting
+	User                       user
+	UserRole                   userRole
 }
 
 func (q *Query) Available() bool { return q.db != nil }
@@ -100,22 +112,25 @@ func (q *Query) UnderlyingDB() *gorm.DB { return q.db }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:                    db,
-		Announcement:          q.Announcement.clone(db),
-		Application:           q.Application.clone(db),
-		AuditLog:              q.AuditLog.clone(db),
-		AuthorizationRequest:  q.AuthorizationRequest.clone(db),
-		Consent:               q.Consent.clone(db),
-		EmailVerificationCode: q.EmailVerificationCode.clone(db),
-		ExternalIdentity:      q.ExternalIdentity.clone(db),
-		OauthToken:            q.OauthToken.clone(db),
-		Profile:               q.Profile.clone(db),
-		RedirectURI:           q.RedirectURI.clone(db),
-		Role:                  q.Role.clone(db),
-		SchemaMigration:       q.SchemaMigration.clone(db),
-		Session:               q.Session.clone(db),
-		User:                  q.User.clone(db),
-		UserRole:              q.UserRole.clone(db),
+		db:                         db,
+		Announcement:               q.Announcement.clone(db),
+		Application:                q.Application.clone(db),
+		AuditLog:                   q.AuditLog.clone(db),
+		AuthorizationRequest:       q.AuthorizationRequest.clone(db),
+		Consent:                    q.Consent.clone(db),
+		DiscordNotificationSetting: q.DiscordNotificationSetting.clone(db),
+		EmailVerificationCode:      q.EmailVerificationCode.clone(db),
+		ExternalIdentity:           q.ExternalIdentity.clone(db),
+		MfaChallenge:               q.MfaChallenge.clone(db),
+		OauthToken:                 q.OauthToken.clone(db),
+		Profile:                    q.Profile.clone(db),
+		RedirectURI:                q.RedirectURI.clone(db),
+		Role:                       q.Role.clone(db),
+		SchemaMigration:            q.SchemaMigration.clone(db),
+		Session:                    q.Session.clone(db),
+		Setting:                    q.Setting.clone(db),
+		User:                       q.User.clone(db),
+		UserRole:                   q.UserRole.clone(db),
 	}
 }
 
@@ -129,60 +144,69 @@ func (q *Query) WriteDB() *Query {
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
-		db:                    db,
-		Announcement:          q.Announcement.replaceDB(db),
-		Application:           q.Application.replaceDB(db),
-		AuditLog:              q.AuditLog.replaceDB(db),
-		AuthorizationRequest:  q.AuthorizationRequest.replaceDB(db),
-		Consent:               q.Consent.replaceDB(db),
-		EmailVerificationCode: q.EmailVerificationCode.replaceDB(db),
-		ExternalIdentity:      q.ExternalIdentity.replaceDB(db),
-		OauthToken:            q.OauthToken.replaceDB(db),
-		Profile:               q.Profile.replaceDB(db),
-		RedirectURI:           q.RedirectURI.replaceDB(db),
-		Role:                  q.Role.replaceDB(db),
-		SchemaMigration:       q.SchemaMigration.replaceDB(db),
-		Session:               q.Session.replaceDB(db),
-		User:                  q.User.replaceDB(db),
-		UserRole:              q.UserRole.replaceDB(db),
+		db:                         db,
+		Announcement:               q.Announcement.replaceDB(db),
+		Application:                q.Application.replaceDB(db),
+		AuditLog:                   q.AuditLog.replaceDB(db),
+		AuthorizationRequest:       q.AuthorizationRequest.replaceDB(db),
+		Consent:                    q.Consent.replaceDB(db),
+		DiscordNotificationSetting: q.DiscordNotificationSetting.replaceDB(db),
+		EmailVerificationCode:      q.EmailVerificationCode.replaceDB(db),
+		ExternalIdentity:           q.ExternalIdentity.replaceDB(db),
+		MfaChallenge:               q.MfaChallenge.replaceDB(db),
+		OauthToken:                 q.OauthToken.replaceDB(db),
+		Profile:                    q.Profile.replaceDB(db),
+		RedirectURI:                q.RedirectURI.replaceDB(db),
+		Role:                       q.Role.replaceDB(db),
+		SchemaMigration:            q.SchemaMigration.replaceDB(db),
+		Session:                    q.Session.replaceDB(db),
+		Setting:                    q.Setting.replaceDB(db),
+		User:                       q.User.replaceDB(db),
+		UserRole:                   q.UserRole.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	Announcement          IAnnouncementDo
-	Application           IApplicationDo
-	AuditLog              IAuditLogDo
-	AuthorizationRequest  IAuthorizationRequestDo
-	Consent               IConsentDo
-	EmailVerificationCode IEmailVerificationCodeDo
-	ExternalIdentity      IExternalIdentityDo
-	OauthToken            IOauthTokenDo
-	Profile               IProfileDo
-	RedirectURI           IRedirectURIDo
-	Role                  IRoleDo
-	SchemaMigration       ISchemaMigrationDo
-	Session               ISessionDo
-	User                  IUserDo
-	UserRole              IUserRoleDo
+	Announcement               IAnnouncementDo
+	Application                IApplicationDo
+	AuditLog                   IAuditLogDo
+	AuthorizationRequest       IAuthorizationRequestDo
+	Consent                    IConsentDo
+	DiscordNotificationSetting IDiscordNotificationSettingDo
+	EmailVerificationCode      IEmailVerificationCodeDo
+	ExternalIdentity           IExternalIdentityDo
+	MfaChallenge               IMfaChallengeDo
+	OauthToken                 IOauthTokenDo
+	Profile                    IProfileDo
+	RedirectURI                IRedirectURIDo
+	Role                       IRoleDo
+	SchemaMigration            ISchemaMigrationDo
+	Session                    ISessionDo
+	Setting                    ISettingDo
+	User                       IUserDo
+	UserRole                   IUserRoleDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		Announcement:          q.Announcement.WithContext(ctx),
-		Application:           q.Application.WithContext(ctx),
-		AuditLog:              q.AuditLog.WithContext(ctx),
-		AuthorizationRequest:  q.AuthorizationRequest.WithContext(ctx),
-		Consent:               q.Consent.WithContext(ctx),
-		EmailVerificationCode: q.EmailVerificationCode.WithContext(ctx),
-		ExternalIdentity:      q.ExternalIdentity.WithContext(ctx),
-		OauthToken:            q.OauthToken.WithContext(ctx),
-		Profile:               q.Profile.WithContext(ctx),
-		RedirectURI:           q.RedirectURI.WithContext(ctx),
-		Role:                  q.Role.WithContext(ctx),
-		SchemaMigration:       q.SchemaMigration.WithContext(ctx),
-		Session:               q.Session.WithContext(ctx),
-		User:                  q.User.WithContext(ctx),
-		UserRole:              q.UserRole.WithContext(ctx),
+		Announcement:               q.Announcement.WithContext(ctx),
+		Application:                q.Application.WithContext(ctx),
+		AuditLog:                   q.AuditLog.WithContext(ctx),
+		AuthorizationRequest:       q.AuthorizationRequest.WithContext(ctx),
+		Consent:                    q.Consent.WithContext(ctx),
+		DiscordNotificationSetting: q.DiscordNotificationSetting.WithContext(ctx),
+		EmailVerificationCode:      q.EmailVerificationCode.WithContext(ctx),
+		ExternalIdentity:           q.ExternalIdentity.WithContext(ctx),
+		MfaChallenge:               q.MfaChallenge.WithContext(ctx),
+		OauthToken:                 q.OauthToken.WithContext(ctx),
+		Profile:                    q.Profile.WithContext(ctx),
+		RedirectURI:                q.RedirectURI.WithContext(ctx),
+		Role:                       q.Role.WithContext(ctx),
+		SchemaMigration:            q.SchemaMigration.WithContext(ctx),
+		Session:                    q.Session.WithContext(ctx),
+		Setting:                    q.Setting.WithContext(ctx),
+		User:                       q.User.WithContext(ctx),
+		UserRole:                   q.UserRole.WithContext(ctx),
 	}
 }
 

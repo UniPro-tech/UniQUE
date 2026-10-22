@@ -1109,6 +1109,9 @@ const docTemplate = `{
                     "type": "boolean",
                     "default": false
                 },
+                "mfa_challenge": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
                 },
@@ -1131,6 +1134,9 @@ const docTemplate = `{
         "router.AuthenticationResponse": {
             "type": "object",
             "properties": {
+                "mfa_challenge": {
+                    "type": "string"
+                },
                 "mfa_type": {
                     "description": "\"totp\"",
                     "type": "array",

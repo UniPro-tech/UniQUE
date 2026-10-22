@@ -102,7 +102,7 @@ export default async function Page({
   const pending_mfa_remember =
     cookieStore.get("pending_mfa_remember")?.value === "1";
   const pending_mfa_user = cookieStore.get("pending_mfa_user")?.value;
-  if (!pending_mfa_user) {
+  if (!pending_mfa_user || !cookieStore.get("pending_mfa_challenge")?.value) {
     redirect("/signin");
   }
   initState.username = pending_mfa_user;
