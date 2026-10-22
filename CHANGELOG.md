@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.7](https://github.com/UniPro-tech/UniQUE/compare/v1.17.6...v1.17.7) (2026-10-22)
+
+
+### Bug Fixes
+
+* **auth:** 認証処理の不具合を修正 ([a1395a6](https://github.com/UniPro-tech/UniQUE/commit/a1395a6ca506942379c230995367d5cc065ac388))
+
 ## [1.17.6](https://github.com/UniPro-tech/UniQUE/compare/v1.17.5...v1.17.6) (2026-10-20)
 
 
