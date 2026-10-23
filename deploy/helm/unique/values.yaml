@@ -71,7 +71,7 @@ database:
   replicaCount: 1
   image:
     repository: mysql
-    tag: "26.7.0"
+    tag: "26.10.0"
     pullPolicy: IfNotPresent
   existingSecret: mysql-secret
   resources:
