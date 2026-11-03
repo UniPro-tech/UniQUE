@@ -45,6 +45,8 @@ type AuthorizationResponse struct {
 	CodeChallengeMethod *string `json:"code_challenge_method" binding:"omitempty,oneof=plain S256"`
 }
 
+const authorizationCodeLifetime = 5 * time.Minute
+
 // AuthorizationGet godoc
 // @Summary authorization endpoint
 // @Schemes
@@ -181,6 +183,10 @@ func AuthorizationPost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
 		return
 	}
+	if !authReq.ExpiresAt.After(time.Now().UTC()) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+		return
+	}
 
 	// sessionJWTからsidを取得し、session, useridを検証
 	sessionID, userID, err := util.ValidateSessionJWT(sessionJWT, c)
@@ -211,13 +217,28 @@ func AuthorizationPost(c *gin.Context) {
 
 	var newConsentId string
 	var authCode string
-	now := time.Now().UTC()
 
 	// コンセントの作成・更新と認可コードの生成・保存をすべて単一トランザクション内で行う
 	if err := db.Transaction(func(txDB *gorm.DB) error {
+		now := time.Now().UTC()
 		tx := query.Use(txDB)
 		var consent model.Consent
 		var user model.User
+
+		// Expired or already-consented requests must not issue a new authorization code.
+		lockedAuthReq, err := tx.AuthorizationRequest.Clauses(clause.Locking{Strength: "UPDATE"}).Where(
+			tx.AuthorizationRequest.ID.Eq(authReq.ID),
+			tx.AuthorizationRequest.ExpiresAt.Gt(now),
+			tx.AuthorizationRequest.Code.IsNull(),
+			tx.AuthorizationRequest.IsConsented.Is(false),
+		).First()
+		if err != nil {
+			return err
+		}
+		if !lockedAuthReq.ExpiresAt.After(time.Now().UTC()) {
+			return gorm.ErrRecordNotFound
+		}
+		authReq = lockedAuthReq
 
 		// Serialize consent creation for the same user even when no consent row
 		// exists yet. The consents table has no active-row uniqueness constraint.
@@ -226,7 +247,7 @@ func AuthorizationPost(c *gin.Context) {
 		}
 
 		// 行ロックで取得を試みる
-		err := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error
+		err = txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error
 		if err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
@@ -297,11 +318,14 @@ func AuthorizationPost(c *gin.Context) {
 		// 認可コードの生成
 		e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
 		authCode = ulid.MustNew(ulid.Timestamp(now), e).String()
+		codeExpiresAt := now.Add(authorizationCodeLifetime)
 
 		// 認可リクエストの更新 (セッションIDおよび認可状態の保存)
 		authReqUpdate := &model.AuthorizationRequest{
-			Code:        &authCode,
-			IsConsented: true,
+			Code:          &authCode,
+			CodeIssuedAt:  &now,
+			CodeExpiresAt: &codeExpiresAt,
+			IsConsented:   true,
 		}
 
 		// Select() を用いて明示的に対象カラムのみを Update する
@@ -309,6 +333,8 @@ func AuthorizationPost(c *gin.Context) {
 			authReqUpdate.SessionID = &sessionID
 			if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(authReq.ID)).Select(
 				tx.AuthorizationRequest.Code,
+				tx.AuthorizationRequest.CodeIssuedAt,
+				tx.AuthorizationRequest.CodeExpiresAt,
 				tx.AuthorizationRequest.IsConsented,
 				tx.AuthorizationRequest.SessionID,
 			).Updates(authReqUpdate); err != nil {
@@ -317,6 +343,8 @@ func AuthorizationPost(c *gin.Context) {
 		} else {
 			if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(authReq.ID)).Select(
 				tx.AuthorizationRequest.Code,
+				tx.AuthorizationRequest.CodeIssuedAt,
+				tx.AuthorizationRequest.CodeExpiresAt,
 				tx.AuthorizationRequest.IsConsented,
 			).Updates(authReqUpdate); err != nil {
 				return err
@@ -325,6 +353,10 @@ func AuthorizationPost(c *gin.Context) {
 
 		return nil
 	}); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create or update consent"})
 		return
 	}

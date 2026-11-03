@@ -26,6 +26,8 @@ type AuthorizationRequest struct {
 	IsConsented         bool      `gorm:"column:is_consented;not null;comment:Consentが作られており、ユーザーが許可したかどうか" json:"is_consented"` // Consentが作られており、ユーザーが許可したかどうか
 	DeviceFlowDenied    bool      `gorm:"column:device_flow_denied;not null;comment:device flow" json:"device_flow_denied"`      // device flow
 	Code                *string   `gorm:"column:code" json:"code"`
+	CodeIssuedAt        *time.Time `gorm:"column:code_issued_at" json:"code_issued_at"`
+	CodeExpiresAt       *time.Time `gorm:"column:code_expires_at" json:"code_expires_at"`
 	UserCode            *string   `gorm:"column:user_code;comment:device flow" json:"user_code"`     // device flow
 	DeviceCode          *string   `gorm:"column:device_code;comment:device flow" json:"device_code"` // device flow
 	ExpiresAt           time.Time `gorm:"column:expires_at;not null" json:"expires_at"`

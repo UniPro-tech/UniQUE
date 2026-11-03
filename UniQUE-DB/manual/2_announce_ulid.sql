@@ -15,4 +15,4 @@ END;
 
 //
 
-DELIMITER;
+DELIMITER ;
