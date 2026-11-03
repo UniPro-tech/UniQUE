@@ -42,6 +42,8 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 	_authorizationRequest.IsConsented = field.NewBool(tableName, "is_consented")
 	_authorizationRequest.DeviceFlowDenied = field.NewBool(tableName, "device_flow_denied")
 	_authorizationRequest.Code = field.NewString(tableName, "code")
+	_authorizationRequest.CodeIssuedAt = field.NewTime(tableName, "code_issued_at")
+	_authorizationRequest.CodeExpiresAt = field.NewTime(tableName, "code_expires_at")
 	_authorizationRequest.UserCode = field.NewString(tableName, "user_code")
 	_authorizationRequest.DeviceCode = field.NewString(tableName, "device_code")
 	_authorizationRequest.ExpiresAt = field.NewTime(tableName, "expires_at")
@@ -71,6 +73,8 @@ type authorizationRequest struct {
 	IsConsented         field.Bool // Consentが作られており、ユーザーが許可したかどうか
 	DeviceFlowDenied    field.Bool // device flow
 	Code                field.String
+	CodeIssuedAt        field.Time
+	CodeExpiresAt       field.Time
 	UserCode            field.String // device flow
 	DeviceCode          field.String // device flow
 	ExpiresAt           field.Time
@@ -105,6 +109,8 @@ func (a *authorizationRequest) updateTableName(table string) *authorizationReque
 	a.IsConsented = field.NewBool(table, "is_consented")
 	a.DeviceFlowDenied = field.NewBool(table, "device_flow_denied")
 	a.Code = field.NewString(table, "code")
+	a.CodeIssuedAt = field.NewTime(table, "code_issued_at")
+	a.CodeExpiresAt = field.NewTime(table, "code_expires_at")
 	a.UserCode = field.NewString(table, "user_code")
 	a.DeviceCode = field.NewString(table, "device_code")
 	a.ExpiresAt = field.NewTime(table, "expires_at")
@@ -125,7 +131,7 @@ func (a *authorizationRequest) GetFieldByName(fieldName string) (field.OrderExpr
 }
 
 func (a *authorizationRequest) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 18)
+	a.fieldMap = make(map[string]field.Expr, 20)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["session_id"] = a.SessionID
 	a.fieldMap["application_id"] = a.ApplicationID
@@ -140,6 +146,8 @@ func (a *authorizationRequest) fillFieldMap() {
 	a.fieldMap["is_consented"] = a.IsConsented
 	a.fieldMap["device_flow_denied"] = a.DeviceFlowDenied
 	a.fieldMap["code"] = a.Code
+	a.fieldMap["code_issued_at"] = a.CodeIssuedAt
+	a.fieldMap["code_expires_at"] = a.CodeExpiresAt
 	a.fieldMap["user_code"] = a.UserCode
 	a.fieldMap["device_code"] = a.DeviceCode
 	a.fieldMap["expires_at"] = a.ExpiresAt

@@ -100,9 +100,14 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID
 	var accessToken, idToken, refreshToken string
 
 	err := q.Transaction(func(tx *query.Query) error {
-		authReq, err := tx.AuthorizationRequest.Where(
+		now := time.Now().UTC()
+		authReq, err := tx.AuthorizationRequest.Clauses(clause.Locking{Strength: "UPDATE"}).Where(
 			tx.AuthorizationRequest.Code.Eq(req.Code),
 			tx.AuthorizationRequest.ApplicationID.Eq(clientID),
+			tx.AuthorizationRequest.Code.IsNotNull(),
+			tx.AuthorizationRequest.IsConsented.Is(true),
+			tx.AuthorizationRequest.ExpiresAt.Gt(now),
+			tx.AuthorizationRequest.CodeExpiresAt.Gt(now),
 		).First()
 		if err != nil {
 			return err
