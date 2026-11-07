@@ -1,8 +1,8 @@
 package util
 
 import (
+	"crypto/rand"
 	"errors"
-	"math/rand"
 	"strings"
 )
 

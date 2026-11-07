@@ -1,7 +1,7 @@
 package router
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -316,8 +316,8 @@ func AuthorizationPost(c *gin.Context) {
 		}
 
 		// 認可コードの生成
-		e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
-		authCode = ulid.MustNew(ulid.Timestamp(now), e).String()
+		entropy := rand.Reader
+		authCode = ulid.MustNew(ulid.Timestamp(now), entropy).String()
 		codeExpiresAt := now.Add(authorizationCodeLifetime)
 
 		// 認可リクエストの更新 (セッションIDおよび認可状態の保存)
@@ -539,7 +539,8 @@ func InternalConsentedPost(c *gin.Context) {
 		}
 
 		if authReq.ResponseType != nil && *authReq.ResponseType == "code" {
-			e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
+			now := time.Now().UTC()
+			e := rand.Reader
 			code := ulid.MustNew(ulid.Timestamp(now), e).String()
 			authReqUpdate.Code = &code
 			codeExpiresAt := now.Add(authorizationCodeLifetime)

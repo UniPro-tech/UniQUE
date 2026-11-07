@@ -2,6 +2,7 @@ package router
 
 import (
 	"bytes"
+	cryptRand "crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -121,7 +122,7 @@ func generatePasswordResetCode() string {
 // generateID ULIDを使用してユニークなIDを生成
 func generateID() string {
 	t := time.Now()
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	entropy := cryptRand.Reader
 	return ulid.MustNew(ulid.Timestamp(t), entropy).String()
 }
 

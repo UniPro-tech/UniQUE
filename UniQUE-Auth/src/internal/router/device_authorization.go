@@ -1,7 +1,7 @@
 package router
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"net/http"
 	"time"
 
@@ -70,7 +70,7 @@ func DeviceAuthorizationGet(c *gin.Context) {
 
 	userCode, err := util.MakeRandomStr(8)
 	now := time.Now().UTC()
-	e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
+	e := rand.Reader
 	deviceCode := ulid.MustNew(ulid.Timestamp(now), e).String()
 
 	var authReq *model.AuthorizationRequest
