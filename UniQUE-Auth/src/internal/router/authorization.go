@@ -1,7 +1,7 @@
 package router
 
 import (
-	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"net/url"
 	"strings"
@@ -216,7 +216,6 @@ func AuthorizationPost(c *gin.Context) {
 	}
 
 	var newConsentId string
-	var authCode string
 
 	// コンセントの作成・更新と認可コードの生成・保存をすべて単一トランザクション内で行う
 	if err := db.Transaction(func(txDB *gorm.DB) error {
@@ -316,8 +315,8 @@ func AuthorizationPost(c *gin.Context) {
 		}
 
 		// 認可コードの生成
-		entropy := rand.Reader
-		authCode = ulid.MustNew(ulid.Timestamp(now), entropy).String()
+		bits128 := make([]byte, 32)
+		authCode := base64.RawURLEncoding.EncodeToString(bits128)
 		codeExpiresAt := now.Add(authorizationCodeLifetime)
 
 		// 認可リクエストの更新 (セッションIDおよび認可状態の保存)
@@ -540,9 +539,9 @@ func InternalConsentedPost(c *gin.Context) {
 
 		if authReq.ResponseType != nil && *authReq.ResponseType == "code" {
 			now := time.Now().UTC()
-			e := rand.Reader
-			code := ulid.MustNew(ulid.Timestamp(now), e).String()
-			authReqUpdate.Code = &code
+			bits128 := make([]byte, 32)
+			authCode := base64.RawURLEncoding.EncodeToString(bits128)
+			authReqUpdate.Code = &authCode
 			codeExpiresAt := now.Add(authorizationCodeLifetime)
 			authReqUpdate.CodeExpiresAt = &codeExpiresAt
 
