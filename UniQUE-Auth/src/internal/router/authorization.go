@@ -531,6 +531,8 @@ func InternalConsentedPost(c *gin.Context) {
 			e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
 			code := ulid.MustNew(ulid.Timestamp(now), e).String()
 			authReqUpdate.Code = &code
+			codeExpiresAt := now.Add(authorizationCodeLifetime)
+			authReqUpdate.CodeExpiresAt = &codeExpiresAt
 
 			if _, err := tx.AuthorizationRequest.Where(tx.AuthorizationRequest.ID.Eq(authReq.ID)).Select(
 				tx.AuthorizationRequest.SessionID,
