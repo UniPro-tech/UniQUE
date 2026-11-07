@@ -521,13 +521,24 @@ func InternalConsentedPost(c *gin.Context) {
 
 	// DBの更新処理をすべて1つのトランザクションにまとめる
 	err = q.Transaction(func(tx *query.Query) error {
+		now := time.Now().UTC()
+		lockedAuthReq, err := tx.AuthorizationRequest.Clauses(clause.Locking{Strength: "UPDATE"}).Where(
+			tx.AuthorizationRequest.ID.Eq(authReq.ID),
+			tx.AuthorizationRequest.ExpiresAt.Gt(now),
+			tx.AuthorizationRequest.Code.IsNull(),
+			tx.AuthorizationRequest.IsConsented.Is(false),
+		).First()
+		if err != nil {
+			return err
+		}
+		authReq = lockedAuthReq
+
 		authReqUpdate := &model.AuthorizationRequest{
 			SessionID:   &sessionID,
 			IsConsented: true,
 		}
 
 		if authReq.ResponseType != nil && *authReq.ResponseType == "code" {
-			now := time.Now().UTC()
 			e := ulid.Monotonic(rand.New(rand.NewSource(now.UnixNano())), 0)
 			code := ulid.MustNew(ulid.Timestamp(now), e).String()
 			authReqUpdate.Code = &code
@@ -555,6 +566,10 @@ func InternalConsentedPost(c *gin.Context) {
 	})
 
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update auth request"})
 		return
 	}
