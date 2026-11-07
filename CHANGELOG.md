@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.18.0](https://github.com/UniPro-tech/UniQUE/compare/v1.17.8...v1.18.0) (2026-11-07)
+
+
+### Features
+
+* 認可コードの有効期限を設定するためのフィールドを追加 ([#177](https://github.com/UniPro-tech/UniQUE/issues/177)) ([f49c382](https://github.com/UniPro-tech/UniQUE/commit/f49c382fc681ee04c7b2c36b1c1fdd438234226f))
+
+
+### Bug Fixes
+
+* 乱数生成にcrypto/randを使用するように変更 ([#178](https://github.com/UniPro-tech/UniQUE/issues/178)) ([87fa1f7](https://github.com/UniPro-tech/UniQUE/commit/87fa1f70eb9ba41468397790035d2562218c974f))
+
 ## [1.17.8](https://github.com/UniPro-tech/UniQUE/compare/v1.17.7...v1.17.8) (2026-11-07)
 
 
