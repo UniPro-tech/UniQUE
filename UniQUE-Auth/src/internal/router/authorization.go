@@ -538,6 +538,7 @@ func InternalConsentedPost(c *gin.Context) {
 				tx.AuthorizationRequest.SessionID,
 				tx.AuthorizationRequest.IsConsented,
 				tx.AuthorizationRequest.Code,
+				tx.AuthorizationRequest.CodeExpiresAt,
 			).Updates(authReqUpdate); err != nil {
 				return err
 			}
