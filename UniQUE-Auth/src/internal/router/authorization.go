@@ -1,6 +1,7 @@
 package router
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"net/http"
 	"net/url"
@@ -316,6 +317,7 @@ func AuthorizationPost(c *gin.Context) {
 
 		// 認可コードの生成
 		bits128 := make([]byte, 32)
+		rand.Read(bits128)
 		authCode := base64.RawURLEncoding.EncodeToString(bits128)
 		codeExpiresAt := now.Add(authorizationCodeLifetime)
 
@@ -540,6 +542,7 @@ func InternalConsentedPost(c *gin.Context) {
 		if authReq.ResponseType != nil && *authReq.ResponseType == "code" {
 			now := time.Now().UTC()
 			bits128 := make([]byte, 32)
+			rand.Read(bits128)
 			authCode := base64.RawURLEncoding.EncodeToString(bits128)
 			authReqUpdate.Code = &authCode
 			codeExpiresAt := now.Add(authorizationCodeLifetime)
