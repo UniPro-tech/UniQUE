@@ -1,0 +1,1 @@
+ALTER TABLE authorization_requests MODIFY COLUMN code VARCHAR(255);

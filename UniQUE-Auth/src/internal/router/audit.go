@@ -1,9 +1,9 @@
 package router
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"log"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -71,6 +71,6 @@ func normalizeAuditAction(a string) string {
 
 func generateAuditID() string {
 	t := time.Now()
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	entropy := rand.Reader
 	return ulid.MustNew(ulid.Timestamp(t), entropy).String()
 }
