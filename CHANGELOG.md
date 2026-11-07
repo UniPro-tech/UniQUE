@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.17.8](https://github.com/UniPro-tech/UniQUE/compare/v1.17.7...v1.17.8) (2026-11-07)
+
+
+### Bug Fixes
+
+* codeの有効期限がRFCに準拠するように修正 ([#170](https://github.com/UniPro-tech/UniQUE/issues/170)) ([558299e](https://github.com/UniPro-tech/UniQUE/commit/558299ed653326cc0d68806ba7b1cdc4672d2983))
+* disgoおよびgodaveのバージョンを更新し、compressのバージョンを最新に変更 ([414d3e5](https://github.com/UniPro-tech/UniQUE/commit/414d3e514e3fb1f3587044826969148c11a2a43a))
+
 ## [1.17.7](https://github.com/UniPro-tech/UniQUE/compare/v1.17.6...v1.17.7) (2026-10-22)
 
 
