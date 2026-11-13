@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/UniPro-tech/UniQUE/compare/v1.18.0...v1.18.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **deps:** update module golang.org/x/crypto to v0.59.0 ([#183](https://github.com/UniPro-tech/UniQUE/issues/183)) ([5903de2](https://github.com/UniPro-tech/UniQUE/commit/5903de2319caee60b875d365e920ab88105c1394))
+
 ## [1.18.0](https://github.com/UniPro-tech/UniQUE/compare/v1.17.8...v1.18.0) (2026-11-07)
 
 
