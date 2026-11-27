@@ -102,7 +102,10 @@ async function loggedFetch(
   }
 
   const method = (init.method ?? "GET").toUpperCase();
-  const path = url.replace(BASE ?? "", "").replace(CLIENT_BASE ?? "", "");
+  const path = url
+    .replace(BASE ?? "", "")
+    .replace(CLIENT_BASE ?? "", "")
+    .split(/[?#]/)[0];
   const startedAt = Date.now();
 
   logWithContext("debug", "api_request", { method, path }, context);

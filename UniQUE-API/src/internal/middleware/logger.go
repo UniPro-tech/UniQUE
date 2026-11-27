@@ -16,7 +16,7 @@ import (
 // Gin 標準の Recovery は標準 log パッケージへ出力するため置き換える。
 func SlogRecovery() gin.HandlerFunc {
 	return gin.CustomRecoveryWithWriter(io.Discard, func(c *gin.Context, recovered any) {
-		slog.Error("panic_recovered",
+		utils.GetLogger(c).Error("panic_recovered",
 			logging.PanicAttr(recovered),
 			slog.String("stack", string(debug.Stack())),
 		)

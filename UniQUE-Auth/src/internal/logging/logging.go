@@ -42,6 +42,8 @@ var sensitiveQueryKeys = map[string]struct{}{
 	"client_secret": {},
 	"password":      {},
 	"authorization": {},
+	"api_key":       {},
+	"bot_token":     {},
 	"jti":           {},
 	"sid":           {},
 	"session_id":    {},

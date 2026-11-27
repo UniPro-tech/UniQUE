@@ -16,7 +16,7 @@ import (
 // standard library's text logger used by gin.Recovery().
 func SlogRecovery() gin.HandlerFunc {
 	return gin.CustomRecoveryWithWriter(io.Discard, func(c *gin.Context, recovered any) {
-		slog.Error("panic_recovered",
+		GetLogger(c).Error("panic_recovered",
 			logging.PanicAttr(recovered),
 			slog.String("stack", string(debug.Stack())),
 		)

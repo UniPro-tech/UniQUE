@@ -147,7 +147,7 @@ func maskJSONValue(value any) any {
 }
 
 var (
-	textSensitiveKV = regexp.MustCompile(`(?i)("?(?:access_token|refresh_token|id_token|token|secret|client_secret|bot_token|password|authorization|api_key|jti|sid|session_id)"?\s*[=:]\s*)("[^"]*"|[^",}\s&]+)`)
+	textSensitiveKV = regexp.MustCompile(`(?i)(["']?(?:access_token|refresh_token|id_token|token|secret|client_secret|bot_token|password|authorization|api_key|jti|sid|session_id)["']?\s*[=:]\s*)(["'][^"']*["']|[^"',}\s&]+)`)
 	authorizationKV = regexp.MustCompile(`(?i)\b(Bearer|Bot|Basic)\s+[A-Za-z0-9._~+/=-]+`)
 )
 

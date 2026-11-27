@@ -388,7 +388,10 @@ func verifyJIT(ctx context.Context, jti string, cfg config.Config, path string) 
 	slog.Debug("jit_request", slog.String("endpoint", path))
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		slog.Error("jit_request_failed", slog.Any("error", err))
+		slog.Error("jit_request_failed",
+			slog.String("error_type", fmt.Sprintf("%T", err)),
+			slog.Any("url", utils.RedactedURL(url)),
+		)
 		return false, ""
 	}
 	defer resp.Body.Close()

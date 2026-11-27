@@ -29,7 +29,9 @@ func logDiscordResponse(operation string, status int, body []byte, attrs ...any)
 	args := []any{
 		slog.String("operation", operation),
 		slog.Int("status", status),
-		slog.String("response_body", strings.ReplaceAll(strings.ReplaceAll(utils.MaskBody(body), "\n", ""), "\r", "")),
+	}
+	if body != nil {
+		args = append(args, slog.String("response_body", strings.ReplaceAll(strings.ReplaceAll(utils.MaskBody(body), "\n", ""), "\r", "")))
 	}
 	args = append(args, attrs...)
 

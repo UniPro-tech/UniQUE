@@ -88,8 +88,10 @@ func SendDirectMessage(ctx context.Context, userID string, content string, db *g
 	}
 	defer msgResp.Body.Close()
 
-	msgResponseBody := readDiscordBody(msgResp.Body)
-	logDiscordResponse("send_dm", msgResp.StatusCode, msgResponseBody,
+	_ = readDiscordBody(msgResp.Body)
+	// Never log the response body for a DM: it echoes the sent content, which
+	// may contain a plaintext initial password.
+	logDiscordResponse("send_dm", msgResp.StatusCode, nil,
 		slog.String("discord_user_id", strings.ReplaceAll(strings.ReplaceAll(externalIdentity.ExternalUserID, "\n", ""), "\r", "")),
 		slog.String("channel_id", strings.ReplaceAll(strings.ReplaceAll(channelRes.ID, "\n", ""), "\r", "")),
 	)

@@ -96,8 +96,8 @@ func safeRequestID(value string) string {
 }
 
 func safeTraceID(value string) string {
-	value = strings.TrimSpace(value)
-	if len(value) != 32 || !isHex(value) {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if len(value) != 32 || !isHex(value) || value == strings.Repeat("0", 32) {
 		return ""
 	}
 	return value
@@ -105,10 +105,14 @@ func safeTraceID(value string) string {
 
 func traceIDFromTraceparent(value string) string {
 	parts := strings.Split(strings.TrimSpace(value), "-")
-	if len(parts) < 4 || len(parts[1]) != 32 || !isHex(parts[1]) {
+	if len(parts) < 4 {
 		return ""
 	}
-	return parts[1]
+	traceID := strings.ToLower(parts[1])
+	if len(traceID) != 32 || !isHex(traceID) || traceID == strings.Repeat("0", 32) {
+		return ""
+	}
+	return traceID
 }
 
 func isHex(value string) bool {

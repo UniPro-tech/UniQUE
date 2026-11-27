@@ -1650,7 +1650,7 @@ func addExternalIdentity(c *gin.Context) {
 
 	if input.Provider == "discord" {
 		config := c.MustGet("config").(config.Config)
-		if err := discordutil.AddToGuild(c.Request.Context(), input.ExternalUserID, db, &config); err != nil {
+		if err := discordutil.AddToGuild(context.WithoutCancel(c.Request.Context()), input.ExternalUserID, db, &config); err != nil {
 			slog.Error("discord_guild_join_failed",
 				slog.String("discord_user_id", strings.ReplaceAll(strings.ReplaceAll(input.ExternalUserID, "\n", ""), "\r", "")),
 				slog.Any("error", err),
@@ -1660,7 +1660,7 @@ func addExternalIdentity(c *gin.Context) {
 		if user, uerr := q.User.Where(query.User.ID.Eq(id)).First(); uerr == nil {
 			if user.Status == "active" {
 				memberRoleId := config.DiscordConfig.Guild.MemberRoleID
-				if err := discordutil.AddRoleToUser(c.Request.Context(), input.ExternalUserID, memberRoleId, &config); err != nil {
+				if err := discordutil.AddRoleToUser(context.WithoutCancel(c.Request.Context()), input.ExternalUserID, memberRoleId, &config); err != nil {
 					slog.Error("discord_role_assign_failed",
 						slog.String("discord_user_id", strings.ReplaceAll(strings.ReplaceAll(input.ExternalUserID, "\n", ""), "\r", "")),
 						slog.String("role_id", memberRoleId),
@@ -1820,7 +1820,7 @@ func linkDiscordByEmailCode(c *gin.Context) {
 	}
 
 	config := c.MustGet("config").(config.Config)
-	if err := discordutil.AddToGuild(c.Request.Context(), input.ExternalUserID, db, &config); err != nil {
+	if err := discordutil.AddToGuild(context.WithoutCancel(c.Request.Context()), input.ExternalUserID, db, &config); err != nil {
 		slog.Error("discord_guild_join_failed",
 			slog.String("discord_user_id", strings.ReplaceAll(strings.ReplaceAll(input.ExternalUserID, "\n", ""), "\r", "")),
 			slog.Any("error", err),
@@ -2082,7 +2082,7 @@ func approveUserRegist(c *gin.Context) {
 		config := c.MustGet("config").(config.Config)
 		memberRoleId := config.DiscordConfig.Guild.MemberRoleID
 		if memberRoleId != "" {
-			if err := discordutil.AddRoleToUser(c.Request.Context(), discordUserId, memberRoleId, &config); err != nil {
+			if err := discordutil.AddRoleToUser(context.WithoutCancel(c.Request.Context()), discordUserId, memberRoleId, &config); err != nil {
 				slog.Error("discord_role_assign_failed",
 					slog.String("discord_user_id", discordUserId),
 					slog.String("role_id", memberRoleId),
@@ -2107,7 +2107,7 @@ func approveUserRegist(c *gin.Context) {
 		}
 
 		// ウェルカムメッセージ送信
-		if err := discordutil.SendWelcomeMessage(c.Request.Context(), discordUserId, dto.Email, dto.SakuraEmailPassword, displayName, db, &config); err != nil {
+		if err := discordutil.SendWelcomeMessage(context.WithoutCancel(c.Request.Context()), discordUserId, dto.Email, dto.SakuraEmailPassword, displayName, db, &config); err != nil {
 			slog.Error("discord_welcome_dm_failed",
 				slog.String("discord_user_id", discordUserId),
 				slog.Any("error", err),

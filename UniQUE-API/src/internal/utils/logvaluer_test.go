@@ -56,6 +56,13 @@ func TestMaskedBodyRedactsBasicAuthorization(t *testing.T) {
 	}
 }
 
+func TestMaskedBodyRedactsSingleQuotedKeys(t *testing.T) {
+	output := logValue(t, MaskedBody([]byte(`{'access_token': 'secret-value'}`)))
+	if strings.Contains(output, "secret-value") {
+		t.Fatalf("credential with single-quoted key leaked into log: %s", output)
+	}
+}
+
 func TestMaskedBodyRedactsJSONStringValues(t *testing.T) {
 	output := logValue(t, MaskedBody([]byte(`{"message":"Authorization: Bearer abc.def.ghi"}`)))
 	if strings.Contains(output, "abc.def.ghi") {
