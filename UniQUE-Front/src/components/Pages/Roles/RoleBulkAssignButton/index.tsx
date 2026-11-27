@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { logger } from "@/libs/logger";
 import { bulkAssignUsersToRole } from "./action";
 
 interface Props {
@@ -47,7 +48,7 @@ export default function RoleBulkAssignButton({ roleId }: Props) {
         router.refresh();
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setSnack({ msg: "一括付与中にエラーが発生しました", severity: "error" });
     } finally {
       setLoading(false);

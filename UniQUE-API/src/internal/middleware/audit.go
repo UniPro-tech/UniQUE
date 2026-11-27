@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -73,7 +73,7 @@ func AuditLogMiddleware() gin.HandlerFunc {
 		}
 
 		if err := query.Use(db).AuditLog.Create(auditLog); err != nil {
-			log.Printf("failed to insert audit log: %v", err)
+			slog.Error("failed to insert audit log", slog.Any("error", err))
 		}
 	}
 }

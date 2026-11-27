@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { Session } from "@/classes/Session";
 import { User } from "@/classes/User";
+import { logger } from "@/libs/logger";
 
 /**
  * Discord連携状態をチェックするエンドポイント
@@ -32,7 +33,7 @@ export const GET = async (_request: NextRequest) => {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Discord連携状態の確認エラー:", error);
+    logger.error("Discord連携状態の確認エラー:", error);
     return NextResponse.json(
       { linked: false, hasSession: false },
       { status: 200 },

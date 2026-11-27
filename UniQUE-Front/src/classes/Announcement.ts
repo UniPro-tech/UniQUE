@@ -2,6 +2,7 @@ import { AuthorizationErrors } from "@/errors/AuthorizationErrors";
 import { FrontendErrors } from "@/errors/FrontendErrors";
 import { ResourceApiErrors } from "@/errors/ResourceApiErrors";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/libs/apiClient";
+import { logger } from "@/libs/logger";
 import { toCamelcase } from "@/libs/snakeCamelUtil";
 import type { ProfileData } from "./Profile";
 import type { UserData } from "./types/User";
@@ -132,7 +133,7 @@ export class Announcement {
           throw AuthorizationErrors.AccessDenied;
         default: {
           const data = await response.json();
-          console.log("API Error:", data);
+          logger.info("API Error:", data);
           throw ResourceApiErrors.ApiServerInternalError;
         }
       }

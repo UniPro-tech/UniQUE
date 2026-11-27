@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { logger } from "@/libs/logger";
 import { createApplication } from "./action";
 
 interface ApplicationCreateFormProps {
@@ -71,7 +72,7 @@ export default function ApplicationCreateForm({
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
+      logger.error("Failed to copy:", err);
     }
   };
 
@@ -106,7 +107,7 @@ export default function ApplicationCreateForm({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error("Application creation error:", {
+      logger.error("Application creation error:", {
         error: err,
         message: errorMessage,
         type: typeof err,

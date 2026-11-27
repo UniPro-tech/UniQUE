@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -255,7 +256,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID stri
 		// tx.OauthToken.UnderlyingDB() から、トランザクションコンテキストを持った *gorm.DB を安全に取得
 		accessToken, idToken, refreshToken, err = util.GenerateTokens(tx, cfg, consent, claims.Scope, "", middleware.GetLogger(c))
 		if err != nil {
-			logger.Error("An error occured in GenTokens")
+			logger.Error("token_generate_failed", slog.Any("error", err))
 			return err
 		}
 
@@ -390,7 +391,7 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest, isDeviceFlo
 			// Basic認証ヘッダがある場合は、クライアントIDとシークレットを検証する
 			clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
 			if err != nil {
-				logger.Warn("not valid authorization header")
+				logger.Warn("authorization_header_invalid", slog.Any("error", err))
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client"})
 				return nil
 			}

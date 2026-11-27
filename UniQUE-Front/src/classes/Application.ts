@@ -1,5 +1,6 @@
 import { ResourceApiErrors } from "@/errors/ResourceApiErrors";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/libs/apiClient";
+import { logger } from "@/libs/logger";
 import { toCamelcase } from "@/libs/snakeCamelUtil";
 import type { UserData } from "./types/User";
 import { User } from "./User";
@@ -238,7 +239,7 @@ export class Application {
     );
 
     if (!response.ok) {
-      console.log("Failed to remove redirect URI:", {
+      logger.info("Failed to remove redirect URI:", {
         status: response.status,
         statusText: response.statusText,
         response: await response.text(),

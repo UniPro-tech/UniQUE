@@ -1,14 +1,18 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	"github.com/UniPro-tech/UniQUE-API/internal/model"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
 )
@@ -23,7 +27,7 @@ func stringToPtr(s string) *string {
 
 // RefreshExternalToken checks if the token is expired and refreshes it using the refresh token.
 // Returns the (possibly updated) ExternalIdentity and any error.
-func RefreshExternalToken(ei *model.ExternalIdentity, q *query.Query, cfg *config.Config) (*model.ExternalIdentity, error) {
+func RefreshExternalToken(ctx context.Context, ei *model.ExternalIdentity, q *query.Query, cfg *config.Config) (*model.ExternalIdentity, error) {
 	if ei.RefreshToken == "" {
 		return ei, nil // no refresh token available
 	}
@@ -33,29 +37,40 @@ func RefreshExternalToken(ei *model.ExternalIdentity, q *query.Query, cfg *confi
 
 	switch ei.Provider {
 	case "discord":
-		return refreshDiscordToken(ei, q, cfg)
+		return refreshDiscordToken(ctx, ei, q, cfg)
 	case "github":
-		return refreshGitHubToken(ei, q, cfg)
+		return refreshGitHubToken(ctx, ei, q, cfg)
 	default:
 		return ei, fmt.Errorf("unsupported provider: %s", ei.Provider)
 	}
 }
 
 // refreshDiscordToken refreshes tokens via Discord's OAuth2 endpoint.
-func refreshDiscordToken(ei *model.ExternalIdentity, q *query.Query, cfg *config.Config) (*model.ExternalIdentity, error) {
+func refreshDiscordToken(ctx context.Context, ei *model.ExternalIdentity, q *query.Query, cfg *config.Config) (*model.ExternalIdentity, error) {
 	data := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {ei.RefreshToken},
 		"client_id":     {cfg.DiscordConfig.ClientID},
 		"client_secret": {cfg.DiscordConfig.ClientSecret},
 	}
-	resp, err := http.PostForm(fmt.Sprintf("https://discord.com/api/%s/oauth2/token", cfg.DiscordApiVersion), data)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("https://discord.com/api/%s/oauth2/token", cfg.DiscordApiVersion), strings.NewReader(data.Encode()))
+	if err != nil {
+		return ei, fmt.Errorf("discord token refresh request creation failed: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	logging.Inject(ctx, req.Header)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ei, fmt.Errorf("discord token refresh request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxLoggedBodyBytes+1))
+		slog.Warn("discord_token_refresh_failed",
+			slog.Int("status", resp.StatusCode),
+			slog.Any("response_body", MaskedBody(body)),
+		)
 		return ei, fmt.Errorf("discord token refresh returned status %d", resp.StatusCode)
 	}
 
@@ -100,19 +115,20 @@ func refreshDiscordToken(ei *model.ExternalIdentity, q *query.Query, cfg *config
 }
 
 // refreshGitHubToken refreshes tokens via GitHub's OAuth2 endpoint.
-func refreshGitHubToken(ei *model.ExternalIdentity, q *query.Query, cfg *config.Config) (*model.ExternalIdentity, error) {
+func refreshGitHubToken(ctx context.Context, ei *model.ExternalIdentity, q *query.Query, cfg *config.Config) (*model.ExternalIdentity, error) {
 	data := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {ei.RefreshToken},
 		"client_id":     {cfg.GitHubClientID},
 		"client_secret": {cfg.GitHubClientSecret},
 	}
-	req, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token", strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://github.com/login/oauth/access_token", strings.NewReader(data.Encode()))
 	if err != nil {
 		return ei, fmt.Errorf("github token refresh request creation failed: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
+	logging.Inject(ctx, req.Header)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
@@ -122,6 +138,11 @@ func refreshGitHubToken(ei *model.ExternalIdentity, q *query.Query, cfg *config.
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxLoggedBodyBytes+1))
+		slog.Warn("github_token_refresh_failed",
+			slog.Int("status", resp.StatusCode),
+			slog.Any("response_body", MaskedBody(body)),
+		)
 		return ei, fmt.Errorf("github token refresh returned status %d", resp.StatusCode)
 	}
 

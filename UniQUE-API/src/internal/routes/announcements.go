@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -278,11 +278,12 @@ func createAnnouncement(c *gin.Context) {
 
 	cfg := c.MustGet("config").(config.Config)
 	if err := discordutil.SendNotification(
+		c.Request.Context(),
 		discordutil.NotificationAnnouncementCreated,
 		db,
 		&cfg,
 	); err != nil {
-		log.Printf("failed to send announcement notification to Discord: %v", err)
+		slog.Error("discord_notification_failed", slog.Any("error", err))
 	}
 
 	c.JSON(http.StatusCreated, dto)

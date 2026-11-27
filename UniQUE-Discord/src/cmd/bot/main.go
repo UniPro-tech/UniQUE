@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,14 +25,18 @@ import (
 )
 
 func main() {
+	logHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	slog.SetDefault(slog.New(logHandler).With(slog.String("component", "discord")))
+
 	databaseSettings, err := settings.LoadValues()
 	if err != nil {
-		log.Printf("failed to load application settings; using environment values: %v", err)
+		slog.Warn("settings_load_failed", slog.Any("error", err))
 		databaseSettings = map[string]string{}
 	}
 	token := settings.Resolve(databaseSettings, "DISCORD_TOKEN", "discord.service_token", "")
 	if token == "" {
-		log.Fatal("Discord token is not configured")
+		slog.Error("discord_token_missing")
+		os.Exit(1)
 	}
 
 	ctxData := &internal.BotContext{
@@ -70,17 +74,19 @@ func main() {
 		bot.WithEventListeners(r),
 	)
 	if err != nil {
-		log.Fatal("error while building disgo instance: ", err)
+		slog.Error("bot_build_failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	defer client.Close(context.TODO())
 
 	// 接続開始
 	if err = client.OpenGateway(context.TODO()); err != nil {
-		log.Fatal("error while connecting to gateway: ", err)
+		slog.Error("gateway_connect_failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 
-	log.Println("Bot is running...")
+	slog.Info("bot_running")
 
 	// Slash Command の登録
 	var generalCommands []discord.ApplicationCommandCreate
@@ -97,14 +103,17 @@ func main() {
 	}
 
 	if _, err := client.Rest.SetGlobalCommands(client.ApplicationID, generalCommands); err != nil {
-		log.Fatal("failed to register global commands: ", err)
+		slog.Error("global_commands_register_failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 	guildID, parseErr := snowflake.Parse(ctxData.Config.AdminGuildID)
 	if parseErr != nil {
-		log.Fatal("invalid CONFIG_ADMIN_GUILD_ID: ", parseErr)
+		slog.Error("admin_guild_id_invalid", slog.Any("error", parseErr))
+		os.Exit(1)
 	}
 	if _, err := client.Rest.SetGuildCommands(client.ApplicationID, guildID, adminCommands); err != nil {
-		log.Fatal("failed to register admin commands: ", err)
+		slog.Error("admin_commands_register_failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// 終了待機

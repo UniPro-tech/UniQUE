@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { User } from "@/classes/User";
+import { logger } from "@/libs/logger";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error("Email verification error:", error);
+    logger.error("Email verification error:", error);
     return NextResponse.json({ error: "Verification failed" }, { status: 500 });
   }
 }

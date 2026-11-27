@@ -3,7 +3,7 @@ package router
 import (
 	"crypto/rand"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -41,7 +41,7 @@ func writeAuditLog(c *gin.Context, action, target string, userID, applicationID,
 	}
 
 	if err := query.Use(db).AuditLog.Create(entry); err != nil {
-		log.Printf("failed to insert audit log: %v", err)
+		slog.Error("audit_log_insert_failed", slog.Any("error", err))
 	}
 }
 

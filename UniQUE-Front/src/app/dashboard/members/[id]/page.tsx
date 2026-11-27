@@ -3,6 +3,7 @@ import { Session } from "@/classes/Session";
 import { User } from "@/classes/User";
 import Profile from "@/components/Cards/Profile";
 import { PermissionBitsFields } from "@/constants/Permission";
+import { logger } from "@/libs/logger";
 
 export const metadata = {
   title: "ユーザー詳細",
@@ -20,7 +21,7 @@ export default async function UserDetailPage({
   try {
     user = await User.getById(id);
   } catch (error) {
-    console.error("Failed to fetch user:", error);
+    logger.error("Failed to fetch user:", error);
     notFound();
   }
 

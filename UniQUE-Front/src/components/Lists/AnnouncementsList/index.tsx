@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import React from "react";
 import type { AnnouncementData } from "@/classes/Announcement";
+import { logger } from "@/libs/logger";
 import { deleteAnnouncement } from "./actions/delete";
 import { pinAnnouncement } from "./actions/pin";
 
@@ -96,7 +97,7 @@ export default function AnnouncementsList({
       setEditDialogOpen(false);
       setSnackbar({ open: true, message: "更新しました", severity: "success" });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setSnackbar({
         open: true,
         message: "更新に失敗しました",
@@ -121,7 +122,7 @@ export default function AnnouncementsList({
       setItems((prev) => prev.filter((p) => p.id !== id));
       setSnackbar({ open: true, message: "削除しました", severity: "success" });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setSnackbar({
         open: true,
         message: "削除に失敗しました",
@@ -146,7 +147,7 @@ export default function AnnouncementsList({
         severity: "success",
       });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setSnackbar({
         open: true,
         message: "操作に失敗しました",

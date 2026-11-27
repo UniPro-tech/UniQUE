@@ -3,6 +3,7 @@ import { ExternalIdentity } from "@/classes/ExternalIdentity";
 import { Session } from "@/classes/Session";
 import { DISCORD_API_VERSION } from "@/constants/ExternalAPI";
 import { ResourceApiErrors } from "@/errors/ResourceApiErrors";
+import { logger } from "@/libs/logger";
 
 // guild invite and role assignment are performed by backend API
 
@@ -28,13 +29,13 @@ export const GET = async (request: NextRequest) => {
       emailVerifyCode = stateObj.code;
     }
   } catch (e) {
-    console.error("Failed to parse state:", e);
+    logger.error("Failed to parse state:", e);
   }
 
   // エラーチェック
   if (error) {
     const sanitizedError = String(error).replace(/\r|\n/g, "");
-    console.error("Discord OAuth error:", sanitizedError);
+    logger.error("Discord OAuth error:", sanitizedError);
     let redirectPath: string;
     if (from === "email_verify" && emailVerifyCode) {
       redirectPath = `/email-verify?code=${encodeURIComponent(emailVerifyCode)}&discord_error=true`;
@@ -47,7 +48,7 @@ export const GET = async (request: NextRequest) => {
   }
 
   if (!code) {
-    console.error("Discord OAuth code is missing");
+    logger.error("Discord OAuth code is missing");
     let redirectPath: string;
     if (from === "email_verify" && emailVerifyCode) {
       redirectPath = `/email-verify?code=${encodeURIComponent(emailVerifyCode)}&discord_error=true`;
@@ -65,7 +66,7 @@ export const GET = async (request: NextRequest) => {
   const redirectUri = process.env.DISCORD_REDIRECT_URI;
 
   if (!clientId || !clientSecret || !redirectUri) {
-    console.error("Discord OAuth環境変数が設定されていません");
+    logger.error("Discord OAuth環境変数が設定されていません");
     let redirectPath: string;
     if (from === "email_verify" && emailVerifyCode) {
       redirectPath = `/email-verify?code=${encodeURIComponent(emailVerifyCode)}&discord_error=true`;
@@ -98,7 +99,7 @@ export const GET = async (request: NextRequest) => {
 
     if (!tokenResponse.ok) {
       const tokenErr = await tokenResponse.text().catch(() => null);
-      console.error("Failed to get Discord access token:", tokenErr);
+      logger.error("Failed to get Discord access token:", tokenErr);
       let redirectPath: string;
       if (from === "email_verify" && emailVerifyCode) {
         redirectPath = `/email-verify?code=${encodeURIComponent(emailVerifyCode)}&discord_error=true`;
@@ -133,7 +134,7 @@ export const GET = async (request: NextRequest) => {
 
     if (!userResponse.ok) {
       const userErr = await userResponse.text().catch(() => null);
-      console.error("Failed to get Discord user info:", userErr);
+      logger.error("Failed to get Discord user info:", userErr);
       let redirectPath: string;
       if (from === "email_verify" && emailVerifyCode) {
         redirectPath = `/email-verify?code=${encodeURIComponent(emailVerifyCode)}&discord_error=true`;
@@ -174,7 +175,7 @@ export const GET = async (request: NextRequest) => {
           idToken: null,
         });
       } else {
-        console.error("Could not determine user ID");
+        logger.error("Could not determine user ID");
         return Response.redirect(
           new URL(
             `/signin?redirect=/dashboard/settings`,
@@ -226,7 +227,7 @@ export const GET = async (request: NextRequest) => {
       ),
     );
   } catch (error) {
-    console.error("Discord OAuth callback error:", error);
+    logger.error("Discord OAuth callback error:", error);
     let redirectPath: string;
     if (from === "email_verify" && emailVerifyCode) {
       redirectPath = `/email-verify?code=${encodeURIComponent(emailVerifyCode)}&discord_error=true`;

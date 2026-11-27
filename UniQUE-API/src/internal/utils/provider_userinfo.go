@@ -1,15 +1,19 @@
 package utils
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	"github.com/UniPro-tech/UniQUE-API/internal/model"
 )
 
@@ -25,12 +29,12 @@ type ProviderUserInfo struct {
 
 // FetchProviderUserInfo calls the providers userinfo API using the stored
 // access token and returns normalised common fields plus the raw JSON.
-func FetchProviderUserInfo(ei *model.ExternalIdentity, cfg *config.Config) (*ProviderUserInfo, error) {
+func FetchProviderUserInfo(ctx context.Context, ei *model.ExternalIdentity, cfg *config.Config) (*ProviderUserInfo, error) {
 	switch ei.Provider {
 	case "discord":
-		return fetchDiscordUserInfo(ei, cfg)
+		return fetchDiscordUserInfo(ctx, ei, cfg)
 	case "github":
-		return fetchGitHubUserInfo(ei, cfg)
+		return fetchGitHubUserInfo(ctx, ei, cfg)
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", ei.Provider)
 	}
@@ -38,11 +42,12 @@ func FetchProviderUserInfo(ei *model.ExternalIdentity, cfg *config.Config) (*Pro
 
 // ----- Discord -----
 
-func fetchDiscordUserInfo(ei *model.ExternalIdentity, cfg *config.Config) (*ProviderUserInfo, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://discord.com/api/%s/users/@me", cfg.DiscordApiVersion), nil)
+func fetchDiscordUserInfo(ctx context.Context, ei *model.ExternalIdentity, cfg *config.Config) (*ProviderUserInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://discord.com/api/%s/users/@me", cfg.DiscordApiVersion), nil)
 	if err != nil {
 		return nil, fmt.Errorf("discord userinfo request creation failed: %w", err)
 	}
+	logging.Inject(ctx, req.Header)
 	req.Header.Set("Authorization", "Bearer "+ei.AccessToken)
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -53,6 +58,11 @@ func fetchDiscordUserInfo(ei *model.ExternalIdentity, cfg *config.Config) (*Prov
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxLoggedBodyBytes+1))
+		slog.Warn("discord_userinfo_failed",
+			slog.Int("status", resp.StatusCode),
+			slog.Any("response_body", MaskedBody(body)),
+		)
 		return nil, fmt.Errorf("discord userinfo returned status %d", resp.StatusCode)
 	}
 
@@ -106,11 +116,13 @@ func fetchDiscordUserInfo(ei *model.ExternalIdentity, cfg *config.Config) (*Prov
 
 // ----- GitHub -----
 
-func fetchGitHubUserInfo(ei *model.ExternalIdentity, _ *config.Config) (*ProviderUserInfo, error) {
-	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
+func fetchGitHubUserInfo(ctx context.Context, ei *model.ExternalIdentity, _ *config.Config) (*ProviderUserInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.github.com/user", nil)
 	if err != nil {
 		return nil, fmt.Errorf("github userinfo request creation failed: %w", err)
 	}
+	logging.Inject(ctx, req.Header)
+	logging.Inject(ctx, req.Header)
 	req.Header.Set("Authorization", "Bearer "+ei.AccessToken)
 	req.Header.Set("Accept", "application/vnd.github+json")
 
@@ -122,6 +134,11 @@ func fetchGitHubUserInfo(ei *model.ExternalIdentity, _ *config.Config) (*Provide
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxLoggedBodyBytes+1))
+		slog.Warn("github_userinfo_failed",
+			slog.Int("status", resp.StatusCode),
+			slog.Any("response_body", MaskedBody(body)),
+		)
 		return nil, fmt.Errorf("github userinfo returned status %d", resp.StatusCode)
 	}
 

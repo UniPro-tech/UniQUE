@@ -4,6 +4,7 @@ import {
   type DiscordNotificationSettingsData,
   saveDiscordNotificationSettings,
 } from "@/classes/DiscordNotificationSettings";
+import { logger } from "@/libs/logger";
 
 export async function updateDiscordNotificationSettings(
   settings: DiscordNotificationSettingsData,
@@ -15,7 +16,7 @@ export async function updateDiscordNotificationSettings(
     const updated = await saveDiscordNotificationSettings(settings);
     return { success: true, settings: updated };
   } catch (error) {
-    console.error("Discord notification settings update failed:", error);
+    logger.error("Discord notification settings update failed:", error);
     return { success: false, error: "Discord通知設定の更新に失敗しました" };
   }
 }

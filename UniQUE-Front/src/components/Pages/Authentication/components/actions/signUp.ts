@@ -1,8 +1,9 @@
 "use server";
 import { User } from "@/classes/User";
+import { logger } from "@/libs/logger";
 
 export const submitSignUp = async (formData: FormData): Promise<string> => {
-  console.log("Submitting sign-up form...");
+  logger.info("Submitting sign-up form...");
   const external_email = formData.get("external_email") as string;
   const username = formData.get("username") as string;
   const name = formData.get("name") as string;

@@ -2,9 +2,11 @@ package discord
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	appsettings "github.com/UniPro-tech/UniQUE-API/internal/settings"
 	"gorm.io/gorm"
 )
@@ -173,7 +176,7 @@ func notificationContent(event NotificationEvent, frontendURL string) (string, e
 
 // SendNotification sends a configured event to Discord. Callers should log an
 // error but must not roll back the domain operation that already succeeded.
-func SendNotification(event NotificationEvent, db *gorm.DB, cfg *config.Config) error {
+func SendNotification(ctx context.Context, event NotificationEvent, db *gorm.DB, cfg *config.Config) error {
 	settings, err := GetNotificationSettings(db, cfg)
 	if err != nil {
 		return fmt.Errorf("load discord notification settings: %w", err)
@@ -186,6 +189,7 @@ func SendNotification(event NotificationEvent, db *gorm.DB, cfg *config.Config) 
 		return err
 	}
 	return sendChannelMessage(
+		ctx,
 		&http.Client{Timeout: 5 * time.Second},
 		"https://discord.com/api/"+cfg.DiscordApiVersion,
 		cfg.DiscordConfig.BotToken,
@@ -194,7 +198,7 @@ func SendNotification(event NotificationEvent, db *gorm.DB, cfg *config.Config) 
 	)
 }
 
-func sendChannelMessage(client *http.Client, apiBaseURL, botToken, channelID, content string) error {
+func sendChannelMessage(ctx context.Context, client *http.Client, apiBaseURL, botToken, channelID, content string) error {
 	if botToken == "" {
 		return errors.New("discord bot token not configured")
 	}
@@ -208,7 +212,8 @@ func sendChannelMessage(client *http.Client, apiBaseURL, botToken, channelID, co
 		return err
 	}
 
-	req, err := http.NewRequest(
+	req, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		fmt.Sprintf("%s/channels/%s/messages", strings.TrimRight(apiBaseURL, "/"), channelID),
 		bytes.NewReader(body),
@@ -216,6 +221,7 @@ func sendChannelMessage(client *http.Client, apiBaseURL, botToken, channelID, co
 	if err != nil {
 		return err
 	}
+	logging.Inject(ctx, req.Header)
 	req.Header.Set("Authorization", "Bot "+botToken)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -224,6 +230,12 @@ func sendChannelMessage(client *http.Client, apiBaseURL, botToken, channelID, co
 		return err
 	}
 	defer resp.Body.Close()
+
+	responseBody := readDiscordBody(resp.Body)
+	logDiscordResponse("send_channel_message", resp.StatusCode, responseBody,
+		slog.String("channel_id", strings.ReplaceAll(strings.ReplaceAll(channelID, "\n", ""), "\r", "")),
+	)
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("failed to send discord channel message, status code: %d", resp.StatusCode)
 	}

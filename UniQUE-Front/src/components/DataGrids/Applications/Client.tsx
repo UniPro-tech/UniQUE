@@ -17,6 +17,7 @@ import React from "react";
 import type { ApplicationData } from "@/classes/Application";
 import DeleteDialog from "@/components/Dialogs/Delete";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
+import { logger } from "@/libs/logger";
 import { deleteApplicationById } from "./deleteAction";
 
 export default function ApplicationsDataGridClient({
@@ -54,7 +55,7 @@ export default function ApplicationsDataGridClient({
       setDeleteDialogOpen(false);
       return { status: "success", message: "アプリケーションを削除しました" };
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       return { status: "error", message: String(err) };
     }
   };

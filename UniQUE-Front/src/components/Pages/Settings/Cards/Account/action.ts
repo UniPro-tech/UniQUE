@@ -3,6 +3,7 @@
 import { Session } from "@/classes/Session";
 import type { UserData } from "@/classes/types/User";
 import { User } from "@/classes/User";
+import { logger } from "@/libs/logger";
 import type { FormStatus } from "../Base";
 
 export const resendEmailVerificationAction = async (
@@ -57,7 +58,7 @@ export const updateAccountSettings = async (
       } as FormStatus,
     };
   } catch (error) {
-    console.error("Account update error:", error);
+    logger.error("Account update error:", error);
     return {
       user: _prevState.user,
       status: {

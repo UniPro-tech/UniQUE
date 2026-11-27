@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"strings"
@@ -16,8 +17,10 @@ import (
 
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
 	"github.com/UniPro-tech/UniQUE-API/internal/constants"
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	"github.com/UniPro-tech/UniQUE-API/internal/model"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
+	"github.com/UniPro-tech/UniQUE-API/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
@@ -279,31 +282,31 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 
 	parsed, err := jwt.ParseWithClaims(token, &combinedClaims{}, keyFunc, jwt.WithValidMethods([]string{"RS256", "RS384", "RS512"}))
 	if err != nil {
-		log.Printf("JWT parse error: %v", err)
+		slog.Warn("jwt_parse_failed", slog.Any("error", err))
 		return nil, nil, false, ""
 	}
 	combined, ok := parsed.Claims.(*combinedClaims)
 	if !ok {
-		log.Printf("JWT claims type assertion failed")
+		slog.Warn("jwt_claims_assertion_failed")
 		return nil, nil, false, ""
 	}
 	claims := &combined.RegisteredClaims
 
 	// claimからの検証
 	if claims.Issuer != issuer {
-		log.Printf("Issuer mismatch: got %q, expected %q", claims.Issuer, issuer)
+		slog.Warn("jwt_issuer_mismatch", slog.String("expected", issuer))
 		return nil, nil, false, ""
 	}
 	if claims.ExpiresAt == nil || time.Until(claims.ExpiresAt.Time) <= 0 {
-		log.Printf("Token expired: exp=%v", claims.ExpiresAt)
+		slog.Debug("token_expired")
 		return nil, nil, false, ""
 	}
 	if claims.NotBefore != nil && time.Until(claims.NotBefore.Time) < 0 {
-		log.Printf("Token not yet valid: nbf=%v", claims.NotBefore)
+		slog.Debug("token_not_yet_valid")
 		return nil, nil, false, ""
 	}
 	if claims.IssuedAt != nil && time.Until(claims.IssuedAt.Time.Add(time.Hour*24*7)) < 0 {
-		log.Printf("Token too old: iat=%v", claims.IssuedAt)
+		slog.Debug("token_too_old")
 		return nil, nil, false, ""
 	}
 	var isValidToken bool = true
@@ -312,8 +315,8 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 	if after, ok0 := strings.CutPrefix(claims.Subject, "SID_"); ok0 {
 		// セッショントークン: jtiなし、subから"SID_"を除いた素のセッションIDで検証
 		sessionID := after
-		log.Printf("Session verify: sessionID=%s, path=/internal/session_verify", sessionID)
-		isValidToken, userIDFromVerify = verifyJIT(sessionID, cfg, "/internal/session_verify")
+		slog.Debug("session_verify", slog.Bool("has_session_id", sessionID != ""))
+		isValidToken, userIDFromVerify = verifyJIT(c.Request.Context(), sessionID, cfg, "/internal/session_verify")
 		if !isValidToken {
 			return nil, nil, false, ""
 		}
@@ -333,10 +336,10 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 			}
 		}
 		// LastLoginを更新
-		go UpdateLastLoginedAt(cfg, sessionID)
+		go UpdateLastLoginedAt(context.WithoutCancel(c.Request.Context()), cfg, sessionID)
 	} else {
 		// アクセストークン: jti(claims.ID)で検証
-		isValidToken, _ = verifyJIT(claims.ID, cfg, "/internal/token_verify")
+		isValidToken, _ = verifyJIT(c.Request.Context(), claims.ID, cfg, "/internal/token_verify")
 		if !isValidToken {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return nil, nil, false, ""
@@ -351,7 +354,7 @@ func validateToken(token string, cfg config.Config, db *gorm.DB, c *gin.Context)
 		}
 	}
 	if !isValidToken {
-		log.Printf("Token verification failed for sub=%s", claims.Subject)
+		slog.Warn("token_verification_failed")
 		return nil, nil, false, ""
 	}
 
@@ -370,26 +373,27 @@ type SessionVerifyResponse struct {
 // verifyJIT calls the issuer's internal endpoint to verify a session/token.
 // Auth側は "jti" パラメータ名で受け取る
 // 戻り値: (valid, userID)
-func verifyJIT(jti string, cfg config.Config, path string) (bool, string) {
+func verifyJIT(ctx context.Context, jti string, cfg config.Config, path string) (bool, string) {
 	issuer := strings.TrimRight(cfg.IssuerInternalURL, "/")
 	url := issuer + path
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		log.Printf("verifyJIT: failed to create request: %v", err)
+		slog.Error("jit_request_create_failed", slog.Any("error", err))
 		return false, ""
 	}
+	logging.Inject(ctx, req.Header)
 	q := req.URL.Query()
 	q.Add("jti", jti)
 	req.URL.RawQuery = q.Encode()
-	log.Printf("verifyJIT: calling %s?%s", url, req.URL.RawQuery)
+	slog.Debug("jit_request", slog.String("endpoint", path))
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		log.Printf("verifyJIT: request failed: %v", err)
+		slog.Error("jit_request_failed", slog.Any("error", err))
 		return false, ""
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Printf("verifyJIT: got status %d from %s", resp.StatusCode, url)
+		slog.Warn("jit_unexpected_status", slog.Int("status", resp.StatusCode), slog.Any("url", utils.RedactedURL(url)))
 		return false, ""
 	}
 	var res struct {
@@ -398,10 +402,10 @@ func verifyJIT(jti string, cfg config.Config, path string) (bool, string) {
 		ExpiresAt time.Time `json:"expires_at,omitempty"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		log.Printf("verifyJIT: failed to decode response: %v", err)
+		slog.Error("jit_decode_failed", slog.Any("error", err))
 		return false, ""
 	}
-	log.Printf("verifyJIT: result valid=%v, userID=%s", res.Valid, res.UserID)
+	slog.Debug("jit_result", slog.Bool("valid", res.Valid), slog.String("user_id", res.UserID))
 	return res.Valid, res.UserID
 }
 
@@ -465,7 +469,7 @@ func RequirePermissionOrScope(required constants.Permission, requiredScope strin
 	}
 }
 
-func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
+func UpdateLastLoginedAt(ctx context.Context, cfg config.Config, sessionID string) {
 	issuer := strings.TrimRight(cfg.IssuerInternalURL, "/")
 
 	// 1. 送信するデータをMap等で定義
@@ -477,7 +481,7 @@ func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		// JSON変換エラーのハンドリング
-		log.Printf("UpdateLastLoginedAt: JSON marshaling failed: %v", err)
+		slog.Error("last_logged_at_marshal_failed", slog.Any("error", err))
 		return
 	}
 
@@ -485,21 +489,22 @@ func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
 	url := issuer + "/internal/update_last_logined"
 
 	// 3. bytes.NewBuffer(jsonData) を使って第3引数に渡す
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		// リクエスト作成エラーのハンドリング
-		log.Printf("UpdateLastLoginedAt: request creation failed: %v", err)
+		slog.Error("last_logged_at_request_create_failed", slog.Any("error", err))
 		return
 	}
 
 	// 4. Content-Typeを指定
 	req.Header.Set("Content-Type", "application/json")
+	logging.Inject(ctx, req.Header)
 
 	// 5. リクエストを実行
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		// リクエスト送信エラーのハンドリング
-		log.Printf("UpdateLastLoginedAt: HTTP request failed: %v", err)
+		slog.Error("last_logged_at_request_failed", slog.Any("error", err))
 		return
 	}
 	// レスポンスボディは必ず閉じる
@@ -510,7 +515,7 @@ func UpdateLastLoginedAt(cfg config.Config, sessionID string) {
 
 	// 必要に応じてステータスコードなどをチェック
 	if resp.StatusCode != http.StatusCreated {
-		log.Printf("UpdateLastLoginedAt: unexpected status code: %d", resp.StatusCode)
+		slog.Warn("last_logged_at_unexpected_status", slog.Int("status", resp.StatusCode))
 		return
 	}
 }

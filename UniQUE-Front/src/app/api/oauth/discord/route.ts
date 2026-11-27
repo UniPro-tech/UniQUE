@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { DISCORD_API_VERSION } from "@/constants/ExternalAPI";
+import { logger } from "@/libs/logger";
 
 /**
  * Discord OAuth認証の開始エンドポイント
@@ -14,7 +15,7 @@ export const GET = async (request: NextRequest) => {
   const stateParam = searchParams.get("state");
 
   if (!clientId || !redirectUri) {
-    console.error("Discord OAuth環境変数が設定されていません");
+    logger.error("Discord OAuth環境変数が設定されていません");
     return new Response(
       JSON.stringify({ error: "Discord OAuth is not configured" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
@@ -45,7 +46,7 @@ export const GET = async (request: NextRequest) => {
         stateObj.code = incomingState.code;
       }
     } catch (e) {
-      console.error("Failed to parse incoming state:", e);
+      logger.error("Failed to parse incoming state:", e);
     }
   }
 

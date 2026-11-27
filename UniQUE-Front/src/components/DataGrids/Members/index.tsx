@@ -30,6 +30,7 @@ import {
   getSelectableAffiliationPeriods,
   USER_STATUS_OPTIONS,
 } from "@/constants/UserConstants";
+import { logger } from "@/libs/logger";
 import { updateUserById } from "./actions/updateAction";
 
 export interface DiscordAccountData {
@@ -456,7 +457,7 @@ export default function MembersDataGrid({
         try {
           // 機密情報（email など）が含まれているか確認
           if (!row.email) {
-            console.warn(
+            logger.warn(
               `User ${row.id} has no email data. Make sure you have access to edit this user.`,
             );
           }
@@ -479,7 +480,7 @@ export default function MembersDataGrid({
             ),
           );
         } catch (err) {
-          console.error("Save row failed:", err);
+          logger.error("Save row failed:", err);
         }
       }
       setIsSaving(false);

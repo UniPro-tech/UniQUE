@@ -14,6 +14,7 @@ import {
   createApiClient,
 } from "@/libs/apiClient";
 import { IsIncludedInBitmask, MergeBitmask } from "@/libs/bitmask";
+import { logger } from "@/libs/logger";
 import { toCamelcase, toSnakecase } from "@/libs/snakeCamelUtil";
 import {
   ExternalIdentity,
@@ -167,7 +168,7 @@ export class User {
       switch (response.status) {
         case 400: {
           const errorText = await response.json();
-          console.log("Failed to create user:", errorText);
+          logger.info("Failed to create user:", errorText);
           throw FrontendErrors.InvalidInput;
         }
         case 409: {
@@ -190,12 +191,12 @@ export class User {
           }
         }
         default:
-          console.log("Failed to create user:", await response.text());
+          logger.info("Failed to create user:", await response.text());
           throw ResourceApiErrors.ApiServerInternalError;
       }
     }
     const responseJson = await response.json();
-    console.log("User created successfully:", responseJson);
+    logger.info("User created successfully:", responseJson);
     return User.fromJson(responseJson);
   }
 
@@ -238,7 +239,7 @@ export class User {
     }
     const response = await apiPatch(`/users/${id}`, updateData);
     if (!response.ok) {
-      console.error("Failed to update user:", await response.text());
+      logger.error("Failed to update user:", await response.text());
       throw new Error(`Failed to update user: ${response.statusText}`);
     }
     const responseJson = toCamelcase<UserData>(await response.json());
@@ -270,7 +271,7 @@ export class User {
       email,
     });
     if (!response.ok) {
-      console.error("Failed to request password reset:", await response.text());
+      logger.error("Failed to request password reset:", await response.text());
       throw new Error(
         `Failed to request password reset: ${response.statusText}`,
       );
@@ -500,7 +501,7 @@ export class User {
         case 404:
           throw ResourceApiErrors.ResourceNotFound;
         default:
-          console.log(
+          logger.info(
             "Failed to reject user registration:",
             await response.text(),
           );
@@ -547,7 +548,7 @@ export class User {
         case 404:
           throw ResourceApiErrors.ResourceNotFound;
         default:
-          console.log(
+          logger.info(
             "Failed to approve user registration:",
             await response.text(),
           );

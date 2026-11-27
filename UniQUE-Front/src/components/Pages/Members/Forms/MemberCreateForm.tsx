@@ -24,6 +24,7 @@ import {
   getAffiliationPeriodInfo,
   getSelectableAffiliationPeriods,
 } from "@/constants/UserConstants";
+import { logger } from "@/libs/logger";
 
 export default function MemberCreateForm() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function MemberCreateForm() {
         setError(res.error || "作成に失敗しました");
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setError("予期しないエラーが発生しました");
     } finally {
       setLoading(false);

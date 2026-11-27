@@ -22,6 +22,7 @@ import {
   updateRole,
 } from "@/components/Forms/RoleEditForm/action";
 import { PermissionBitsFields, PermissionTexts } from "@/constants/Permission";
+import { logger } from "@/libs/logger";
 import { PermissionGroups } from "../PermissionGroups";
 
 interface RoleEditFormProps {
@@ -102,7 +103,7 @@ export default function RoleEditForm({ role }: RoleEditFormProps) {
       }
     } catch (err) {
       setError("予期しないエラーが発生しました");
-      console.error(err);
+      logger.error(err);
     } finally {
       setLoading(false);
     }

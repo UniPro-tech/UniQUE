@@ -1,6 +1,7 @@
 "use server";
 
 import { Application } from "@/classes/Application";
+import { logger } from "@/libs/logger";
 
 export interface CreateApplicationFormData {
   name: string;
@@ -42,7 +43,7 @@ export async function createApplication(
 
     return { success: true, applicationId: application.id };
   } catch (error) {
-    console.error("Application creation failed:", error);
+    logger.error("Application creation failed:", error);
     return {
       success: false,
       error:

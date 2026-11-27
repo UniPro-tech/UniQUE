@@ -19,6 +19,7 @@ import {
   assignUserToRole,
   getAllUsers,
 } from "@/components/Dialogs/AssignUserToRole/action";
+import { logger } from "@/libs/logger";
 
 interface AssignUserToRoleDialogProps {
   open: boolean;
@@ -92,7 +93,7 @@ export default function AssignUserToRoleDialog({
       }
     } catch (err) {
       setError("予期しないエラーが発生しました");
-      console.error(err);
+      logger.error(err);
     } finally {
       setSubmitting(false);
     }

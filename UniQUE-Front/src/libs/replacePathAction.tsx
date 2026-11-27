@@ -1,5 +1,6 @@
 "use server";
 import { RedirectType, redirect } from "next/navigation";
+import { logger } from "@/libs/logger";
 
 /**
  * # replacePath
@@ -35,12 +36,12 @@ export const replacePath = async (path: string, replaceDuration = 0) => {
       ? ABSOLUTE_MAX_DELAY_MS
       : configuredMax;
   if (configuredMax > ABSOLUTE_MAX_DELAY_MS) {
-    console.warn(
+    logger.warn(
       `replacePath: MAX_REPLACE_DELAY_MS (${configuredMax}) exceeds ABSOLUTE_MAX_DELAY_MS (${ABSOLUTE_MAX_DELAY_MS}), clamping to absolute max`,
     );
   }
   if (duration > maxDelay) {
-    console.warn(
+    logger.warn(
       `replacePath: replaceDuration (${duration}) exceeds max (${maxDelay}), clamping to max`,
     );
     duration = maxDelay;

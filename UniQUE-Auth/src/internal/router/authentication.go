@@ -217,16 +217,14 @@ func passwordAuthentication(q *query.Query, username, password string) (resuser 
 	if ok, err := util.VerifyPassword(password, user.PasswordHash); err != nil || !ok {
 		reason := "invalid_credentials"
 
-		// slogを使った構造化ログへ変更（サニタイズ処理はslogが自動で行うため不要に）
+		// ログインジェクション対策として、ユーザー入力から改行を除去してから記録する
 		if err != nil {
-			slog.Warn("Password verification error",
-				slog.String("user", username),
-				slog.String("error", err.Error()),
+			slog.Warn("password_verify_failed",
+				slog.String("username", strings.ReplaceAll(strings.ReplaceAll(username, "\n", ""), "\r", "")),
+				slog.Any("error", err),
 			)
 		} else {
-			slog.Warn("Password verification failed: invalid password",
-				slog.String("user", username),
-			)
+			slog.Warn("invalid_credentials", slog.String("username", strings.ReplaceAll(strings.ReplaceAll(username, "\n", ""), "\r", "")))
 		}
 		return nil, nil, &reason
 	}

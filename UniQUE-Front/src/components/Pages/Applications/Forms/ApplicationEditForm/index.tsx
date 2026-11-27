@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import type { ApplicationData } from "@/classes/Application";
+import { logger } from "@/libs/logger";
 import { changeAction } from "./action";
 
 interface ApplicationEditFormProps {
@@ -88,7 +89,7 @@ export default function ApplicationEditForm({
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
+      logger.error("Failed to copy:", err);
     }
   };
 
@@ -98,7 +99,7 @@ export default function ApplicationEditForm({
       setClientIdCopySuccess(true);
       setTimeout(() => setClientIdCopySuccess(false), 2000);
     } catch (err) {
-      console.error("Failed to copy client id:", err);
+      logger.error("Failed to copy client id:", err);
     }
   };
 
@@ -122,7 +123,7 @@ export default function ApplicationEditForm({
             ? err.message
             : "シークレットの再生成に失敗しました",
         );
-        console.error(err);
+        logger.error(err);
       } finally {
         setRegenerating(false);
       }
@@ -165,7 +166,7 @@ export default function ApplicationEditForm({
       setCopySuccess(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "更新に失敗しました");
-      console.error(err);
+      logger.error(err);
     } finally {
       setLoading(false);
     }
@@ -187,7 +188,7 @@ export default function ApplicationEditForm({
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "更新に失敗しました");
-      console.error(err);
+      logger.error(err);
     } finally {
       setLoading(false);
     }

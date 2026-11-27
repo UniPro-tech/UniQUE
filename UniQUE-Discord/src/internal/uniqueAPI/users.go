@@ -1,10 +1,15 @@
 package uniqueapi
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE/Discord/internal"
@@ -55,15 +60,18 @@ type UserDTO struct {
 
 func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (*UserDTO, error) {
 	var uniqueAPIClient = &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/internal/users/external_identities/search?provider=discord&external_user_id=%s", ctx.Config.UniqueAPIBaseURL, userId.String()), nil)
+	requestID, traceID := newID(16), newID(16)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", fmt.Sprintf("%s/internal/users/external_identities/search?provider=discord&external_user_id=%s", ctx.Config.UniqueAPIBaseURL, userId.String()), nil)
 	if err != nil {
 		return nil, err
 	}
+	setCorrelation(req, requestID, traceID)
 	resp, err := uniqueAPIClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	slog.Debug("unique_api_response", slog.String("operation", "search_external_identity"), slog.Int("status", resp.StatusCode), slog.String("request_id", requestID), slog.String("trace_id", traceID))
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -87,15 +95,17 @@ func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (*UserDTO, error
 	}
 
 	targetUserId := result.Data[0].UserID
-	req, err = http.NewRequest("GET", fmt.Sprintf("%s/internal/users/%s", ctx.Config.UniqueAPIBaseURL, targetUserId), nil)
+	req, err = http.NewRequestWithContext(context.Background(), "GET", fmt.Sprintf("%s/internal/users/%s", ctx.Config.UniqueAPIBaseURL, targetUserId), nil)
 	if err != nil {
 		return nil, err
 	}
+	setCorrelation(req, requestID, traceID)
 	resp, err = uniqueAPIClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	slog.Debug("unique_api_response", slog.String("operation", "get_user"), slog.Int("status", resp.StatusCode), slog.String("request_id", requestID), slog.String("trace_id", traceID))
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
@@ -113,4 +123,18 @@ func GetUserInfo(ctx *internal.BotContext, userId snowflake.ID) (*UserDTO, error
 	}
 
 	return userResult, nil
+}
+
+func newID(size int) string {
+	buffer := make([]byte, size)
+	if _, err := rand.Read(buffer); err != nil {
+		return strings.Repeat("0", size*2)
+	}
+	return hex.EncodeToString(buffer)
+}
+
+func setCorrelation(req *http.Request, requestID, traceID string) {
+	req.Header.Set("X-Request-ID", requestID)
+	req.Header.Set("X-Trace-ID", traceID)
+	req.Header.Set("traceparent", "00-"+traceID+"-"+newID(8)+"-01")
 }

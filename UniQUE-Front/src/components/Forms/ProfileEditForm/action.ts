@@ -3,6 +3,7 @@
 import { Session } from "@/classes/Session";
 import { User } from "@/classes/User";
 import { PermissionBitsFields } from "@/constants/Permission";
+import { logger } from "@/libs/logger";
 
 export interface UpdateProfileData {
   displayName?: string;
@@ -60,7 +61,7 @@ export async function updateProfile(userId: string, data: UpdateProfileData) {
       profile: user.profile.toJson(),
     };
   } catch (err) {
-    console.error("プロフィールの更新に失敗:", err);
+    logger.error("プロフィールの更新に失敗:", err);
     return {
       success: false,
       error: "プロフィールの更新に失敗しました",
