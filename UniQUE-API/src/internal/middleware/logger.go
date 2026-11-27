@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"io"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
@@ -14,7 +15,7 @@ import (
 // SlogRecovery は panic を slog 形式で記録し、500 を返すミドルウェア。
 // Gin 標準の Recovery は標準 log パッケージへ出力するため置き換える。
 func SlogRecovery() gin.HandlerFunc {
-	return gin.CustomRecovery(func(c *gin.Context, recovered any) {
+	return gin.CustomRecoveryWithWriter(io.Discard, func(c *gin.Context, recovered any) {
 		slog.Error("panic_recovered",
 			slog.Any("panic", recovered),
 			slog.String("stack", string(debug.Stack())),

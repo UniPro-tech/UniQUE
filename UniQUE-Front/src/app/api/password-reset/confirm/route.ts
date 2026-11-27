@@ -1,4 +1,4 @@
-import { logger } from "@/libs/logger";
+import { correlationHeaders, logger } from "@/libs/logger";
 
 /**
  * POST /api/password-reset/confirm
@@ -23,6 +23,7 @@ export const POST = async (request: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...correlationHeaders(request.headers),
       },
       body: JSON.stringify({
         code,

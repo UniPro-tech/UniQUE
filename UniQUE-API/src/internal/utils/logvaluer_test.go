@@ -49,6 +49,37 @@ func TestMaskedBodyRedactsAuthorizationHeader(t *testing.T) {
 	}
 }
 
+func TestMaskedBodyRedactsBasicAuthorization(t *testing.T) {
+	output := logValue(t, MaskedBody([]byte("Authorization: Basic dXNlcjpwYXNz")))
+	if strings.Contains(output, "dXNlcjpwYXNz") {
+		t.Fatalf("basic credentials leaked into log: %s", output)
+	}
+}
+
+func TestMaskedBodyRedactsJSONStringValues(t *testing.T) {
+	output := logValue(t, MaskedBody([]byte(`{"message":"Authorization: Bearer abc.def.ghi"}`)))
+	if strings.Contains(output, "abc.def.ghi") {
+		t.Fatalf("credential in a JSON string leaked into log: %s", output)
+	}
+}
+
+func TestRedactedQueryHandlesQuestionMarkInValues(t *testing.T) {
+	output := logValue(t, RedactedQuery("token=secret?tail&safe=1"))
+	if strings.Contains(output, "secret") {
+		t.Fatalf("credential in raw query leaked into log: %s", output)
+	}
+	if !strings.Contains(output, "safe") {
+		t.Fatalf("non-sensitive query value should be preserved: %s", output)
+	}
+}
+
+func TestRedactedQueryParseFailureIsSafe(t *testing.T) {
+	output := logValue(t, RedactedQuery("%74oken=secret&bad=%ZZ"))
+	if strings.Contains(output, "secret") {
+		t.Fatalf("credential leaked when query parsing failed: %s", output)
+	}
+}
+
 func TestRedactedURLMasksQuerySecrets(t *testing.T) {
 	output := logValue(t, RedactedURL("https://auth.example/internal/token_verify?jti=session-id&code=oauth-code&safe=1"))
 	for _, leaked := range []string{"session-id", "oauth-code"} {

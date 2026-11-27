@@ -59,7 +59,7 @@ func (s Secret) LogValue() slog.Value {
 	return slog.StringValue(redactedValue)
 }
 
-// RedactedURL masks credentials embedded in a URL or raw query string.
+// RedactedURL masks credentials embedded in an absolute URL or request path.
 type RedactedURL string
 
 // LogValue implements slog.LogValuer.
@@ -67,11 +67,19 @@ func (u RedactedURL) LogValue() slog.Value {
 	return slog.StringValue(redactURL(string(u)))
 }
 
+// RedactedQuery masks credentials in a raw query string.
+type RedactedQuery string
+
+// LogValue implements slog.LogValuer.
+func (q RedactedQuery) LogValue() slog.Value {
+	return slog.StringValue(redactQuery(string(q)))
+}
+
 func redactURL(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	if strings.Contains(raw, "?") || strings.Contains(raw, "://") {
+	if strings.HasPrefix(raw, "/") || strings.Contains(raw, "://") {
 		parsed, err := url.Parse(raw)
 		if err == nil {
 			parsed.User = nil

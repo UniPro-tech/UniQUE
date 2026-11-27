@@ -22,7 +22,7 @@ func GetLogger(c *gin.Context) *slog.Logger {
 	attrs := []any{
 		slog.String("method", c.Request.Method),
 		slog.String("path", strings.ReplaceAll(strings.ReplaceAll(path, "\n", ""), "\r", "")),
-		slog.Any("query", RedactedURL(strings.ReplaceAll(strings.ReplaceAll(query, "\n", ""), "\r", ""))),
+		slog.Any("query", RedactedQuery(strings.ReplaceAll(strings.ReplaceAll(query, "\n", ""), "\r", ""))),
 		slog.String("ip", strings.ReplaceAll(strings.ReplaceAll(c.ClientIP(), "\n", ""), "\r", "")),
 		slog.String("user_agent", strings.ReplaceAll(strings.ReplaceAll(c.Request.UserAgent(), "\n", ""), "\r", "")),
 	}

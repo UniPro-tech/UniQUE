@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
 	"github.com/UniPro-tech/UniQUE-API/internal/logging"
@@ -28,7 +29,7 @@ func SendDirectMessage(ctx context.Context, userID string, content string, db *g
 		return fmt.Errorf("discord bot token not configured")
 	}
 
-	httpClient := &http.Client{}
+	httpClient := &http.Client{Timeout: 10 * time.Second}
 
 	// 1) DMチャンネルを作成 (or fetch)
 	channelReqBody := map[string]string{"recipient_id": externalIdentity.ExternalUserID}

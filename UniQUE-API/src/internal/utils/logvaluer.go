@@ -91,6 +91,15 @@ func (u RedactedURL) LogValue() slog.Value {
 	return slog.StringValue(redactURL(string(u)))
 }
 
+// RedactedQuery masks credentials in a raw query string. Use this for
+// url.URL.RawQuery, which may legitimately contain "?" inside values.
+type RedactedQuery string
+
+// LogValue implements slog.LogValuer.
+func (q RedactedQuery) LogValue() slog.Value {
+	return slog.StringValue(redactQuery(string(q)))
+}
+
 func maskBody(body []byte) string {
 	if len(body) == 0 {
 		return "(empty body)"
@@ -130,6 +139,8 @@ func maskJSONValue(value any) any {
 			typed[i] = maskJSONValue(typed[i])
 		}
 		return typed
+	case string:
+		return redactText(typed)
 	default:
 		return value
 	}
@@ -137,7 +148,7 @@ func maskJSONValue(value any) any {
 
 var (
 	textSensitiveKV = regexp.MustCompile(`(?i)("?(?:access_token|refresh_token|id_token|token|secret|client_secret|bot_token|password|authorization|api_key|jti|sid|session_id)"?\s*[=:]\s*)("[^"]*"|[^",}\s&]+)`)
-	authorizationKV = regexp.MustCompile(`(?i)\b(Bearer|Bot)\s+[A-Za-z0-9._~+/=-]+`)
+	authorizationKV = regexp.MustCompile(`(?i)\b(Bearer|Bot|Basic)\s+[A-Za-z0-9._~+/=-]+`)
 )
 
 func redactText(text string) string {
@@ -152,7 +163,7 @@ func redactURL(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	if strings.Contains(raw, "?") || strings.Contains(raw, "://") {
+	if strings.HasPrefix(raw, "/") || strings.Contains(raw, "://") {
 		parsed, err := url.Parse(raw)
 		if err == nil {
 			parsed.User = nil
@@ -169,7 +180,7 @@ func redactQuery(raw string) string {
 	}
 	values, err := url.ParseQuery(raw)
 	if err != nil {
-		return redactText(raw)
+		return "[REDACTED_QUERY]"
 	}
 	for key := range values {
 		if _, sensitive := querySensitiveKeys[strings.ToLower(key)]; sensitive {

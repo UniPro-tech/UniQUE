@@ -3,18 +3,17 @@ import { getAllCookies } from "./cookies";
 import {
   LOG_HEADERS,
   type LogContext,
-  logger,
+  logWithContext,
   newClientContext,
   newRequestContext,
+  traceIdFromTraceparent,
   traceparent,
-  withLogContext,
 } from "./logger";
 import { toSnakecase } from "./snakeCamelUtil";
 
 const BASE = process.env.RESOURCE_API_URL;
 const CLIENT_BASE = process.env.NEXT_PUBLIC_RESOURCE_API_URL;
 const COOKIE_NAME = "session_jwt";
-const MAX_LOGGED_BODY = 2048;
 
 /** API レスポンスの拡張型 */
 export interface ExtendedResponse extends Response {
@@ -72,67 +71,64 @@ async function buildHeaders(
   return base;
 }
 
-function resolveLogContext(): LogContext {
-  // Server requests have no shared page context; generate a fresh pair.
-  return typeof window === "undefined"
-    ? newRequestContext()
-    : newClientContext();
-}
-
 async function loggedFetch(
   url: string,
   init: RequestInit,
 ): Promise<ExtendedResponse> {
-  const context = resolveLogContext();
+  const headers = new Headers(init.headers);
+  const generated =
+    typeof window === "undefined" ? newRequestContext() : newClientContext();
+  const existingRequestId = (headers.get(LOG_HEADERS.requestId) ?? "").trim();
+  const existingTraceId =
+    (headers.get(LOG_HEADERS.traceId) ?? "").trim() ||
+    traceIdFromTraceparent(headers.get(LOG_HEADERS.traceparent) ?? "");
+  const context: LogContext = {
+    requestId: existingRequestId || generated.requestId,
+    traceId: existingTraceId || generated.traceId,
+  };
+
+  if (!existingRequestId) {
+    headers.set(LOG_HEADERS.requestId, context.requestId);
+  }
+  if (!existingTraceId) {
+    headers.set(LOG_HEADERS.traceId, context.traceId);
+  }
+  if (!headers.get(LOG_HEADERS.traceparent)) {
+    headers.set(LOG_HEADERS.traceparent, traceparent(context.traceId));
+  }
+
   const method = (init.method ?? "GET").toUpperCase();
   const path = url.replace(BASE ?? "", "").replace(CLIENT_BASE ?? "", "");
   const startedAt = Date.now();
 
-  return withLogContext(context, async () => {
-    const headers = new Headers(init.headers);
-    headers.set(LOG_HEADERS.requestId, context.requestId);
-    headers.set(LOG_HEADERS.traceId, context.traceId);
-    headers.set(LOG_HEADERS.traceparent, traceparent(context.traceId));
+  logWithContext("debug", "api_request", { method, path }, context);
 
-    logger.debug("api_request", { method, path });
+  const response = await fetch(url, { ...init, headers });
+  const latencyMs = Date.now() - startedAt;
+  logWithContext(
+    "debug",
+    "api_response",
+    { method, path, status: response.status, latency_ms: latencyMs },
+    context,
+  );
 
-    const response = await fetch(url, { ...init, headers });
-    const latencyMs = Date.now() - startedAt;
-    logger.debug("api_response", {
-      method,
-      path,
-      status: response.status,
-      latency_ms: latencyMs,
-    });
+  const extended = response as ExtendedResponse;
+  extended.requestId = context.requestId;
+  extended.traceId = context.traceId;
 
-    const extended = response as ExtendedResponse;
-    extended.requestId = context.requestId;
-    extended.traceId = context.traceId;
+  if (!response.ok) {
+    // Do not read the body here: reading can block the caller indefinitely
+    // when an upstream stops streaming. Callers still receive the original
+    // Response and can read it themselves.
+    logWithContext(
+      "error",
+      "api_error",
+      { method, path, status: response.status, latency_ms: latencyMs },
+      context,
+    );
+  }
 
-    if (!response.ok) {
-      let detail: unknown;
-      try {
-        const body = await response.clone().text();
-        const bounded = body.slice(0, MAX_LOGGED_BODY);
-        try {
-          detail = JSON.parse(bounded);
-        } catch {
-          detail = bounded;
-        }
-      } catch {
-        detail = undefined;
-      }
-      logger.error("api_error", {
-        method,
-        path,
-        status: response.status,
-        latency_ms: latencyMs,
-        response_body: detail,
-      });
-    }
-
-    return extended;
-  });
+  return extended;
 }
 
 export const apiFetch = async (path: string, init: RequestInit = {}) => {

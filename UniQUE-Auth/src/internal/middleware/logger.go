@@ -1,10 +1,11 @@
 package middleware
 
 import (
+	"io"
 	"log/slog"
-	"strings"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/logging"
@@ -14,7 +15,7 @@ import (
 // SlogRecovery records panic recovery as structured JSON instead of the
 // standard library's text logger used by gin.Recovery().
 func SlogRecovery() gin.HandlerFunc {
-	return gin.CustomRecovery(func(c *gin.Context, recovered any) {
+	return gin.CustomRecoveryWithWriter(io.Discard, func(c *gin.Context, recovered any) {
 		slog.Error("panic_recovered",
 			slog.Any("panic", recovered),
 			slog.String("stack", string(debug.Stack())),
@@ -32,7 +33,7 @@ func requestLogger(c *gin.Context) *slog.Logger {
 	attrs := []any{
 		slog.String("method", c.Request.Method),
 		slog.String("path", strings.ReplaceAll(strings.ReplaceAll(c.Request.URL.Path, "\n", ""), "\r", "")),
-		slog.Any("query", logging.RedactedURL(strings.ReplaceAll(strings.ReplaceAll(c.Request.URL.RawQuery, "\n", ""), "\r", ""))),
+		slog.Any("query", logging.RedactedQuery(strings.ReplaceAll(strings.ReplaceAll(c.Request.URL.RawQuery, "\n", ""), "\r", ""))),
 		slog.String("ip", strings.ReplaceAll(strings.ReplaceAll(c.ClientIP(), "\n", ""), "\r", "")),
 		slog.String("user_agent", strings.ReplaceAll(strings.ReplaceAll(c.Request.UserAgent(), "\n", ""), "\r", "")),
 	}

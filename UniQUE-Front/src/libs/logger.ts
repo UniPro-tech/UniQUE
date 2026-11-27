@@ -56,7 +56,6 @@ const RESERVED_KEYS = new Set([
   "error",
 ]);
 
-let currentContext: LogContext | null = null;
 let pageContext: LogContext | null = null;
 
 function randomHex(bytes: number): string {
@@ -89,7 +88,7 @@ export function traceparent(traceId: string): string {
   return `00-${traceId}-${randomHex(8)}-01`;
 }
 
-function traceIdFromTraceparent(value: string): string {
+export function traceIdFromTraceparent(value: string): string {
   const parts = value.split("-");
   if (parts.length >= 4 && /^[0-9a-f]{32}$/i.test(parts[1])) {
     return parts[1];
@@ -111,30 +110,23 @@ export function requestContextFromHeaders(headers: {
 }
 
 export function getLogContext(): LogContext {
-  if (currentContext) {
-    return currentContext;
-  }
   if (!pageContext) {
     pageContext = newRequestContext();
   }
   return pageContext;
 }
 
-export function setLogContext(context: LogContext | null): void {
-  currentContext = context;
-}
-
-export async function withLogContext<T>(
-  context: LogContext,
-  fn: () => Promise<T> | T,
-): Promise<T> {
-  const previous = currentContext;
-  currentContext = context;
-  try {
-    return await fn();
-  } finally {
-    currentContext = previous;
-  }
+/** Build the correlation headers to forward to another service. */
+export function correlationHeaders(incoming: {
+  get(name: string): string | null;
+}): Record<string, string> {
+  const context = requestContextFromHeaders(incoming);
+  return {
+    [LOG_HEADERS.requestId]: context.requestId,
+    [LOG_HEADERS.traceId]: context.traceId,
+    [LOG_HEADERS.traceparent]:
+      incoming.get(LOG_HEADERS.traceparent) ?? traceparent(context.traceId),
+  };
 }
 
 function redactString(value: string): string {
@@ -229,10 +221,11 @@ function normalizeArgs(args: unknown[]): {
         extras.push(sanitize(arg));
       }
     } else if (typeof arg === "string") {
+      const safe = redactString(arg);
       if (index === 0) {
-        messages.push(arg);
+        messages.push(safe);
       } else {
-        extras.push(arg);
+        extras.push(safe);
       }
     } else if (isPlainObject(arg)) {
       extras.push(sanitize(arg));
@@ -262,15 +255,17 @@ function normalizeArgs(args: unknown[]): {
   return { message: messages.join(" "), fields };
 }
 
-function emit(level: LogLevel, fallbackEvent: string, args: unknown[]): void {
-  const { message, fields } = normalizeArgs(args);
-  const context = getLogContext();
+function emitEntry(
+  level: LogLevel,
+  event: string,
+  fields: Record<string, unknown>,
+  context: LogContext,
+): void {
   const entry = {
     timestamp: new Date().toISOString(),
     level,
     component: COMPONENT,
-    msg: deriveEvent(message, fallbackEvent),
-    ...(message ? { message } : {}),
+    msg: event,
     request_id: context.requestId,
     trace_id: context.traceId,
     ...fields,
@@ -292,6 +287,26 @@ function emit(level: LogLevel, fallbackEvent: string, args: unknown[]): void {
     default:
       console.log(line);
   }
+}
+
+function emit(level: LogLevel, fallbackEvent: string, args: unknown[]): void {
+  const { message, fields } = normalizeArgs(args);
+  emitEntry(
+    level,
+    deriveEvent(message, fallbackEvent),
+    { ...(message ? { message } : {}), ...fields },
+    getLogContext(),
+  );
+}
+
+/** Emit a structured entry with an explicit correlation context. */
+export function logWithContext(
+  level: LogLevel,
+  event: string,
+  fields: Record<string, unknown>,
+  context: LogContext,
+): void {
+  emitEntry(level, event, fields, context);
 }
 
 /** Console-compatible structured logger. */
