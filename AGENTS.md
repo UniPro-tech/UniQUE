@@ -8,7 +8,7 @@ Rules this repository's AI agents must follow when creating Git commits, pull re
 
 ```text
 AIL-{number}
-Assisted-by: Particle AI by Claude Code
+Assisted-by: <model-name> by <tool/agent name>
 ```
 
 ### AIL Identifier Inference
@@ -46,10 +46,34 @@ feat: implement login functionality
 
 AIL-4
 Assisted-by: Particle AI by Claude Code
+Signed-off-by: Yuito Akatsuki <yuito@yuito-it.jp>
 ```
 
 Before creating a commit, read the final commit message back and confirm these
 rules are satisfied.
+
+### GPG Signing and Sign-off (Mandatory)
+
+Every commit must be **both GPG-signed and signed off**. This is not optional,
+even when the repository does not enforce it.
+
+- GPG sign every commit: `git commit -S`, or rely on `commit.gpgsign=true`.
+  Verify with `git log --show-signature -1`.
+- Add a sign-off: `git commit -s`, which appends
+  `Signed-off-by: <name> <email>`. The sign-off identity must match the
+  commit author/committer identity (DCO).
+- Never pass `--no-gpg-sign`, never create an unsigned commit, and never strip
+  an existing `Signed-off-by` trailer.
+- If signing fails (no key, wrong key, passphrase prompt, expired key, or
+  `gpg failed to sign the data`), **stop and report the failure to the user**.
+  Never fall back to an unsigned or unsigned-off commit to "get past" it.
+- On `--amend`, `rebase`, `cherry-pick`, or squash, keep both: amend with
+  `-S -s`, rebase with `--gpg-sign`, and retain the `Signed-off-by` trailer when
+  rewriting messages.
+- Trailer order at the end of the message body: `AIL-{number}`,
+  `Assisted-by: Particle AI by Claude Code`, then `Signed-off-by: ...`.
+- Before finishing, verify: `git log -1 --format='%G?%n%B'` shows `G` (valid
+  signature) and the body contains `Signed-off-by:`.
 
 ### Pull Requests and Issues
 
@@ -115,10 +139,12 @@ If neither exists, use a short structure of your own: `## Summary`,
 
 These rules apply to every commit, pull request, and issue created or modified
 by the agent in this repository. Do not rely on default Claude Code attribution
-behavior: construct and verify the final text explicitly.
+behavior: construct and verify the final text explicitly. Every commit must be
+GPG-signed and carry a `Signed-off-by` trailer; a commit that fails either check
+must not be pushed.
 
 If the AIL identifier cannot be reliably inferred, still include:
 
 ```text
-Assisted-by: <model-name> by <tool/agent name>
+Assisted-by: Particle AI by Claude Code
 ```
