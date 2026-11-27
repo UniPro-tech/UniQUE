@@ -64,6 +64,8 @@ func TestMaskedBodyRedactsSingleQuotedKeys(t *testing.T) {
 		`{'password': 'secret\'tail'}`,
 		`{'password': 'sample-secret`,
 		`{"password": "sample-secret`,
+		`{"password":"sample-secret\`,
+		`{'password':'sample-secret\`,
 	}
 	for _, input := range cases {
 		output := logValue(t, MaskedBody([]byte(input)))
