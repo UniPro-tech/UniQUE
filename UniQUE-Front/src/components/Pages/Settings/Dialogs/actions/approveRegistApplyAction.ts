@@ -2,6 +2,7 @@
 import { User } from "@/classes/User";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
 import { FrontendErrors } from "@/errors/FrontendErrors";
+import { logger } from "@/libs/logger";
 
 export const userIdChangeApplyAction = async (
   _prevState: FormStatus | null,
@@ -44,7 +45,7 @@ export const userIdChangeApplyAction = async (
           message: "無効な入力です。もう一度お試しください。",
         };
       default:
-        console.error("Unexpected error in userIdChangeApplyAction:", error);
+        logger.error("Unexpected error in userIdChangeApplyAction:", error);
         return {
           status: "error",
           message: "予期しないエラーが発生しました。",

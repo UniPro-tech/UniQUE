@@ -1,6 +1,7 @@
 "use server";
 
 import { Application } from "@/classes/Application";
+import { logger } from "@/libs/logger";
 
 export async function deleteApplicationById(
   appId: string,
@@ -10,7 +11,7 @@ export async function deleteApplicationById(
     await app.delete();
     return { success: true };
   } catch (err) {
-    console.error("Failed to delete application:", err);
+    logger.error("Failed to delete application:", err);
     return { success: false, error: "アプリケーションの削除に失敗しました" };
   }
 }

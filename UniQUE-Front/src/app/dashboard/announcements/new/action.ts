@@ -1,6 +1,7 @@
 "use server";
 
 import { Announcement } from "@/classes/Announcement";
+import { logger } from "@/libs/logger";
 
 export interface CreateAnnouncementFormData {
   title: string;
@@ -27,7 +28,7 @@ export async function createAnnouncement(
 
     return { success: true };
   } catch (err) {
-    console.error("Announcement creation failed:", err);
+    logger.error("Announcement creation failed:", err);
     return {
       success: false,
       error:

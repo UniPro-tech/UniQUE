@@ -1,75 +1,81 @@
 package middleware
 
 import (
+	"io"
 	"log/slog"
+	"net/http"
+	"runtime/debug"
+	"strings"
 	"time"
 
+	"github.com/UniPro-tech/UniQUE-Auth/internal/logging"
 	"github.com/gin-gonic/gin"
 )
 
-// Ginのコンテキストからロガーを安全に取り出すためのヘルパー関数
-func GetLogger(c *gin.Context) *slog.Logger {
+// SlogRecovery records panic recovery as structured JSON instead of the
+// standard library's text logger used by gin.Recovery().
+func SlogRecovery() gin.HandlerFunc {
+	return gin.CustomRecoveryWithWriter(io.Discard, func(c *gin.Context, recovered any) {
+		GetLogger(c).Error("panic_recovered",
+			logging.PanicAttr(recovered),
+			slog.String("stack", string(debug.Stack())),
+		)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+	})
+}
+
+func requestLogger(c *gin.Context) *slog.Logger {
 	if ctxLogger, exists := c.Get("logger"); exists {
 		if logger, ok := ctxLogger.(*slog.Logger); ok {
 			return logger
 		}
-	} else {
-		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
-
-		// リクエスト固有の情報をあらかじめ埋め込んだロガーを作る
-		logger := slog.Default().With(
-			slog.String("method", c.Request.Method),
-			slog.String("path", path),
-			slog.String("query", query),
-			slog.String("ip", c.ClientIP()),
-			slog.String("user_agent", c.Request.UserAgent()),
-		)
-		return logger
 	}
-	return slog.Default() // fallback
+	attrs := []any{
+		slog.String("method", c.Request.Method),
+		slog.String("path", strings.ReplaceAll(strings.ReplaceAll(c.Request.URL.Path, "\n", ""), "\r", "")),
+		slog.Any("query", logging.RedactedQuery(strings.ReplaceAll(strings.ReplaceAll(c.Request.URL.RawQuery, "\n", ""), "\r", ""))),
+		slog.String("ip", strings.ReplaceAll(strings.ReplaceAll(c.ClientIP(), "\n", ""), "\r", "")),
+		slog.String("user_agent", strings.ReplaceAll(strings.ReplaceAll(c.Request.UserAgent(), "\n", ""), "\r", "")),
+	}
+	if requestContext, ok := logging.FromContext(c.Request.Context()); ok {
+		attrs = append(attrs, requestContext.LogAttrs()...)
+	}
+	return slog.Default().With(attrs...)
 }
 
+// GetLogger returns the request-scoped logger, adding request attributes when
+// the middleware has not populated one yet.
+func GetLogger(c *gin.Context) *slog.Logger {
+	return requestLogger(c)
+}
+
+// SlogMiddleware writes the access log and handler errors as JSON.
 func SlogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		requestContext := logging.NewRequestContext(c.Request)
+		c.Request = c.Request.WithContext(requestContext.WithContext(c.Request.Context()))
+		c.Header(logging.HeaderRequestID, requestContext.RequestID)
+		c.Header(logging.HeaderTraceID, requestContext.TraceID)
+
 		start := time.Now()
-		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
-
-		// リクエスト固有の情報をあらかじめ埋め込んだロガーを作る
-		logger := slog.Default().With(
-			slog.String("method", c.Request.Method),
-			slog.String("path", path),
-			slog.String("query", query),
-			slog.String("ip", c.ClientIP()),
-			slog.String("user_agent", c.Request.UserAgent()),
-		)
-
-		// Ginのコンテキストにロガーをセット
+		logger := requestLogger(c)
 		c.Set("logger", logger)
 
 		c.Next()
 
-		// ハンドラーで c.AbortWithError() が呼ばれていた場合の共通エラー処理
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last()
-			status := c.Writer.Status()
-
-			// 埋め込み済みのロガーを使うので、errorを足すだけでOK！
-			logger.Error("An error occurred",
-				slog.Int("status", status),
-				slog.String("error", err.Error()),
+			logger.Error("http_error",
+				slog.Int("status", c.Writer.Status()),
+				slog.Any("error", err.Err),
 			)
-
-			c.JSON(status, gin.H{"error": err.Err.Error()})
+			c.JSON(c.Writer.Status(), gin.H{"error": err.Err.Error()})
 			return
 		}
 
-		// 通常のアクセスログ（成功時）
-		latency := time.Since(start)
-		logger.Info("HTTP Request",
+		logger.Info("http_request",
 			slog.Int("status", c.Writer.Status()),
-			slog.Duration("latency", latency),
+			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
 		)
 	}
 }

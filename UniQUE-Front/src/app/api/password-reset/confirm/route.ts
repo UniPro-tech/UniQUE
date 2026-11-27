@@ -1,3 +1,5 @@
+import { correlationHeaders, logger } from "@/libs/logger";
+
 /**
  * POST /api/password-reset/confirm
  * Confirm password reset with code and new password
@@ -21,6 +23,7 @@ export const POST = async (request: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...correlationHeaders(request.headers),
       },
       body: JSON.stringify({
         code,
@@ -44,7 +47,7 @@ export const POST = async (request: Request) => {
       message: data.message,
     });
   } catch (error) {
-    console.error("Password reset confirm error:", error);
+    logger.error("Password reset confirm error:", error);
     return Response.json(
       {
         ok: false,

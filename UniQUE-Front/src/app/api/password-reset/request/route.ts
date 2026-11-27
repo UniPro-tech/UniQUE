@@ -1,3 +1,5 @@
+import { correlationHeaders, logger } from "@/libs/logger";
+
 /**
  * POST /api/password-reset/request
  * Request password reset by email
@@ -21,6 +23,7 @@ export const POST = async (request: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...correlationHeaders(request.headers),
       },
       body: JSON.stringify({
         email,
@@ -43,7 +46,7 @@ export const POST = async (request: Request) => {
       message: data.message,
     });
   } catch (error) {
-    console.error("Password reset request error:", error);
+    logger.error("Password reset request error:", error);
     return Response.json(
       {
         ok: false,

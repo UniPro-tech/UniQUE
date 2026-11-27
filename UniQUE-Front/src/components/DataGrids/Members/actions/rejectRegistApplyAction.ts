@@ -1,6 +1,7 @@
 "use server";
 import { User } from "@/classes/User";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
+import { logger } from "@/libs/logger";
 
 export const rejectRegistApplyAction = async (
   _prevState: FormStatus | null,
@@ -22,7 +23,7 @@ export const rejectRegistApplyAction = async (
     await user.reject();
     return { status: "success", message: "申請を却下しました" };
   } catch (err) {
-    console.error("rejectRegistApplyAction error:", err);
+    logger.error("rejectRegistApplyAction error:", err);
     return { status: "error", message: "却下中にエラーが発生しました" };
   }
 };

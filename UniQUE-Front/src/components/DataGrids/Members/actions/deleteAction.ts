@@ -1,6 +1,7 @@
 "use server";
 
 import { User } from "@/classes/User";
+import { logger } from "@/libs/logger";
 
 export async function deleteUserById(
   userId: string,
@@ -13,7 +14,7 @@ export async function deleteUserById(
     await user.delete();
     return { success: true };
   } catch (err) {
-    console.error("Failed to delete user:", err);
+    logger.error("Failed to delete user:", err);
     return { success: false, error: "ユーザーの削除に失敗しました" };
   }
 }

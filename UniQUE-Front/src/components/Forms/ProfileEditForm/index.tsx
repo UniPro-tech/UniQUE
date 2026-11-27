@@ -16,6 +16,7 @@ import {
 import { useSnackbar } from "notistack";
 import { useState } from "react";
 import type { ProfileData } from "@/classes/Profile";
+import { logger } from "@/libs/logger";
 import { type UpdateProfileData, updateProfile } from "./action";
 
 interface ProfileEditFormProps {
@@ -77,7 +78,7 @@ export default function ProfileEditForm({
       }
     } catch (err) {
       setError("予期しないエラーが発生しました");
-      console.error(err);
+      logger.error(err);
     } finally {
       setLoading(false);
     }

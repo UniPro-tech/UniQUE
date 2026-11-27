@@ -2,6 +2,7 @@
 
 import { Role } from "@/classes/Role";
 import { ResourceApiErrors } from "@/errors/ResourceApiErrors";
+import { logger } from "@/libs/logger";
 
 export interface UpdateRoleFormData {
   customId: string;
@@ -33,7 +34,7 @@ export async function updateRole(
 
     return { success: true };
   } catch (error) {
-    console.error("Role update failed:", error);
+    logger.error("Role update failed:", error);
     return {
       success: false,
       error: "ロールの更新に失敗しました",
@@ -48,7 +49,7 @@ export async function deleteRole(
     await Role.deleteById(roleId);
     return { success: true };
   } catch (error) {
-    console.error("Role delete failed:", error);
+    logger.error("Role delete failed:", error);
     return { success: false, error: "ロールの削除に失敗しました" };
   }
 }

@@ -2,7 +2,9 @@ package utils
 
 import (
 	"log/slog"
+	"strings"
 
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,12 +19,15 @@ func GetLogger(c *gin.Context) *slog.Logger {
 	query := c.Request.URL.RawQuery
 
 	// リクエスト固有の情報をあらかじめ埋め込んだロガーを作る
-	logger := slog.Default().With(
+	attrs := []any{
 		slog.String("method", c.Request.Method),
-		slog.String("path", path),
-		slog.String("query", query),
-		slog.String("ip", c.ClientIP()),
-		slog.String("user_agent", c.Request.UserAgent()),
-	)
-	return logger
+		slog.String("path", strings.ReplaceAll(strings.ReplaceAll(path, "\n", ""), "\r", "")),
+		slog.Any("query", RedactedQuery(strings.ReplaceAll(strings.ReplaceAll(query, "\n", ""), "\r", ""))),
+		slog.String("ip", strings.ReplaceAll(strings.ReplaceAll(c.ClientIP(), "\n", ""), "\r", "")),
+		slog.String("user_agent", strings.ReplaceAll(strings.ReplaceAll(c.Request.UserAgent(), "\n", ""), "\r", "")),
+	}
+	if requestContext, ok := logging.FromContext(c.Request.Context()); ok {
+		attrs = append(attrs, requestContext.LogAttrs()...)
+	}
+	return slog.Default().With(attrs...)
 }

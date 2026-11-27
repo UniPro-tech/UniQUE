@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Session } from "@/classes/Session";
+import { logger } from "@/libs/logger";
 import EmailVerifyClient from "./EmailVerifyClient";
 
 interface EmailVerifyPageProps {
@@ -39,13 +40,13 @@ export default async function EmailVerifyPage({
     if (response.ok) {
       verifyResult = await response.json();
     } else {
-      console.error(
+      logger.error(
         "Server-side email verification returned non-200:",
         response.status,
       );
     }
   } catch (error) {
-    console.error("Server-side email verification error:", error);
+    logger.error("Server-side email verification error:", error);
   }
 
   return (

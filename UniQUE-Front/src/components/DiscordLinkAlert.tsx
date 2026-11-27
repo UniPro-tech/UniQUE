@@ -9,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { logger } from "@/libs/logger";
 
 export default function DiscordLinkAlert() {
   const [isDiscordLinked, setIsDiscordLinked] = useState<boolean | null>(null);
@@ -24,7 +25,7 @@ export default function DiscordLinkAlert() {
           setIsDiscordLinked(data.linked);
         }
       } catch (error) {
-        console.error("Discord連携状態の確認に失敗しました:", error);
+        logger.error("Discord連携状態の確認に失敗しました:", error);
       }
     };
 

@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/logging"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
@@ -101,7 +103,7 @@ func PasswordResetRequestPost(c *gin.Context) {
 	mailErr := sendPasswordResetEmail(c, user, code, cfg)
 	if mailErr != nil {
 		// メール送信失敗時はログするが、ユーザーへは成功応答を返す（情報漏洩防止）
-		fmt.Printf("Failed to send password reset email: %v\n", mailErr)
+		slog.Error("password_reset_email_send_failed", slog.Any("error", mailErr))
 	}
 
 	c.JSON(http.StatusOK, PasswordResetRequestResponse{
@@ -162,7 +164,14 @@ func sendPasswordResetEmail(c *gin.Context, user *model.User, code string, confi
 	}
 
 	// HTTPリクエストを作成
-	resp, err := http.Post(mailServerURL, "application/json", bytes.NewBuffer(jsonPayload))
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, mailServerURL, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return fmt.Errorf("failed to build request to mail server: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	logging.Inject(c.Request.Context(), req.Header)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request to mail server: %w", err)
 	}

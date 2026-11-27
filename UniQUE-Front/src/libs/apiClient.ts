@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAllCookies } from "./cookies";
+import {
+  LOG_HEADERS,
+  type LogContext,
+  logWithContext,
+  newClientContext,
+  newRequestContext,
+  traceIdFromTraceparent,
+  traceparent,
+} from "./logger";
 import { toSnakecase } from "./snakeCamelUtil";
 
 const BASE = process.env.RESOURCE_API_URL;
@@ -8,6 +17,10 @@ const COOKIE_NAME = "session_jwt";
 
 /** API レスポンスの拡張型 */
 export interface ExtendedResponse extends Response {
+  /** リクエスト相関 ID */
+  requestId?: string;
+  /** トレース ID */
+  traceId?: string;
   /** エラー情報が含まれている場合 */
   errorDetails?: {
     errorCode: string;
@@ -58,22 +71,85 @@ async function buildHeaders(
   return base;
 }
 
+async function loggedFetch(
+  url: string,
+  init: RequestInit,
+): Promise<ExtendedResponse> {
+  const headers = new Headers(init.headers);
+  const generated =
+    typeof window === "undefined" ? newRequestContext() : newClientContext();
+  const headerRequestId = (headers.get(LOG_HEADERS.requestId) ?? "").trim();
+  const rawHeaderTraceId = (headers.get(LOG_HEADERS.traceId) ?? "").trim();
+  const headerTraceId = /^[0-9a-f]{32}$/i.test(rawHeaderTraceId)
+    ? rawHeaderTraceId
+    : "";
+  const traceparentTraceId = traceIdFromTraceparent(
+    headers.get(LOG_HEADERS.traceparent) ?? "",
+  );
+  const context: LogContext = {
+    requestId: headerRequestId || generated.requestId,
+    traceId: headerTraceId || traceparentTraceId || generated.traceId,
+  };
+
+  if (!headerRequestId) {
+    headers.set(LOG_HEADERS.requestId, context.requestId);
+  }
+  if (!headerTraceId) {
+    headers.set(LOG_HEADERS.traceId, context.traceId);
+  }
+  if (!headers.get(LOG_HEADERS.traceparent)) {
+    headers.set(LOG_HEADERS.traceparent, traceparent(context.traceId));
+  }
+
+  const method = (init.method ?? "GET").toUpperCase();
+  const path = url
+    .replace(BASE ?? "", "")
+    .replace(CLIENT_BASE ?? "", "")
+    .split(/[?#]/)[0];
+  const startedAt = Date.now();
+
+  logWithContext("debug", "api_request", { method, path }, context);
+
+  const response = await fetch(url, { ...init, headers });
+  const latencyMs = Date.now() - startedAt;
+  logWithContext(
+    "debug",
+    "api_response",
+    { method, path, status: response.status, latency_ms: latencyMs },
+    context,
+  );
+
+  const extended = response as ExtendedResponse;
+  extended.requestId = context.requestId;
+  extended.traceId = context.traceId;
+
+  if (!response.ok) {
+    // Do not read the body here: reading can block the caller indefinitely
+    // when an upstream stops streaming. Callers still receive the original
+    // Response and can read it themselves.
+    logWithContext(
+      "error",
+      "api_error",
+      { method, path, status: response.status, latency_ms: latencyMs },
+      context,
+    );
+  }
+
+  return extended;
+}
+
 export const apiFetch = async (path: string, init: RequestInit = {}) => {
   const cookie = await getAllCookies();
   const headers = await buildHeaders(init.headers);
-  const res = await fetch(
-    `${clientComponentCheck === "server" ? BASE : CLIENT_BASE}${path}`,
-    {
-      ...init,
-      headers: {
-        ...headers,
-        cookie,
-      },
-      credentials: "include",
+  const url = `${clientComponentCheck === "server" ? BASE : CLIENT_BASE}${path}`;
+  return loggedFetch(url, {
+    ...init,
+    headers: {
+      ...headers,
+      cookie,
     },
-  );
-
-  return res as ExtendedResponse;
+    credentials: "include",
+  });
 };
 
 const jsonStringifySafe = (obj: object) =>
@@ -123,7 +199,8 @@ export const createApiClient = (base?: string) => {
   const apiFetchWithBase = async (path: string, init: RequestInit = {}) => {
     const cookie = await getAllCookies();
     const headers = await buildHeaders(init.headers);
-    const res = await fetch(`${resolvedBase}${path}`, {
+    const url = `${resolvedBase}${path}`;
+    return loggedFetch(url, {
       ...init,
       headers: {
         ...headers,
@@ -131,8 +208,6 @@ export const createApiClient = (base?: string) => {
       },
       credentials: "include",
     });
-
-    return res as ExtendedResponse;
   };
 
   return {

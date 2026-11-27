@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -80,6 +81,7 @@ func TestSendChannelMessage(t *testing.T) {
 	defer server.Close()
 
 	err := sendChannelMessage(
+		context.Background(),
 		server.Client(),
 		server.URL,
 		"test-token",
@@ -98,6 +100,7 @@ func TestSendChannelMessageRejectsDiscordError(t *testing.T) {
 	defer server.Close()
 
 	err := sendChannelMessage(
+		context.Background(),
 		server.Client(),
 		server.URL,
 		"test-token",

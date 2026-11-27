@@ -2,7 +2,7 @@ package event_handlers
 
 import (
 	"context"
-	"log"
+	"log/slog"
 
 	"github.com/UniPro-tech/UniQUE/Discord/internal"
 
@@ -13,8 +13,7 @@ import (
 )
 
 func Ready(ctx *internal.BotContext, e *events.Ready) {
-	log.Println("Bot is ready 🚀")
-	log.Printf("Logged in as: %v#%v", e.User.Username, e.User.Discriminator)
+	slog.Info("bot_ready", slog.String("username", e.User.Username), slog.String("discriminator", e.User.Discriminator))
 	resetBotStatus(e.Client())
 }
 

@@ -2,7 +2,7 @@ package routes
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -84,7 +84,11 @@ func assignRoleToAll(c *gin.Context) {
 			if _, ferr := q.UserRole.Where(query.UserRole.UserID.Eq(usr.ID), query.UserRole.RoleID.Eq(id)).First(); ferr == nil {
 				continue
 			} else if ferr != gorm.ErrRecordNotFound {
-				log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, safeLogID, ferr)
+				slog.Error("user_role_lookup_failed",
+					slog.String("user_id", usr.ID),
+					slog.String("role_id", safeLogID),
+					slog.Any("error", ferr),
+				)
 				continue
 			}
 			ur := &model.UserRole{
@@ -94,7 +98,11 @@ func assignRoleToAll(c *gin.Context) {
 				UpdatedAt: now,
 			}
 			if cerr := q.UserRole.Create(ur); cerr != nil {
-				log.Printf("failed to assign role %s to user %s: %v", safeLogID, usr.ID, cerr)
+				slog.Error("role_assign_failed",
+					slog.String("role_id", safeLogID),
+					slog.String("user_id", usr.ID),
+					slog.Any("error", cerr),
+				)
 				continue
 			}
 			assigned++
@@ -305,14 +313,18 @@ func createRole(c *gin.Context) {
 			users, uerr := q.User.Where(query.User.Status.In("active", "established")).Find()
 			if uerr != nil {
 				// Log and continue (トランザクション自体は失敗させない)
-				log.Printf("failed to fetch users for assign_to_existing: %v", uerr)
+				slog.Error("role_users_fetch_failed", slog.Any("error", uerr))
 			} else {
 				for _, usr := range users {
 					// skip if already assigned
 					if _, ferr := q.UserRole.Where(query.UserRole.UserID.Eq(usr.ID), query.UserRole.RoleID.Eq(role.ID)).First(); ferr == nil {
 						continue
 					} else if ferr != gorm.ErrRecordNotFound {
-						log.Printf("failed checking existing user_role for user %s role %s: %v", usr.ID, role.ID, ferr)
+						slog.Error("user_role_lookup_failed",
+							slog.String("user_id", usr.ID),
+							slog.String("role_id", role.ID),
+							slog.Any("error", ferr),
+						)
 						continue
 					}
 					ur := &model.UserRole{
@@ -322,7 +334,11 @@ func createRole(c *gin.Context) {
 						UpdatedAt: now,
 					}
 					if cerr := q.UserRole.Create(ur); cerr != nil {
-						log.Printf("failed to assign role %s to user %s: %v", role.ID, usr.ID, cerr)
+						slog.Error("role_assign_failed",
+							slog.String("role_id", role.ID),
+							slog.String("user_id", usr.ID),
+							slog.Any("error", cerr),
+						)
 					}
 				}
 			}

@@ -1,11 +1,12 @@
 package routes
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
 	"github.com/UniPro-tech/UniQUE-API/internal/constants"
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-API/internal/model"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
@@ -197,11 +199,14 @@ func listUsers(c *gin.Context) {
 	if user, exists := c.Get("user"); exists {
 		if userModel, ok := user.(*model.User); ok && userModel != nil {
 			permissions, _ := middleware.GetUserPermissions(userModel.ID, db)
-			log.Printf("permission:%s", string(rune(permissions)))
+			slog.Debug("user_permissions_loaded",
+				slog.String("user_id", userModel.ID),
+				slog.Any("permissions", permissions),
+			)
 			hasUserReadPermission = permissions.HasPermission(constants.USER_READ)
 		}
 	} else {
-		log.Printf("no authenticated user found in context")
+		slog.Warn("user_context_missing")
 	}
 
 	var out []UserDTO
@@ -291,7 +296,14 @@ func createUser(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	resp, err := http.Post(config.IssuerInternalURL+"/internal/password_hash", "application/json", strings.NewReader(string(reqBody)))
+	hashReq, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, config.IssuerInternalURL+"/internal/password_hash", strings.NewReader(string(reqBody)))
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	hashReq.Header.Set("Content-Type", "application/json")
+	logging.Inject(c.Request.Context(), hashReq.Header)
+	resp, err := http.DefaultClient.Do(hashReq)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -356,14 +368,18 @@ func createUser(c *gin.Context) {
 					UpdatedAt: now,
 				}
 				if err := q.UserRole.Create(ur); err != nil {
-					log.Printf("failed to assign default role %s to user %s: %v", dr.ID, user.ID, err)
+					slog.Error("default_role_assign_failed",
+						slog.String("role_id", dr.ID),
+						slog.String("user_id", user.ID),
+						slog.Any("error", err),
+					)
 				}
 			}
 		} else {
-			log.Printf("failed to fetch default roles: %v", derr)
+			slog.Error("default_roles_fetch_failed", slog.Any("error", derr))
 		}
 
-		err = sendRegistrationEmailVerification(user.ID, user.ExternalEmail, "", q, &config)
+		err = sendRegistrationEmailVerification(c.Request.Context(), user.ID, user.ExternalEmail, "", q, &config)
 		if err != nil {
 			return err
 		}
@@ -430,8 +446,11 @@ func createUser(c *gin.Context) {
 
 	notificationEvent := notificationEventForCreationSource(creationSource)
 	if notificationEvent != "" {
-		if err := discordutil.SendNotification(notificationEvent, db, &config); err != nil {
-			log.Printf("failed to send user notification to Discord: %v", err)
+		if err := discordutil.SendNotification(c.Request.Context(), notificationEvent, db, &config); err != nil {
+			slog.Error("discord_notification_failed",
+				slog.String("event", string(notificationEvent)),
+				slog.Any("error", err),
+			)
 		}
 	}
 	c.JSON(http.StatusCreated, dbResp)
@@ -716,7 +735,7 @@ func updateUser(c *gin.Context) {
 			}
 			// 認証コードの生成と送信
 			cfg := c.MustGet("config").(config.Config)
-			if err := sendEmailChangeVerification(id, *input.ExternalEmail, "", q, &cfg); err != nil {
+			if err := sendEmailChangeVerification(c.Request.Context(), id, *input.ExternalEmail, "", q, &cfg); err != nil {
 				return err
 			}
 		}
@@ -942,7 +961,7 @@ func patchUser(c *gin.Context) {
 				}
 				// external_emailは直接更新せず、認証コードのnew_emailに保存
 				cfg := c.MustGet("config").(config.Config)
-				if err := sendEmailChangeVerification(id, *body.ExternalEmail.Value, "", tx, &cfg); err != nil {
+				if err := sendEmailChangeVerification(c.Request.Context(), id, *body.ExternalEmail.Value, "", tx, &cfg); err != nil {
 					return err
 				}
 				// ★ if を追加して修正
@@ -1480,7 +1499,7 @@ func listExternalIdentities(c *gin.Context) {
 	}
 	var out []ExternalIdentityDTO
 	for _, e := range eis {
-		refreshed, _ := utils.RefreshExternalToken(e, q, &cfg)
+		refreshed, _ := utils.RefreshExternalToken(c.Request.Context(), e, q, &cfg)
 
 		dto := ExternalIdentityDTO{
 			ID:             refreshed.ID,
@@ -1509,7 +1528,7 @@ func listExternalIdentities(c *gin.Context) {
 			}
 		}
 
-		if info, err := utils.FetchProviderUserInfo(refreshed, &cfg); err == nil && info != nil {
+		if info, err := utils.FetchProviderUserInfo(c.Request.Context(), refreshed, &cfg); err == nil && info != nil {
 			if dto.Username == "" {
 				dto.Username = info.Username
 			}
@@ -1631,15 +1650,22 @@ func addExternalIdentity(c *gin.Context) {
 
 	if input.Provider == "discord" {
 		config := c.MustGet("config").(config.Config)
-		if err := discordutil.AddToGuild(input.ExternalUserID, db, &config); err != nil {
-			log.Printf("failed to add user to discord guild: %v", err)
+		if err := discordutil.AddToGuild(context.WithoutCancel(c.Request.Context()), input.ExternalUserID, db, &config); err != nil {
+			slog.Error("discord_guild_join_failed",
+				slog.String("discord_user_id", strings.ReplaceAll(strings.ReplaceAll(input.ExternalUserID, "\n", ""), "\r", "")),
+				slog.Any("error", err),
+			)
 		}
 
 		if user, uerr := q.User.Where(query.User.ID.Eq(id)).First(); uerr == nil {
 			if user.Status == "active" {
 				memberRoleId := config.DiscordConfig.Guild.MemberRoleID
-				if err := discordutil.AddRoleToUser(input.ExternalUserID, memberRoleId, &config); err != nil {
-					log.Printf("failed to add discord role: %v", err)
+				if err := discordutil.AddRoleToUser(context.WithoutCancel(c.Request.Context()), input.ExternalUserID, memberRoleId, &config); err != nil {
+					slog.Error("discord_role_assign_failed",
+						slog.String("discord_user_id", strings.ReplaceAll(strings.ReplaceAll(input.ExternalUserID, "\n", ""), "\r", "")),
+						slog.String("role_id", memberRoleId),
+						slog.Any("error", err),
+					)
 				}
 			}
 		}
@@ -1660,7 +1686,7 @@ func addExternalIdentity(c *gin.Context) {
 		}
 	}
 
-	if info, err := utils.FetchProviderUserInfo(ei, &cfg); err == nil && info != nil {
+	if info, err := utils.FetchProviderUserInfo(c.Request.Context(), ei, &cfg); err == nil && info != nil {
 		resp.Username = info.Username
 		resp.DisplayName = info.DisplayName
 		resp.AvatarURL = info.AvatarURL
@@ -1794,8 +1820,11 @@ func linkDiscordByEmailCode(c *gin.Context) {
 	}
 
 	config := c.MustGet("config").(config.Config)
-	if err := discordutil.AddToGuild(input.ExternalUserID, db, &config); err != nil {
-		log.Printf("failed to add user to discord guild via email verify: %v", err)
+	if err := discordutil.AddToGuild(context.WithoutCancel(c.Request.Context()), input.ExternalUserID, db, &config); err != nil {
+		slog.Error("discord_guild_join_failed",
+			slog.String("discord_user_id", strings.ReplaceAll(strings.ReplaceAll(input.ExternalUserID, "\n", ""), "\r", "")),
+			slog.Any("error", err),
+		)
 	}
 
 	resp := ExternalIdentityDTO{
@@ -1806,7 +1835,7 @@ func linkDiscordByEmailCode(c *gin.Context) {
 		CreatedAt:      ei.CreatedAt,
 		UpdatedAt:      ei.UpdatedAt,
 	}
-	if info, err := utils.FetchProviderUserInfo(ei, &config); err == nil && info != nil {
+	if info, err := utils.FetchProviderUserInfo(c.Request.Context(), ei, &config); err == nil && info != nil {
 		resp.Username = info.Username
 		resp.DisplayName = info.DisplayName
 		resp.AvatarURL = info.AvatarURL
@@ -2053,11 +2082,16 @@ func approveUserRegist(c *gin.Context) {
 		config := c.MustGet("config").(config.Config)
 		memberRoleId := config.DiscordConfig.Guild.MemberRoleID
 		if memberRoleId != "" {
-			if err := discordutil.AddRoleToUser(discordUserId, memberRoleId, &config); err != nil {
-				log.Printf("failed to add discord role: %v", err)
+			if err := discordutil.AddRoleToUser(context.WithoutCancel(c.Request.Context()), discordUserId, memberRoleId, &config); err != nil {
+				slog.Error("discord_role_assign_failed",
+					slog.String("discord_user_id", discordUserId),
+					slog.String("role_id", memberRoleId),
+					slog.Any("error", err),
+				)
 			}
 		} else {
-			log.Printf("DISCORD_MEMBER_ROLE_ID is not set; skipping role assignment")
+			slog.Warn("discord_member_role_unset",
+				slog.String("discord_user_id", discordUserId))
 		}
 
 		// 表示名を取得
@@ -2073,8 +2107,11 @@ func approveUserRegist(c *gin.Context) {
 		}
 
 		// ウェルカムメッセージ送信
-		if err := discordutil.SendWelcomeMessage(discordUserId, dto.Email, dto.SakuraEmailPassword, displayName, db, &config); err != nil {
-			log.Printf("failed to send welcome DM: %v", err)
+		if err := discordutil.SendWelcomeMessage(context.WithoutCancel(c.Request.Context()), discordUserId, dto.Email, dto.SakuraEmailPassword, displayName, db, &config); err != nil {
+			slog.Error("discord_welcome_dm_failed",
+				slog.String("discord_user_id", discordUserId),
+				slog.Any("error", err),
+			)
 		}
 	}
 
@@ -2190,11 +2227,11 @@ func resendEmailVerification(c *gin.Context) {
 		}
 
 		if requestType == "email_change" {
-			if err = sendEmailChangeVerification(id, *externalEmail, name, tx, &cfg); err != nil {
+			if err = sendEmailChangeVerification(c.Request.Context(), id, *externalEmail, name, tx, &cfg); err != nil {
 				return err
 			}
 		} else {
-			if err = sendRegistrationEmailVerification(id, user.ExternalEmail, name, tx, &cfg); err != nil {
+			if err = sendRegistrationEmailVerification(c.Request.Context(), id, user.ExternalEmail, name, tx, &cfg); err != nil {
 				return err
 			}
 		}
@@ -2300,7 +2337,14 @@ func changePassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": jerr.Error()})
 		return
 	}
-	resp, err := http.Post(cfg.IssuerInternalURL+"/internal/password_hash", "application/json", strings.NewReader(string(reqBody)))
+	hashReq, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, cfg.IssuerInternalURL+"/internal/password_hash", strings.NewReader(string(reqBody)))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		return
+	}
+	hashReq.Header.Set("Content-Type", "application/json")
+	logging.Inject(c.Request.Context(), hashReq.Header)
+	resp, err := http.DefaultClient.Do(hashReq)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
@@ -2338,7 +2382,7 @@ func changePassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "password changed"})
 }
 
-func sendRegistrationEmailVerification(user_id, email, name string, q *query.Query, config *config.Config) error {
+func sendRegistrationEmailVerification(ctx context.Context, user_id, email, name string, q *query.Query, config *config.Config) error {
 	// コードを生成してDBに保存する
 	// 6桁のコードを生成
 	b := make([]byte, 3)
@@ -2370,11 +2414,12 @@ func sendRegistrationEmailVerification(user_id, email, name string, q *query.Que
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", endpoint, strings.NewReader(string(reqBody)))
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, strings.NewReader(string(reqBody)))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	logging.Inject(ctx, req.Header)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -2389,7 +2434,7 @@ func sendRegistrationEmailVerification(user_id, email, name string, q *query.Que
 	return nil
 }
 
-func sendEmailChangeVerification(user_id, email, name string, q *query.Query, config *config.Config) error {
+func sendEmailChangeVerification(ctx context.Context, user_id, email, name string, q *query.Query, config *config.Config) error {
 	// コードを生成してDBに保存する
 	// 6桁のコードを生成
 	b := make([]byte, 3)
@@ -2422,11 +2467,12 @@ func sendEmailChangeVerification(user_id, email, name string, q *query.Query, co
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", endpoint, strings.NewReader(string(reqBody)))
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, strings.NewReader(string(reqBody)))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	logging.Inject(ctx, req.Header)
 
 	resp, err := client.Do(req)
 	if err != nil {

@@ -19,6 +19,7 @@ import { useSnackbar } from "notistack";
 import { useState, useTransition } from "react";
 import type { ExternalIdentityData } from "@/classes/ExternalIdentity";
 import type { UserData } from "@/classes/types/User";
+import { logger } from "@/libs/logger";
 import { deleteAction } from "./action";
 
 /** Discord brand colour */
@@ -275,7 +276,7 @@ function UnlinkDialog({
         });
         onClose(true);
       } catch (error) {
-        console.error("Failed to unlink account:", error);
+        logger.error("Failed to unlink account:", error);
         enqueueSnackbar(`${provider}アカウントの連携解除に失敗しました`, {
           variant: "error",
         });

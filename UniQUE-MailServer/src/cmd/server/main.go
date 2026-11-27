@@ -1,10 +1,13 @@
 package main
 
 import (
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/UniPro-tech/UniQUE-MailServer/docs"
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/config"
+	"github.com/UniPro-tech/UniQUE-MailServer/internal/logging"
+	"github.com/UniPro-tech/UniQUE-MailServer/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/routes"
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/settings"
 	"github.com/UniPro-tech/UniQUE-MailServer/internal/utils"
@@ -30,9 +33,13 @@ func healthCheck(c *gin.Context) {
 }
 
 func main() {
+	logging.Init("mail")
+	gin.DefaultWriter = logging.Writer()
+	gin.DefaultErrorWriter = logging.Writer()
+
 	databaseSettings, err := settings.LoadValues()
 	if err != nil {
-		log.Printf("failed to load application settings; using environment values: %v", err)
+		slog.Warn("settings_load_failed", slog.Any("error", err))
 		databaseSettings = map[string]string{}
 	}
 	environmentConfigs := config.LoadConfig(databaseSettings)
@@ -45,7 +52,8 @@ func main() {
 	docs.SwaggerInfo.Title = environmentConfigs.AppName + " Mail Server API"
 	docs.SwaggerInfo.Version = environmentConfigs.Version
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(middleware.SlogRecovery(), middleware.SlogMiddleware())
 
 	r.Use(func(c *gin.Context) {
 		c.Set("config", environmentConfigs)
@@ -62,5 +70,9 @@ func main() {
 	r.POST("/register", routes.RegistrationEmail)
 	r.POST("/password-reset", routes.PasswordResetEmail)
 
-	r.Run()
+	slog.Info("service_starting", slog.String("addr", ":8080"))
+	if err := r.Run(); err != nil {
+		slog.Error("service_start_failed", slog.Any("error", err))
+		os.Exit(1)
+	}
 }

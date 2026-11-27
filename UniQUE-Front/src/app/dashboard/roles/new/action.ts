@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { Role } from "@/classes/Role";
+import { logger } from "@/libs/logger";
 
 export interface CreateRoleFormData {
   customId: string;
@@ -30,7 +31,7 @@ export async function createRole(
 
     return { success: true, roleId: role.id };
   } catch (error) {
-    console.error("Role creation failed:", error);
+    logger.error("Role creation failed:", error);
     return {
       success: false,
       error: "ロールの作成に失敗しました",

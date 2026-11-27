@@ -5,7 +5,7 @@ import {
   type JWTVerifyGetKey,
   jwtVerify,
 } from "jose";
-import { baseLogger } from "./logger";
+import { logger } from "@/libs/logger";
 
 const AUTH_ISSUER = process.env.AUTH_API_URL;
 const JWKS_CACHE_TTL = 1000 * 60 * 60; // 1時間
@@ -24,7 +24,7 @@ export const ParseJwt = (token: string): { [key: string]: unknown } => {
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error("Failed to parse JWT:", error);
+    logger.error("Failed to parse JWT:", error);
     return {};
   }
 };
@@ -68,7 +68,7 @@ async function fetchJWKS(): Promise<JWKSResponse> {
     };
     return jwks;
   } catch (error) {
-    console.error("Error fetching JWKS:", error);
+    logger.error("Error fetching JWKS:", error);
     throw error;
   }
 }
@@ -119,8 +119,7 @@ export async function VerifyJwt(token: string): Promise<{
     }
     return { valid: true, payload: verified.payload };
   } catch (error) {
-    const logger = baseLogger.getLogger({ function: "VerifyJwt" });
-    logger.error(error);
+    logger.error("verify_jwt_failed", error);
     return { valid: false };
   }
 }

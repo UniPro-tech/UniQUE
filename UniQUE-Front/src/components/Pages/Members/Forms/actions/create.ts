@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import type { UserStatus } from "@/classes/types/User";
 import { User } from "@/classes/User";
+import { logger } from "@/libs/logger";
 
 export interface CreateMemberFormData {
   customId: string;
@@ -34,7 +35,7 @@ export async function createMember(
     );
     return { success: true, userId: user.id };
   } catch (err) {
-    console.error("Member creation failed:", err);
+    logger.error("Member creation failed:", err);
     return { success: false, error: "ユーザーの作成に失敗しました" };
   }
 }

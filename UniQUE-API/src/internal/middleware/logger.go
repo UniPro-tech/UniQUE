@@ -1,17 +1,39 @@
 package middleware
 
 import (
+	"io"
 	"log/slog"
+	"net/http"
+	"runtime/debug"
 	"time"
 
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	"github.com/UniPro-tech/UniQUE-API/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
+// SlogRecovery は panic を slog 形式で記録し、500 を返すミドルウェア。
+// Gin 標準の Recovery は標準 log パッケージへ出力するため置き換える。
+func SlogRecovery() gin.HandlerFunc {
+	return gin.CustomRecoveryWithWriter(io.Discard, func(c *gin.Context, recovered any) {
+		utils.GetLogger(c).Error("panic_recovered",
+			logging.PanicAttr(recovered),
+			slog.String("stack", string(debug.Stack())),
+		)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+	})
+}
+
 // Gin のアクセスログを slog で JSON 出力するためのミドルウェア
 func SlogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		requestContext := logging.NewRequestContext(c.Request)
+		c.Request = c.Request.WithContext(requestContext.WithContext(c.Request.Context()))
+		c.Header(logging.HeaderRequestID, requestContext.RequestID)
+		c.Header(logging.HeaderTraceID, requestContext.TraceID)
+
 		logger := utils.GetLogger(c)
+		c.Set("logger", logger)
 		start := time.Now()
 
 		// 先に後続のハンドラー（AuthenticationPostなど）を実行させる
@@ -23,9 +45,9 @@ func SlogMiddleware() gin.HandlerFunc {
 			status := c.Writer.Status()
 
 			// 1箇所でまとめてエラーログをJSON出力
-			logger.Error("An error occurred",
+			logger.Error("http_error",
 				slog.Int("status", status),
-				slog.String("error", err.Error()),
+				slog.Any("error", err),
 			)
 
 			// 1箇所でまとめてクライアントにエラーレスポンス（JSON）を返却
@@ -34,10 +56,9 @@ func SlogMiddleware() gin.HandlerFunc {
 		}
 
 		// エラーがなかった場合は、通常のアクセスログを出す
-		latency := time.Since(start)
-		logger.Info("HTTP Request",
+		logger.Info("http_request",
 			slog.Int("status", c.Writer.Status()),
-			slog.Duration("latency", latency),
+			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
 		)
 	}
 }

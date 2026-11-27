@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { EmailVerificationResponse } from "@/classes/User";
+import { logger } from "@/libs/logger";
 
 type VerifyState =
   | "loading"
@@ -97,7 +98,7 @@ export default function EmailVerifyClient({
             }
           }
         } catch (error) {
-          console.error("Failed to verify email after Discord link:", error);
+          logger.error("Failed to verify email after Discord link:", error);
           setState("error");
         }
         return;
@@ -133,7 +134,7 @@ export default function EmailVerifyClient({
                 setState("error");
               }
             } catch (error) {
-              console.error("Failed to verify email:", error);
+              logger.error("Failed to verify email:", error);
               setState("error");
             }
           } else {
@@ -198,7 +199,7 @@ export default function EmailVerifyClient({
             }
           }
         } catch (error) {
-          console.error("Discord check error:", error);
+          logger.error("Discord check error:", error);
         }
       }, 1000); // 1秒ごとにチェック
 

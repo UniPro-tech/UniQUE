@@ -2,6 +2,7 @@
 
 import { User } from "@/classes/User";
 import type { FormStatus } from "@/components/Pages/Settings/Cards/Base";
+import { logger } from "@/libs/logger";
 
 export const approveAction = async (
   _prevState: FormStatus | null,
@@ -55,7 +56,7 @@ export const approveAction = async (
       message: "メンバーを承認しました。",
     };
   } catch (e) {
-    console.log(e);
+    logger.info(e);
     return {
       status: "error",
       message: "メンバーの承認に失敗しました。",

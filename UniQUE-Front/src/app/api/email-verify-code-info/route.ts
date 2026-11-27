@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { apiGet } from "@/libs/apiClient";
+import { logger } from "@/libs/logger";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
-    console.error("Email verify code lookup error:", error);
+    logger.error("Email verify code lookup error:", error);
     return NextResponse.json(
       { error: "Verification lookup failed" },
       { status: 500 },

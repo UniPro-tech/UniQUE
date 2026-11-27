@@ -96,7 +96,7 @@ func GenerateTokens(q *query.Query, config config.Config, consent *model.Consent
 		}
 		IDTokenString, err = GenerateIDToken(q, IDTokenIDRaw, consent.UserID, consent.ApplicationID, nonce, scopes, config)
 		if err != nil {
-			logger.Error("Un error occured in idtoken gen", slog.String("error", err.Error()))
+			logger.Error("idtoken_generate_failed", slog.Any("error", err))
 			return "", "", "", err
 		}
 	} else {

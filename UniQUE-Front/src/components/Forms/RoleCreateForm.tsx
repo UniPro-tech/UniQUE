@@ -28,6 +28,7 @@ import {
   redirectToRoleList,
 } from "@/app/dashboard/roles/new/action";
 import { PermissionBitsFields, PermissionTexts } from "@/constants/Permission";
+import { logger } from "@/libs/logger";
 import { PermissionGroups } from "./PermissionGroups";
 
 interface RoleCreateFormProps {
@@ -110,7 +111,7 @@ export default function RoleCreateForm({ onCancel }: RoleCreateFormProps) {
       }
     } catch (err) {
       setError("予期しないエラーが発生しました");
-      console.error(err);
+      logger.error(err);
     } finally {
       setLoading(false);
     }
@@ -134,7 +135,7 @@ export default function RoleCreateForm({ onCancel }: RoleCreateFormProps) {
         setError(result.error || "作成に失敗しました");
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setError("予期しないエラーが発生しました");
     } finally {
       setLoading(false);

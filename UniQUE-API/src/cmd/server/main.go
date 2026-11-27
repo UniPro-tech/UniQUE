@@ -8,6 +8,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-API/docs"
 	"github.com/UniPro-tech/UniQUE-API/internal/config"
 	"github.com/UniPro-tech/UniQUE-API/internal/db"
+	"github.com/UniPro-tech/UniQUE-API/internal/logging"
 	"github.com/UniPro-tech/UniQUE-API/internal/middleware"
 	"github.com/UniPro-tech/UniQUE-API/internal/query"
 	"github.com/UniPro-tech/UniQUE-API/internal/routes"
@@ -41,23 +42,19 @@ func healthCheck(c *gin.Context) {
 }
 
 func main() {
-	// --- slog の初期化 ---
-	// JSONフォーマットで標準出力へログを書き出すように設定
-	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo, // 出力レベルを変更したい場合はここで調整
-	})
-	slog.SetDefault(slog.New(handler))
+	logging.Init("api")
+	gin.DefaultWriter = logging.Writer()
+	gin.DefaultErrorWriter = logging.Writer()
 
 	// Initialize database
 	dbConnection, err := db.NewDB()
 	if err != nil {
-		// 標準の log.Fatal ではなく slog.Error を使用して JSON 形式を維持
-		slog.Error("Failed to initialize database", slog.String("error", err.Error()))
+		slog.Error("database_init_failed", slog.Any("error", err))
 		os.Exit(1)
 	}
 	databaseSettings, err := settings.LoadValues(dbConnection)
 	if err != nil {
-		slog.Warn("Failed to load application settings; using environment values", slog.String("error", err.Error()))
+		slog.Warn("settings_load_failed", slog.Any("error", err))
 		databaseSettings = map[string]string{}
 	}
 	environmentConfigs := config.LoadConfig(databaseSettings)
@@ -76,8 +73,10 @@ func main() {
 
 	query.SetDefault(dbConnection)
 
-	// loggerとrecoveryミドルウェア付きGinルーター作成
-	r := gin.Default()
+	// アクセスログは SlogMiddleware が JSON で出力するため、Gin 標準の
+	// テキストログは有効化しない。panic は SlogRecovery で slog に記録する。
+	r := gin.New()
+	r.Use(middleware.SlogRecovery())
 
 	// Swagger Info
 	docs.SwaggerInfo.BasePath = "/"
@@ -107,5 +106,9 @@ func main() {
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	r.Run()
+	slog.Info("service_starting", slog.String("addr", ":8080"))
+	if err := r.Run(); err != nil {
+		slog.Error("service_start_failed", slog.Any("error", err))
+		os.Exit(1)
+	}
 }
