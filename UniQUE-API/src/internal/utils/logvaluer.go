@@ -82,8 +82,8 @@ func MaskBody(body []byte) string {
 	return maskBody(body)
 }
 
-// RedactedURL masks credentials embedded in a URL or a raw query string.
-// It accepts both absolute URLs and stand-alone query strings.
+// RedactedURL masks credentials embedded in an absolute URL. Use
+// RedactedQuery for a raw query string.
 type RedactedURL string
 
 // LogValue implements slog.LogValuer.
