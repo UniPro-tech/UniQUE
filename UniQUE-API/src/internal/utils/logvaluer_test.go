@@ -92,6 +92,16 @@ func TestRedactedURLMasksQuerySecrets(t *testing.T) {
 	}
 }
 
+func TestRedactedURLRejectsNonURL(t *testing.T) {
+	output := logValue(t, RedactedURL("token=secret/path://host"))
+	if strings.Contains(output, "secret") {
+		t.Fatalf("non-URL value leaked into log: %s", output)
+	}
+	if !strings.Contains(output, "[REDACTED_URL]") {
+		t.Fatalf("non-URL value should be replaced with a fixed marker: %s", output)
+	}
+}
+
 func TestMaskedBodyTruncates(t *testing.T) {
 	body := MaskedBody(bytes.Repeat([]byte("a"), maxLoggedBodyBytes*2))
 	output := logValue(t, body)

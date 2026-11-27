@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -28,4 +29,10 @@ func (slogWriter) Write(p []byte) (int, error) {
 // Writer returns an io.Writer that emits each line as a structured log entry.
 func Writer() io.Writer {
 	return slogWriter{}
+}
+
+// PanicAttr describes a panic without exposing its value, which may contain
+// credentials or other sensitive data.
+func PanicAttr(recovered any) slog.Attr {
+	return slog.String("panic_type", fmt.Sprintf("%T", recovered))
 }

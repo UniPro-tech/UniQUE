@@ -109,7 +109,12 @@ export function requestContextFromHeaders(headers: {
   };
 }
 
-export function getLogContext(): LogContext {
+export function getLogContext(): LogContext | null {
+  // Server-side implicit logs have no per-request context; omit the
+  // correlation IDs rather than reusing a process-wide page context.
+  if (typeof window === "undefined") {
+    return null;
+  }
   if (!pageContext) {
     pageContext = newRequestContext();
   }
@@ -135,7 +140,11 @@ function redactString(value: string): string {
       /"(access_token|refresh_token|id_token|token|secret|client_secret|bot_token|password|authorization|api_key|jti|sid|session_id)"\s*:\s*"[^"]*"/gi,
       '"$1":"[REDACTED]"',
     )
-    .replace(/\b(Bearer|Bot)\s+[A-Za-z0-9._~+/=-]+/gi, "$1 [REDACTED]");
+    .replace(/\b(Bearer|Bot|Basic)\s+[A-Za-z0-9._~+/=-]+/gi, "$1 [REDACTED]")
+    .replace(
+      /(access_token|refresh_token|id_token|token|secret|client_secret|bot_token|password|authorization|api_key|jti|sid|session_id)\s*[:=]\s*[^\s,;&"']+/gi,
+      "$1=[REDACTED]",
+    );
 }
 
 function sanitize(value: unknown, depth = 0): unknown {
@@ -180,30 +189,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function deriveEvent(message: string, fallback: string): string {
-  let slug = "";
-  let pendingSeparator = false;
-  for (const char of message.toLowerCase()) {
-    const isAlphanumeric =
-      (char >= "a" && char <= "z") || (char >= "0" && char <= "9");
-    if (isAlphanumeric) {
-      if (pendingSeparator && slug.length > 0) {
-        slug += "_";
-      }
-      slug += char;
-      pendingSeparator = false;
-    } else {
-      pendingSeparator = true;
-    }
-    if (slug.length >= 60) {
-      break;
-    }
-  }
-  while (slug.endsWith("_")) {
-    slug = slug.slice(0, -1);
-  }
-  return slug || fallback;
-}
 
 function normalizeArgs(args: unknown[]): {
   message: string;
@@ -259,15 +244,16 @@ function emitEntry(
   level: LogLevel,
   event: string,
   fields: Record<string, unknown>,
-  context: LogContext,
+  context: LogContext | null,
 ): void {
   const entry = {
     timestamp: new Date().toISOString(),
     level,
     component: COMPONENT,
     msg: event,
-    request_id: context.requestId,
-    trace_id: context.traceId,
+    ...(context
+      ? { request_id: context.requestId, trace_id: context.traceId }
+      : {}),
     ...fields,
   };
   const line = JSON.stringify(entry);
@@ -291,9 +277,10 @@ function emitEntry(
 
 function emit(level: LogLevel, fallbackEvent: string, args: unknown[]): void {
   const { message, fields } = normalizeArgs(args);
+  // Use a fixed event identifier; diagnostic strings stay in `message`.
   emitEntry(
     level,
-    deriveEvent(message, fallbackEvent),
+    fallbackEvent,
     { ...(message ? { message } : {}), ...fields },
     getLogContext(),
   );

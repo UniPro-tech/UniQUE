@@ -163,15 +163,13 @@ func redactURL(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	if strings.HasPrefix(raw, "/") || strings.Contains(raw, "://") {
-		parsed, err := url.Parse(raw)
-		if err == nil {
-			parsed.User = nil
-			parsed.RawQuery = redactQuery(parsed.RawQuery)
-			return parsed.String()
-		}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "[REDACTED_URL]"
 	}
-	return redactQuery(raw)
+	parsed.User = nil
+	parsed.RawQuery = redactQuery(parsed.RawQuery)
+	return parsed.String()
 }
 
 func redactQuery(raw string) string {

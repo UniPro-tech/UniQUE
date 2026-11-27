@@ -78,19 +78,23 @@ async function loggedFetch(
   const headers = new Headers(init.headers);
   const generated =
     typeof window === "undefined" ? newRequestContext() : newClientContext();
-  const existingRequestId = (headers.get(LOG_HEADERS.requestId) ?? "").trim();
-  const existingTraceId =
-    (headers.get(LOG_HEADERS.traceId) ?? "").trim() ||
-    traceIdFromTraceparent(headers.get(LOG_HEADERS.traceparent) ?? "");
+  const headerRequestId = (headers.get(LOG_HEADERS.requestId) ?? "").trim();
+  const rawHeaderTraceId = (headers.get(LOG_HEADERS.traceId) ?? "").trim();
+  const headerTraceId = /^[0-9a-f]{32}$/i.test(rawHeaderTraceId)
+    ? rawHeaderTraceId
+    : "";
+  const traceparentTraceId = traceIdFromTraceparent(
+    headers.get(LOG_HEADERS.traceparent) ?? "",
+  );
   const context: LogContext = {
-    requestId: existingRequestId || generated.requestId,
-    traceId: existingTraceId || generated.traceId,
+    requestId: headerRequestId || generated.requestId,
+    traceId: headerTraceId || traceparentTraceId || generated.traceId,
   };
 
-  if (!existingRequestId) {
+  if (!headerRequestId) {
     headers.set(LOG_HEADERS.requestId, context.requestId);
   }
-  if (!existingTraceId) {
+  if (!headerTraceId) {
     headers.set(LOG_HEADERS.traceId, context.traceId);
   }
   if (!headers.get(LOG_HEADERS.traceparent)) {
