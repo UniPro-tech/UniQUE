@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.19.0](https://github.com/UniPro-tech/UniQUE/compare/v1.18.0...v1.19.0) (2026-11-27)
+
+
+### Features
+
+* 構造化ログの統一と request_id / trace_id の伝播 ([#194](https://github.com/UniPro-tech/UniQUE/issues/194)) ([e1361ce](https://github.com/UniPro-tech/UniQUE/commit/e1361ce2df4e38a803fc1dffbf526c640fd93516))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/go-sql-driver/mysql to v1.10.2 ([#188](https://github.com/UniPro-tech/UniQUE/issues/188)) ([b413890](https://github.com/UniPro-tech/UniQUE/commit/b413890de962f4b2b4b80a4d902285cf19179cac))
+* **deps:** update module golang.org/x/crypto to v0.59.0 ([#183](https://github.com/UniPro-tech/UniQUE/issues/183)) ([5903de2](https://github.com/UniPro-tech/UniQUE/commit/5903de2319caee60b875d365e920ab88105c1394))
+
 ## [1.18.0](https://github.com/UniPro-tech/UniQUE/compare/v1.17.8...v1.18.0) (2026-11-07)
 
 
