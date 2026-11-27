@@ -57,9 +57,17 @@ func TestMaskedBodyRedactsBasicAuthorization(t *testing.T) {
 }
 
 func TestMaskedBodyRedactsSingleQuotedKeys(t *testing.T) {
-	output := logValue(t, MaskedBody([]byte(`{'access_token': 'secret-value'}`)))
-	if strings.Contains(output, "secret-value") {
-		t.Fatalf("credential with single-quoted key leaked into log: %s", output)
+	cases := []string{
+		`{'access_token': 'secret-value'}`,
+		`{'password': 'secret"tail'}`,
+		`{"password": "secret'tail"}`,
+		`{'password': 'secret\'tail'}`,
+	}
+	for _, input := range cases {
+		output := logValue(t, MaskedBody([]byte(input)))
+		if strings.Contains(output, "secret") || strings.Contains(output, "tail") {
+			t.Fatalf("credential with quoted key/value leaked into log: %s", output)
+		}
 	}
 }
 
