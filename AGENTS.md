@@ -11,23 +11,39 @@ AIL-{number}
 Assisted-by: <model-name> by <tool/agent name>
 ```
 
-### AIL Identifier Inference
+### AIL — AI Influence Level
 
-Infer the relevant AIL identifier using this priority:
+`AIL-{number}` is the **AI Influence Level** by Daniel Miessler
+(<https://danielmiessler.com/blog/ai-influence-level-ail>). It records how much
+of the work the AI did and where the idea came from. It is **not** a ticket,
+issue, or branch identifier.
 
-1. Current Git branch name (e.g. `feature/AIL-4-login`)
-2. Related GitHub issue or pull request
-3. Explicit task context in the current conversation
-4. Related Git commit history
+Scale (v2.0): read the list top-down and stop at the first line that is true of
+this change.
 
-Rules:
+| Level   | Name                                 | Meaning                                                      |
+| ------- | ------------------------------------ | ------------------------------------------------------------ |
+| `AIL-0` | Human Created, No AI Involved        | Nothing AI-based touched the work.                           |
+| `AIL-1` | Human Created, Minor AI Assistance   | AI only tidied: proofreading, grammar, cleanup.              |
+| `AIL-2` | Human Created, Major AI Augmentation | AI added to work a human wrote; the human still authored it. |
+| `AIL-3` | AI Created, Human Full Structure     | AI wrote it inside a structure a human fully laid out.       |
+| `AIL-4` | AI Created, Human Basic Idea         | AI wrote it from a basic idea a human brought.               |
+| `AIL-5` | AI Created, Human Request            | A human only asked; the AI supplied the idea itself.         |
+| `AIL-6` | AI Initiated, No Human Involvement   | Nobody asked; the AI decided the work should exist.          |
 
-- Extract the identifier in the format `AIL-{number}`.
-- Use the most relevant identifier associated with the current task.
-- Never hardcode an issue number.
-- Never fabricate or guess an identifier without sufficient evidence.
-- If no identifier can be reliably determined, omit the AIL line only.
-- Do not ask the user for an identifier if it can be inferred from context.
+Assignment rules:
+
+- Self-assess honestly for each commit and PR from the actual process. Never
+  inflate or deflate the level.
+- Typical agent work: the user gives the requirement and the agent designs and
+  writes it → `AIL-4`. The user specifies the full structure and the agent
+  fills it in → `AIL-3`. The user says "do something about X" and the agent
+  invents the approach → `AIL-5`. Use `AIL-6` only for work no human requested.
+- Formatting, frontmatter, art, and publishing do not move the level. For a
+  mixed change, rate the main substance of that commit/PR.
+- Do not infer the level from a branch name, issue number, or commit history.
+- If the level genuinely cannot be assessed, omit the AIL line and keep
+  `Assisted-by:`.
 
 ### Git Commits
 
