@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/UniPro-tech/UniQUE/compare/v1.19.0...v1.19.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/go-sql-driver/mysql to v1.11.0 ([#195](https://github.com/UniPro-tech/UniQUE/issues/195)) ([15c5eab](https://github.com/UniPro-tech/UniQUE/commit/15c5eab12bf8445526fb9b6729f872c8f5bc5b9a))
+
 ## [1.19.0](https://github.com/UniPro-tech/UniQUE/compare/v1.18.0...v1.19.0) (2026-11-27)
 
 
